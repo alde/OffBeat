@@ -35,3 +35,9 @@ Encounters.lua
 BuffDisplay.lua
 BuffTimeline.lua
 Warnings.lua
+
+## Rotation Tracker
+Auras.lua
+Rotation.lua
+RotationDisplay.lua
+RotationTimeline.lua

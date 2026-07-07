@@ -18,8 +18,14 @@ $currentUrl = ""
 
 function Invoke-Checkout {
     if ($currentPath -and $currentUrl) {
-        Write-Host "Checking out ${currentPath}..."
-        svn checkout $currentUrl ($currentPath -replace "/", "\")
+        $localPath = $currentPath -replace "/", "\"
+        Write-Host "Fetching ${currentPath}..."
+        if ($currentUrl -match "github\.com") {
+            if (Test-Path $localPath) { Remove-Item -Recurse -Force $localPath }
+            git clone --depth 1 $currentUrl $localPath
+        } else {
+            svn checkout $currentUrl $localPath
+        }
         Write-Host "Done."
     }
 }

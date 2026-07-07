@@ -9,8 +9,13 @@ in_externals=false
 
 checkout() {
   if [[ -n "$current_path" && -n "$current_url" ]]; then
-    echo "Checking out ${current_path}..."
-    svn checkout "$current_url" "$current_path"
+    echo "Fetching ${current_path}..."
+    if [[ "$current_url" == *github.com* ]]; then
+      rm -rf "$current_path"
+      git clone --depth 1 "$current_url" "$current_path"
+    else
+      svn checkout "$current_url" "$current_path"
+    fi
     echo "Done."
   fi
 }

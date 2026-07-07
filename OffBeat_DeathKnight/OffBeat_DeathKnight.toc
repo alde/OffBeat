@@ -1,0 +1,8 @@
+## Interface: 120007
+## Title: OffBeat - Death Knight
+## Version: 1.0.0
+## Notes: Death Knight spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+FrostDeathKnight.lua

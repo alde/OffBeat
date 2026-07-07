@@ -1,0 +1,8 @@
+## Interface: 120007
+## Title: OffBeat - Monk
+## Version: 1.0.0
+## Notes: Monk spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+WindwalkerMonk.lua

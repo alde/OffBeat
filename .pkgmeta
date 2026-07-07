@@ -46,3 +46,4 @@ externals:
 ignore:
   - download_deps.sh
   - download_deps.ps1
+  - .claude

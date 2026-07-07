@@ -28,3 +28,10 @@ Sounds.lua
 Frames.lua
 Core.lua
 Profiles.lua
+
+## Buff Tracker
+Buffs.lua
+Encounters.lua
+BuffDisplay.lua
+BuffTimeline.lua
+Warnings.lua

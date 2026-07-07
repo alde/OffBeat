@@ -1,15 +1,8 @@
-$ErrorActionPreference = "Stop"
-
-# Symlinks satellite addons into the same AddOns directory as the core
-# so WoW can discover them during development.
-#
-# Usage: run from the OffBeat repo root, or pass the AddOns path:
-#   .\dev_install.ps1
-#   .\dev_install.ps1 -AddOnsDir "C:\...\Interface\AddOns"
-
 param(
     [string]$AddOnsDir = (Split-Path -Parent $PSScriptRoot)
 )
+
+$ErrorActionPreference = "Stop"
 
 $satellites = @("OffBeat_Evoker", "OffBeat_Monk", "OffBeat_DeathKnight", "OffBeat_Paladin")
 

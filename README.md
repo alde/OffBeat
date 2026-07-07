@@ -29,7 +29,14 @@ A profile can use both at once.
 
 ## Installation
 
-Install **OffBeat** (the core) plus whichever `OffBeat_<Class>` addons you need. Each class addon is a separate folder in your `Interface/AddOns/` directory.
+Install **OffBeat** (the core) plus whichever `OffBeat_<Class>` addons you need. Each class addon must be its own folder in `Interface/AddOns/` — the CurseForge packager handles this automatically via `move-folders`.
+
+**From source** (development): clone the repo into your AddOns directory, then symlink the satellites so WoW can find them:
+
+```bash
+cd Interface/AddOns/OffBeat
+./dev_install.sh
+```
 
 ## Commands
 

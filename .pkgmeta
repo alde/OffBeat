@@ -43,7 +43,14 @@ externals:
     url: https://github.com/SafeteeWoW/LibDeflate
     tag: latest
 
+move-folders:
+  OffBeat/OffBeat_Evoker: OffBeat_Evoker
+  OffBeat/OffBeat_Monk: OffBeat_Monk
+  OffBeat/OffBeat_DeathKnight: OffBeat_DeathKnight
+  OffBeat/OffBeat_Paladin: OffBeat_Paladin
+
 ignore:
   - download_deps.sh
   - download_deps.ps1
+  - dev_install.sh
   - .claude

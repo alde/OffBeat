@@ -196,9 +196,7 @@ function Rotation:CheckKeyCdReady()
     local info = C_Spell.GetSpellCooldown(keyCd.spellId)
     if not info then return end
 
-    -- isActive exists in TWW API; fall back to duration > 0 for older builds
-    local onCooldown = info.isActive or (info.duration and info.duration > 0)
-    local ready = not onCooldown
+    local ready = not info.isActive
 
     if ready and not self.keyCdReady then
         self.keyCdReady = true
@@ -227,8 +225,7 @@ function Rotation:CheckIdleCooldowns()
         if IsPlayerSpell(spellId) then
             local cdInfo = C_Spell.GetSpellCooldown(spellId)
             local usable = C_Spell.IsSpellUsable(spellId)
-            local onCd = cdInfo and (cdInfo.isActive or (cdInfo.duration and cdInfo.duration > 0))
-            local ready = cdInfo and not onCd and usable
+            local ready = cdInfo and not cdInfo.isActive and usable
 
             if ready then
                 local st = self.idleState[spellId]

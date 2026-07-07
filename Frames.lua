@@ -204,33 +204,58 @@ function OffBeat:InvalidateKeybindCache()
     keybindCacheDirty = true
 end
 
+local ACTION_BAR_BINDINGS = {
+    { prefix = "ACTIONBUTTON",          offset = 0 },
+    { prefix = "MULTIACTIONBAR1BUTTON", offset = 60 },
+    { prefix = "MULTIACTIONBAR2BUTTON", offset = 48 },
+    { prefix = "MULTIACTIONBAR3BUTTON", offset = 24 },
+    { prefix = "MULTIACTIONBAR4BUTTON", offset = 36 },
+    { prefix = "MULTIACTIONBAR5BUTTON", offset = 72 },
+    { prefix = "MULTIACTIONBAR6BUTTON", offset = 84 },
+    { prefix = "MULTIACTIONBAR7BUTTON", offset = 96 },
+    { prefix = "MULTIACTIONBAR8BUTTON", offset = 108 },
+}
+
+local keybindNameCache = {}
+
+local function CacheKey(spellId, key)
+    if not spellId then return end
+    local short = ShortenKey(key)
+    if keybindCache[spellId] and #keybindCache[spellId] <= #short then return end
+    keybindCache[spellId] = short
+    local info = C_Spell.GetSpellInfo(spellId)
+    if info and info.name then
+        local existing = keybindNameCache[info.name]
+        if not existing or #short < #existing then
+            keybindNameCache[info.name] = short
+        end
+    end
+end
+
 function OffBeat:GetKeybindForSpell(spellId)
     if keybindCacheDirty then
         wipe(keybindCache)
-        for bar = 1, 8 do
-            for slot = 1, 12 do
-                local realSlot = (bar - 1) * 12 + slot
-                local actionType, id = GetActionInfo(realSlot)
-                local resolvedSpell
-                if actionType == "spell" then
-                    resolvedSpell = id
-                elseif actionType == "macro" then
-                    resolvedSpell = GetMacroSpell(id)
-                end
-                if resolvedSpell and not keybindCache[resolvedSpell] then
-                    local key = GetBindingKey("ACTIONBUTTON" .. slot)
-                        or GetBindingKey("MULTIACTIONBAR1BUTTON" .. slot)
-                        or GetBindingKey("MULTIACTIONBAR2BUTTON" .. slot)
-                        or GetBindingKey("MULTIACTIONBAR3BUTTON" .. slot)
-                        or GetBindingKey("MULTIACTIONBAR4BUTTON" .. slot)
-                    if key then
-                        keybindCache[resolvedSpell] = ShortenKey(key)
+        wipe(keybindNameCache)
+        for _, bar in ipairs(ACTION_BAR_BINDINGS) do
+            for i = 1, 12 do
+                local key = GetBindingKey(bar.prefix .. i)
+                if key then
+                    local slot = bar.offset + i
+                    local actionType, id = GetActionInfo(slot)
+                    if actionType == "spell" then
+                        CacheKey(id, key)
+                    elseif actionType == "macro" then
+                        local macroSpell = GetMacroSpell(id)
+                        if macroSpell then CacheKey(macroSpell, key) end
                     end
                 end
             end
         end
         keybindCacheDirty = false
     end
-    return keybindCache[spellId]
+    if keybindCache[spellId] then return keybindCache[spellId] end
+    local info = C_Spell.GetSpellInfo(spellId)
+    if info and info.name then return keybindNameCache[info.name] end
+    return nil
 end
 

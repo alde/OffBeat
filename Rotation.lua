@@ -196,10 +196,12 @@ function Rotation:CheckKeyCdReady()
     local info = C_Spell.GetSpellCooldown(keyCd.spellId)
     if not info then return end
 
-    local ready = not info.isActive
+    local usable = C_Spell.IsSpellUsable(keyCd.spellId)
+    local ready = not info.isActive and usable
 
-    -- Spells like Avenging Wrath start their cooldown after the buff
-    -- expires, so isActive is false during the buff. Check the aura too.
+    -- Spells like Avenging Wrath report isActive=false during the buff
+    -- and briefly after it expires. The aura check catches the buff window;
+    -- IsSpellUsable catches the gap between buff expiry and CD start.
     if ready then
         local auras = OffBeat:GetModule("Auras", true)
         if auras and auras:IsActive(keyCd.spellId) then

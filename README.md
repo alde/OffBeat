@@ -35,7 +35,8 @@ Install **OffBeat** (the core) plus whichever `OffBeat_<Class>` addons you need.
 
 ```bash
 cd Interface/AddOns/OffBeat
-./dev_install.sh
+./dev_install.sh        # macOS/Linux
+.\dev_install.ps1       # Windows (creates junctions)
 ```
 
 ## Commands

@@ -53,4 +53,5 @@ ignore:
   - download_deps.sh
   - download_deps.ps1
   - dev_install.sh
+  - dev_install.ps1
   - .claude

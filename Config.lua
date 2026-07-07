@@ -60,6 +60,7 @@ function OffBeat:GetDefaults()
 
             -- Next spell (Assisted Combat)
             assistedCombat = true,
+            assistedCombatOnly = false,
             assistedIconSize = 48,
             assistedKeybindSize = 12,
             assistedPosition = nil,

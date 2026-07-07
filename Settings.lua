@@ -369,6 +369,27 @@ pageBuilders.rotation = function(parent, y)
         _, h = W:Toggle(parent, "Show Next Spell", y,
             function() return db.assistedCombat end,
             function(v) db.assistedCombat = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
+        _, h = W:Toggle(parent, "Only in Combat", y,
+            function() return db.assistedCombatOnly end,
+            function(v)
+                db.assistedCombatOnly = v
+                local rd = OffBeat:GetModule("RotationDisplay", true)
+                if rd and rd:IsEnabled() then rd:UpdateAssistedVisibility() end
+            end); y = y - h
+        _, h = W:Slider(parent, "Icon Size", y, 24, 80, 2,
+            function() return db.assistedIconSize end,
+            function(v)
+                db.assistedIconSize = v
+                local rd = OffBeat:GetModule("RotationDisplay", true)
+                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
+            end); y = y - h
+        _, h = W:Slider(parent, "Keybind Font Size", y, 8, 20, 1,
+            function() return db.assistedKeybindSize end,
+            function(v)
+                db.assistedKeybindSize = v
+                local rd = OffBeat:GetModule("RotationDisplay", true)
+                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
+            end); y = y - h
     end
 
     _, h = W:SectionHeader(parent, "TIMELINE", y); y = y - h

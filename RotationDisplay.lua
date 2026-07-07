@@ -267,6 +267,7 @@ end
 
 function RotationDisplay:PLAYER_REGEN_DISABLED()
     self:UpdatePanelVisibility()
+    self:UpdateAssistedVisibility()
     local db = OffBeat.db.profile
     if db.keyCdCombatOnly and self.keyCdIcon and self.keyCdIcon:IsShown() then
         self:SetKeyCdIconAlpha(db.keyCdIconAlpha)
@@ -275,6 +276,7 @@ end
 
 function RotationDisplay:PLAYER_REGEN_ENABLED()
     self:UpdatePanelVisibility()
+    self:UpdateAssistedVisibility()
     self:HideWarning()
     if OffBeat.db.profile.keyCdCombatOnly then
         self:SetKeyCdIconAlpha(0)
@@ -337,10 +339,26 @@ function RotationDisplay:RefreshAssisted()
         return
     end
     local af = self:GetAssistedFrame()
-    local size = OffBeat.db.profile.assistedIconSize or OffBeat.db.profile.iconSize
+    local db = OffBeat.db.profile
+    local size = db.assistedIconSize or db.iconSize
     af:SetSize(size, size)
+    af.keybind:SetFont("Fonts\\FRIZQT__.TTF", db.assistedKeybindSize or 12, "OUTLINE")
     af:Show()
+    self:UpdateAssistedVisibility()
     self:UpdateAssisted()
+end
+
+function RotationDisplay:UpdateAssistedVisibility()
+    local af = self.assistedFrame
+    if not af then return end
+    local db = OffBeat.db.profile
+    if not db.assistedCombat then
+        af:SetAlpha(0)
+    elseif db.assistedCombatOnly and not UnitAffectingCombat("player") then
+        af:SetAlpha(0)
+    else
+        af:SetAlpha(1)
+    end
 end
 
 function RotationDisplay:UpdateAssisted()

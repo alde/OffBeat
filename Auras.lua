@@ -28,32 +28,21 @@ function Auras:BuildLookups()
     local profile = OffBeat.activeProfile
     if not profile or not profile.trackedAuras then return end
 
+    local hasHarmful = false
     for _, aura in ipairs(profile.trackedAuras) do
         trackedById[aura.spellId] = aura
         if aura.name then
             nameToId[aura.name] = aura.spellId
         end
+        if aura.filter == "HARMFUL" then hasHarmful = true end
     end
+
+    self.auraFilters = { "HELPFUL" }
+    if hasHarmful then self.auraFilters[2] = "HARMFUL" end
 end
 
 local function ResolveSpellId(auraSpellId)
-    if auraIdCache[auraSpellId] ~= nil then
-        return auraIdCache[auraSpellId]
-    end
-
-    if trackedById[auraSpellId] then
-        auraIdCache[auraSpellId] = auraSpellId
-        return auraSpellId
-    end
-
-    local name = C_Spell.GetSpellName(auraSpellId)
-    if name and nameToId[name] then
-        auraIdCache[auraSpellId] = nameToId[name]
-        return nameToId[name]
-    end
-
-    auraIdCache[auraSpellId] = false
-    return false
+    return OffBeat.ResolveSpellId(auraSpellId, trackedById, nameToId, auraIdCache)
 end
 
 local scanErrorLogged = false
@@ -61,8 +50,16 @@ local scanErrorLogged = false
 function Auras:ScanPlayer()
     local found = {}
 
-    local ids = C_UnitAuras.GetUnitAuraInstanceIDs("player", "HELPFUL")
-    if not ids then return found end
+    for _, filter in ipairs(self.auraFilters) do
+        self:ScanPlayerFilter(found, filter)
+    end
+
+    return found
+end
+
+function Auras:ScanPlayerFilter(found, filter)
+    local ids = C_UnitAuras.GetUnitAuraInstanceIDs("player", filter)
+    if not ids then return end
 
     for _, instanceId in ipairs(ids) do
         local ok, err = pcall(function()
@@ -114,8 +111,6 @@ function Auras:ScanPlayer()
             scanErrorLogged = true
         end
     end
-
-    return found
 end
 
 function Auras:UNIT_AURA(_, unit)

@@ -9,8 +9,28 @@ local DEFAULT_WIDTH = 360
 local MIN_WIDTH = 260
 local MAX_WIDTH = 600
 
+local function CalcAccuracy(enc)
+    if not enc or not enc.totalCasts or enc.totalCasts == 0 then return 100 end
+    return (1 - enc.mistakes / enc.totalCasts) * 100
+end
+
+local function FormatDuration(seconds)
+    local mins = math.floor(seconds / 60)
+    local secs = seconds - mins * 60
+    return mins, secs
+end
+
+local spellInfoCache = {}
+
+local function GetCachedSpellInfo(spellId)
+    if not spellInfoCache[spellId] then
+        spellInfoCache[spellId] = C_Spell.GetSpellInfo(spellId) or false
+    end
+    return spellInfoCache[spellId] or nil
+end
+
 function RotationTimeline:OnEnable()
-    self:RegisterMessage("OFFBEAT_ENCOUNTER_END", "OnEncounterEnd")
+    self:RegisterMessage("OFFBEAT_ROTATION_ENCOUNTER_END", "OnEncounterEnd")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "OnLockChanged")
 end
 
@@ -188,11 +208,10 @@ function RotationTimeline:GetRow(parent, index)
 end
 
 function RotationTimeline:Render(f, enc)
+    wipe(spellInfoCache)
     local duration = enc.endTime - enc.startTime
-    local mins = math.floor(duration / 60)
-    local secs = duration - mins * 60
-    local pct = enc.totalCasts > 0
-        and (1 - enc.mistakes / enc.totalCasts) * 100 or 100
+    local mins, secs = FormatDuration(duration)
+    local pct = CalcAccuracy(enc)
 
     f.title:SetText(string.format("OffBeat — %dm %02ds — %.1f%% accuracy",
         mins, secs, pct))
@@ -212,7 +231,7 @@ function RotationTimeline:Render(f, enc)
         local s = offset - m * 60
         row.timestamp:SetText(string.format("%d:%04.1f", m, s))
 
-        local spellInfo = C_Spell.GetSpellInfo(cast.spellId)
+        local spellInfo = GetCachedSpellInfo(cast.spellId)
         row.icon:SetTexture(spellInfo and spellInfo.iconID or "Interface\\Icons\\INV_Misc_QuestionMark")
 
         local spellName = spellInfo and spellInfo.name or tostring(cast.spellId)
@@ -299,10 +318,8 @@ end
 
 function RotationTimeline:FormatExport(enc)
     local duration = enc.endTime - enc.startTime
-    local mins = math.floor(duration / 60)
-    local secs = duration - mins * 60
-    local pct = enc.totalCasts > 0
-        and (1 - enc.mistakes / enc.totalCasts) * 100 or 100
+    local mins, secs = FormatDuration(duration)
+    local pct = CalcAccuracy(enc)
 
     local lines = {}
     lines[1] = string.format("# OffBeat Export — %dm %02ds — %.1f%% accuracy (%d casts, %d mistakes)",
@@ -311,7 +328,7 @@ function RotationTimeline:FormatExport(enc)
 
     for _, cast in ipairs(enc.casts) do
         local offset = cast.time - enc.startTime
-        local spellInfo = C_Spell.GetSpellInfo(cast.spellId)
+        local spellInfo = GetCachedSpellInfo(cast.spellId)
         local name = spellInfo and spellInfo.name or tostring(cast.spellId)
         local flag = cast.mistake and ("," .. cast.mistake:upper():gsub(" ", "_")) or ""
         lines[#lines + 1] = string.format("%.1f,%s%s", offset, name, flag)

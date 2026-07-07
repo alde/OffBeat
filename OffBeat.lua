@@ -187,6 +187,7 @@ function OffBeat:WipeState()
     wipe(self.state.auras)
     self.state.encounter = nil
     self.state.keystone = nil
+    self.state.rotationKeystone = nil
     self.state.combat = nil
     self.state.lastSpellId = nil
 end

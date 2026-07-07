@@ -6,6 +6,9 @@ local PADDING = 4
 local BORDER_SIZE = 2
 local KEY_CD_FLASH_DURATION = 3.0
 local ASSISTED_COMBAT_POLL = 0.1
+local ICON_SCALE_DECAY = 0.06
+local ICON_MIN_SCALE = 0.6
+local GLOW_SIZE_MULTIPLIER = 1.7
 
 local msqHistory, msqKeyCd, msqAssisted
 if MSQ then
@@ -155,12 +158,12 @@ function RotationDisplay:Refresh()
 
         if entry then
             local age = i - 1
-            local scale = math.max(0.6, 1.0 - (age * 0.06))
+            local scale = math.max(ICON_MIN_SCALE, 1.0 - (age * ICON_SCALE_DECAY))
             local alpha = db.iconAlpha * math.max(db.minOpacity, 1.0 - (age * db.opacityStep))
             local iconPixels = math.floor(baseSize * scale)
 
             container:SetSize(iconPixels, iconPixels)
-            container.glow:SetSize(iconPixels * 1.7, iconPixels * 1.7)
+            container.glow:SetSize(iconPixels * GLOW_SIZE_MULTIPLIER, iconPixels * GLOW_SIZE_MULTIPLIER)
             container:ClearAllPoints()
             container:SetPoint(grow.anchor, f, grow.anchor,
                 offset * grow.xMul + (grow.xMul == 0 and (BORDER_SIZE + 4) or 0),

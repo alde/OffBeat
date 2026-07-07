@@ -124,8 +124,10 @@ function Rotation:RecordAbility(spellId)
 
     local mistakeName = self:EvaluateMistakes(spellId, state)
 
-    if mistakeName and OffBeat.db.profile.soundEnabled then
-        OffBeat:PlayConfigSound("mistakeSound")
+    if mistakeName then
+        if OffBeat.db.profile.soundEnabled then
+            OffBeat:PlayConfigSound("mistakeSound")
+        end
         self:SendMessage("OFFBEAT_MISTAKE", spellId, mistakeName)
     end
 
@@ -157,7 +159,7 @@ function Rotation:RecordAbility(spellId)
 
     local now = GetTime()
     if state.combat then RecordToStats(state.combat, spellId, now, mistakeName) end
-    if state.keystone then RecordToStats(state.keystone, spellId, now, mistakeName) end
+    if state.rotationKeystone then RecordToStats(state.rotationKeystone, spellId, now, mistakeName) end
 
     self:SendMessage("OFFBEAT_HISTORY_UPDATED")
 end
@@ -194,7 +196,9 @@ function Rotation:CheckKeyCdReady()
     local info = C_Spell.GetSpellCooldown(keyCd.spellId)
     if not info then return end
 
-    local ready = not info.isActive
+    -- isActive exists in TWW API; fall back to duration > 0 for older builds
+    local onCooldown = info.isActive or (info.duration and info.duration > 0)
+    local ready = not onCooldown
 
     if ready and not self.keyCdReady then
         self.keyCdReady = true
@@ -223,7 +227,8 @@ function Rotation:CheckIdleCooldowns()
         if IsPlayerSpell(spellId) then
             local cdInfo = C_Spell.GetSpellCooldown(spellId)
             local usable = C_Spell.IsSpellUsable(spellId)
-            local ready = cdInfo and not cdInfo.isActive and usable
+            local onCd = cdInfo and (cdInfo.isActive or (cdInfo.duration and cdInfo.duration > 0))
+            local ready = cdInfo and not onCd and usable
 
             if ready then
                 local st = self.idleState[spellId]
@@ -300,7 +305,7 @@ function Rotation:PLAYER_REGEN_ENABLED()
         combat.endTime = GetTime()
         self:PrintCombatReport(combat, "Combat")
         OffBeat.state.lastEncounter = combat
-        self:SendMessage("OFFBEAT_ENCOUNTER_END", combat)
+        self:SendMessage("OFFBEAT_ROTATION_ENCOUNTER_END", combat)
     end
     OffBeat.state.combat = nil
 
@@ -314,7 +319,7 @@ end
 -- Keystone tracking
 
 function Rotation:CHALLENGE_MODE_START()
-    OffBeat.state.keystone = NewCombatStats()
+    OffBeat.state.rotationKeystone = NewCombatStats()
     OffBeat:Print("Keystone started — tracking rotation.")
 end
 
@@ -329,20 +334,20 @@ end
 function Rotation:PLAYER_ENTERING_WORLD()
     if C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive
         and C_ChallengeMode.IsChallengeModeActive()
-        and not OffBeat.state.keystone then
-        OffBeat.state.keystone = NewCombatStats()
+        and not OffBeat.state.rotationKeystone then
+        OffBeat.state.rotationKeystone = NewCombatStats()
     end
 end
 
 function Rotation:EndKeystone()
-    local ks = OffBeat.state.keystone
+    local ks = OffBeat.state.rotationKeystone
     if ks and ks.totalCasts > 0 then
         ks.endTime = GetTime()
         self:PrintCombatReport(ks, "Keystone")
         OffBeat.state.lastEncounter = ks
-        self:SendMessage("OFFBEAT_ENCOUNTER_END", ks)
+        self:SendMessage("OFFBEAT_ROTATION_ENCOUNTER_END", ks)
     end
-    OffBeat.state.keystone = nil
+    OffBeat.state.rotationKeystone = nil
 end
 
 -- Reporting

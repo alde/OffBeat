@@ -48,23 +48,7 @@ function Buffs:GetTrackedBuff(spellId)
 end
 
 local function ResolveSpellId(auraSpellId)
-    if auraIdCache[auraSpellId] ~= nil then
-        return auraIdCache[auraSpellId]
-    end
-
-    if trackedById[auraSpellId] then
-        auraIdCache[auraSpellId] = auraSpellId
-        return auraSpellId
-    end
-
-    local name = C_Spell.GetSpellName(auraSpellId)
-    if name and spellNameToId[name] then
-        auraIdCache[auraSpellId] = spellNameToId[name]
-        return spellNameToId[name]
-    end
-
-    auraIdCache[auraSpellId] = false
-    return false
+    return OffBeat.ResolveSpellId(auraSpellId, trackedById, spellNameToId, auraIdCache)
 end
 
 local scanErrorLogged = false

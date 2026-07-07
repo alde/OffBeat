@@ -1,5 +1,33 @@
 local OffBeat = _G.OffBeat
 
+--- Resolve an aura spell ID to a canonical tracked spell ID.
+--- Uses a two-tier lookup: direct ID match, then name-based fallback.
+--- Results are cached per auraIdCache instance for performance.
+---@param auraSpellId number The spell ID from the aura data
+---@param trackedById table Map of canonical spell ID -> info table
+---@param nameToId table Map of spell name -> canonical spell ID
+---@param auraIdCache table Cache of aura spell ID -> canonical ID (or false)
+---@return number|false The canonical spell ID, or false if not tracked
+function OffBeat.ResolveSpellId(auraSpellId, trackedById, nameToId, auraIdCache)
+    if auraIdCache[auraSpellId] ~= nil then
+        return auraIdCache[auraSpellId]
+    end
+
+    if trackedById[auraSpellId] then
+        auraIdCache[auraSpellId] = auraSpellId
+        return auraSpellId
+    end
+
+    local name = C_Spell.GetSpellName(auraSpellId)
+    if name and nameToId[name] then
+        auraIdCache[auraSpellId] = nameToId[name]
+        return nameToId[name]
+    end
+
+    auraIdCache[auraSpellId] = false
+    return false
+end
+
 --- Create a movable, position-saving frame.
 ---@param name string Global frame name
 ---@param positionKey string Key in db.profile for saving position

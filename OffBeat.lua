@@ -214,10 +214,10 @@ function OffBeat:OnSlashCommand(input)
     local cmd = self:GetArgs(input, 1)
     cmd = cmd and cmd:lower() or ""
 
-    if cmd == "" then
-        self:ToggleDisplay()
-    elseif cmd == "config" or cmd == "options" then
+    if cmd == "" or cmd == "config" or cmd == "options" then
         self:OpenConfig()
+    elseif cmd == "show" or cmd == "toggle" then
+        self:ToggleDisplay()
     elseif cmd == "timeline" or cmd == "tl" then
         self:ToggleTimeline()
     elseif cmd == "lock" then
@@ -239,8 +239,8 @@ function OffBeat:OnSlashCommand(input)
         end
     else
         self:Print("OffBeat v" .. self.VERSION)
-        self:Print("  /ob              — Toggle display")
-        self:Print("  /ob config       — Open settings")
+        self:Print("  /ob              — Open settings")
+        self:Print("  /ob show         — Toggle display")
         self:Print("  /ob timeline     — Toggle timeline")
         self:Print("  /ob lock         — Lock/unlock frames")
         self:Print("  /ob reset        — Reset encounter data")

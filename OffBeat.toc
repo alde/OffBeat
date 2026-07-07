@@ -41,3 +41,7 @@ Auras.lua
 Rotation.lua
 RotationDisplay.lua
 RotationTimeline.lua
+
+## Settings
+Widgets.lua
+Settings.lua

@@ -66,7 +66,7 @@ function RotationDisplay:GetFrame()
     if self.frame then return self.frame end
 
     local f = OffBeat:CreateMovableFrame("OffBeatRotationPanel", "rotationPosition", {
-        defaultY = -200,
+        defaultY = 200,
     })
     f.icons = {}
     self.frame = f
@@ -298,7 +298,7 @@ function RotationDisplay:GetAssistedFrame()
         backdrop = not MSQ and ICON_BACKDROP or nil,
         backdropColor = { 0.05, 0.05, 0.1, 0.8 },
         borderColor = { 0.1, 0.5, 0.8, 0.8 },
-        defaultX = 60, defaultY = -200,
+        defaultX = 60, defaultY = 200,
     })
 
     local icon = af:CreateTexture(nil, "ARTWORK")
@@ -375,7 +375,7 @@ function RotationDisplay:GetKeyCdIcon()
         backdrop = not MSQ and ICON_BACKDROP or nil,
         backdropColor = { 0.05, 0.05, 0.05, 0.8 },
         borderColor = { gr, gg, gb, 0.9 },
-        defaultY = -150,
+        defaultY = 250,
     })
 
     local icon = f:CreateTexture(nil, "ARTWORK")
@@ -458,7 +458,7 @@ function RotationDisplay:GetWarningFrame()
         backdrop = ICON_BACKDROP,
         backdropColor = { 0.05, 0.05, 0.05, db.warningBgAlpha },
         borderColor = { 0.5, 0.5, 0.5, db.warningBorderAlpha },
-        defaultY = -240,
+        defaultY = 160,
     })
 
     local label = wf:CreateFontString(nil, "OVERLAY")

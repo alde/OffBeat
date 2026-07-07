@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="drumBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8B5E3C"/>
+      <stop offset="40%" stop-color="#6B3A1F"/>
+      <stop offset="100%" stop-color="#4A2510"/>
+    </linearGradient>
+    <linearGradient id="drumHead" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F5E6C8"/>
+      <stop offset="60%" stop-color="#D4B896"/>
+      <stop offset="100%" stop-color="#BFA07A"/>
+    </linearGradient>
+    <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#C9A04E"/>
+      <stop offset="50%" stop-color="#A67B2E"/>
+      <stop offset="100%" stop-color="#7D5A1C"/>
+    </linearGradient>
+    <linearGradient id="stickGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#A0764A"/>
+      <stop offset="100%" stop-color="#6B4E30"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0%" stop-color="#5AB4FF" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#5AB4FF" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#5AB4FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="8" fill="#1A1A2E"/>
+
+  <!-- Glow behind drum -->
+  <ellipse cx="64" cy="60" rx="50" ry="45" fill="url(#glow)"/>
+
+  <!-- Drum body -->
+  <ellipse cx="64" cy="82" rx="36" ry="12" fill="#3A1A08"/>
+  <rect x="28" y="52" width="72" height="30" rx="2" fill="url(#drumBody)" filter="url(#shadow)"/>
+
+  <!-- Side detail bands -->
+  <rect x="28" y="58" width="72" height="3" fill="#A67B2E" opacity="0.5"/>
+  <rect x="28" y="72" width="72" height="3" fill="#A67B2E" opacity="0.5"/>
+
+  <!-- Drum rim bottom -->
+  <ellipse cx="64" cy="82" rx="36" ry="10" fill="url(#rimGrad)"/>
+  <ellipse cx="64" cy="82" rx="33" ry="8" fill="url(#drumBody)"/>
+
+  <!-- Drum head (top ellipse) -->
+  <ellipse cx="64" cy="52" rx="36" ry="10" fill="url(#rimGrad)"/>
+  <ellipse cx="64" cy="52" rx="33" ry="8" fill="url(#drumHead)"/>
+
+  <!-- Drum head highlight -->
+  <ellipse cx="58" cy="49" rx="16" ry="4" fill="#FFF" opacity="0.15"/>
+
+  <!-- Drumstick left -->
+  <line x1="22" y1="28" x2="52" y2="50" stroke="url(#stickGrad)" stroke-width="4" stroke-linecap="round" filter="url(#shadow)"/>
+  <circle cx="22" cy="28" r="4" fill="#C9A04E"/>
+
+  <!-- Drumstick right -->
+  <line x1="106" y1="28" x2="76" y2="50" stroke="url(#stickGrad)" stroke-width="4" stroke-linecap="round" filter="url(#shadow)"/>
+  <circle cx="106" cy="28" r="4" fill="#C9A04E"/>
+
+  <!-- Impact sparks -->
+  <circle cx="50" cy="48" r="2" fill="#5AB4FF" opacity="0.7"/>
+  <circle cx="78" cy="48" r="2" fill="#5AB4FF" opacity="0.7"/>
+  <circle cx="46" cy="44" r="1" fill="#5AB4FF" opacity="0.4"/>
+  <circle cx="82" cy="44" r="1" fill="#5AB4FF" opacity="0.4"/>
+
+  <!-- Text -->
+  <text x="64" y="112" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="14" font-weight="bold" fill="#5AB4FF" opacity="0.8">OFFBEAT</text>
+</svg>

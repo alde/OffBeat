@@ -1,13 +1,10 @@
 $ErrorActionPreference = "Stop"
 
-if (-not (Get-Command svn -ErrorAction SilentlyContinue)) {
-    Write-Host "svn not found, installing via Chocolatey..."
-    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-        Write-Error "Chocolatey is not installed. Install it from https://chocolatey.org/install then re-run this script."
+foreach ($cmd in @("svn", "git")) {
+    if (-not (Get-Command $cmd -ErrorAction SilentlyContinue)) {
+        Write-Error "$cmd is required but not found."
         exit 1
     }
-    choco install svn -y
-    refreshenv
 }
 
 New-Item -ItemType Directory -Force -Path Libs | Out-Null

@@ -1,6 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
+for cmd in svn git; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "Error: $cmd is required but not found." >&2
+    exit 1
+  fi
+done
+
 mkdir -p Libs
 
 current_path=""

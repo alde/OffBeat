@@ -59,7 +59,7 @@ function OffBeat:GetDefaults()
             keyCdIconPosition = nil,
 
             -- Next spell (Assisted Combat)
-            assistedCombat = false,
+            assistedCombat = true,
             assistedIconSize = 48,
             assistedKeybindSize = 12,
             assistedPosition = nil,

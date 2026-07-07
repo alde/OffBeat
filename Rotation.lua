@@ -198,6 +198,15 @@ function Rotation:CheckKeyCdReady()
 
     local ready = not info.isActive
 
+    -- Spells like Avenging Wrath start their cooldown after the buff
+    -- expires, so isActive is false during the buff. Check the aura too.
+    if ready then
+        local auras = OffBeat:GetModule("Auras", true)
+        if auras and auras:IsActive(keyCd.spellId) then
+            ready = false
+        end
+    end
+
     if ready and not self.keyCdReady then
         self.keyCdReady = true
         if OffBeat.db.profile.keyCdAlert and UnitAffectingCombat("player") then

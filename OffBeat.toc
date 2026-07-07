@@ -1,0 +1,30 @@
+## Interface: 120007
+## Title: OffBeat
+## Version: 1.0.0
+## Notes: Unified buff and rotation tracker with shareable profiles
+## Author: Rickard Dybeck
+## IconTexture: Interface\Icons\INV_Misc_Drum_07
+## SavedVariablesPerCharacter: OffBeatDB
+## Category: Combat
+## Dependencies
+## OptionalDeps: Ace3, Masque
+
+## Libs
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\AceAddon-3.0\AceAddon-3.0.lua
+Libs\AceDB-3.0\AceDB-3.0.lua
+Libs\AceEvent-3.0\AceEvent-3.0.lua
+Libs\AceTimer-3.0\AceTimer-3.0.lua
+Libs\AceConsole-3.0\AceConsole-3.0.lua
+Libs\AceSerializer-3.0\AceSerializer-3.0.lua
+Libs\LibSharedMedia-3.0\lib.xml
+Libs\LibDeflate\LibDeflate.lua
+
+## Core
+OffBeat.lua
+Config.lua
+Sounds.lua
+Frames.lua
+Core.lua
+Profiles.lua

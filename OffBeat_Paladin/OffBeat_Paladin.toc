@@ -1,0 +1,8 @@
+## Interface: 120007
+## Title: OffBeat - Paladin
+## Version: 1.0.0
+## Notes: Paladin spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+RetributionPaladin.lua

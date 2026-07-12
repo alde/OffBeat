@@ -51,3 +51,5 @@ foreach ($raw in Get-Content .pkgmeta) {
 }
 
 Invoke-Checkout
+
+Read-Host "Press Enter to exit"

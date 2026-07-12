@@ -28,3 +28,5 @@ foreach ($sat in $satellites) {
     New-Item -ItemType Junction -Path $dest -Target $src | Out-Null
     Write-Host "$sat`: linked"
 }
+
+Read-Host "Press Enter to exit"

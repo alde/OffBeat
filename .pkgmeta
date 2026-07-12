@@ -47,6 +47,7 @@ move-folders:
   OffBeat/OffBeat_Evoker: OffBeat_Evoker
   OffBeat/OffBeat_Monk: OffBeat_Monk
   OffBeat/OffBeat_DeathKnight: OffBeat_DeathKnight
+  OffBeat/OffBeat_Mage: OffBeat_Mage
   OffBeat/OffBeat_Paladin: OffBeat_Paladin
 
 ignore:

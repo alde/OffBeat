@@ -1,0 +1,8 @@
+## Interface: 120007
+## Title: OffBeat - Mage
+## Version: 1.0.0
+## Notes: Mage spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+ArcaneMage.lua

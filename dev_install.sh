@@ -11,7 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ADDONS_DIR="${1:-$(dirname "$SCRIPT_DIR")}"
 
-for sat in OffBeat_Evoker OffBeat_Monk OffBeat_DeathKnight OffBeat_Paladin; do
+for sat in OffBeat_Evoker OffBeat_Mage OffBeat_Monk OffBeat_DeathKnight OffBeat_Paladin; do
     src="$SCRIPT_DIR/$sat"
     dest="$ADDONS_DIR/$sat"
 

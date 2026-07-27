@@ -376,7 +376,8 @@ function RotationDisplay:UpdateAssisted()
     local spellInfo = C_Spell.GetSpellInfo(spellId)
     af.icon:SetTexture(spellInfo and spellInfo.iconID or "Interface\\Icons\\INV_Misc_QuestionMark")
     af.icon:SetDesaturated(false)
-    af.keybind:SetText(OffBeat:GetKeybindForSpell(spellId) or "")
+    local kb = OffBeat.db.profile.assistedKeybindShown and OffBeat:GetKeybindForSpell(spellId) or ""
+    af.keybind:SetText(kb)
 end
 
 -- Key Cooldown icon

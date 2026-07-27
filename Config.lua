@@ -62,6 +62,7 @@ function OffBeat:GetDefaults()
             assistedCombat = true,
             assistedCombatOnly = false,
             assistedIconSize = 48,
+            assistedKeybindShown = true,
             assistedKeybindSize = 12,
             assistedPosition = nil,
 

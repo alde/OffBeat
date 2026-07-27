@@ -383,6 +383,13 @@ pageBuilders.rotation = function(parent, y)
                 local rd = OffBeat:GetModule("RotationDisplay", true)
                 if rd and rd:IsEnabled() then rd:RefreshAssisted() end
             end); y = y - h
+        _, h = W:Toggle(parent, "Show Keybind", y,
+            function() return db.assistedKeybindShown end,
+            function(v)
+                db.assistedKeybindShown = v
+                local rd = OffBeat:GetModule("RotationDisplay", true)
+                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
+            end); y = y - h
         _, h = W:Slider(parent, "Keybind Font Size", y, 8, 20, 1,
             function() return db.assistedKeybindSize end,
             function(v)

@@ -1,0 +1,9 @@
+## Interface: 120007
+## Title: OffBeat - Shaman
+## Version: 1.0.0
+## Notes: Shaman spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+EnhancementShaman.lua
+ElementalShaman.lua

@@ -17,7 +17,6 @@ OffBeat:RegisterProfile({
         { spellId = 188196 }, -- Lightning Bolt (MW spender)
         { spellId = 188443 }, -- Chain Lightning (MW spender, AoE)
         { spellId = 454009 }, -- Tempest (Stormbringer proc)
-        { spellId = 384352 }, -- Doom Winds
         { spellId = 114049 }, -- Ascendance
         { spellId = 197214 }, -- Sundering
         { spellId = 470053 }, -- Voltaic Blaze
@@ -44,13 +43,12 @@ OffBeat:RegisterProfile({
     },
 
     keyCooldown = {
-        spellId = 384352,
-        name = "Doom Winds",
-        duration = 8,
+        spellId = 114049,
+        name = "Ascendance",
+        duration = 15,
     },
 
     idleCooldowns = {
-        { spellId = 384352, name = "Doom Winds" },
         { spellId = 114049, name = "Ascendance" },
         { spellId = 197214, name = "Sundering" },
     },

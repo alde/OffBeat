@@ -348,7 +348,11 @@ pageBuilders.rotation = function(parent, y)
         function(v) db.keyCdCombatOnly = v end); y = y - h
     _, h = W:Slider(parent, "Icon Size", y, 24, 80, 2,
         function() return db.keyCdIconSize end,
-        function(v) db.keyCdIconSize = v end); y = y - h
+        function(v)
+            db.keyCdIconSize = v
+            local rd = OffBeat:GetModule("RotationDisplay", true)
+            if rd and rd:IsEnabled() then rd:ResizeKeyCdIcon() end
+        end); y = y - h
     _, h = W:Dropdown(parent, "Glow Style", y,
         { glow = "Pulse", proc = "Proc", ants = "Ants", none = "None" },
         function() return db.keyCdGlowStyle end,

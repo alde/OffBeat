@@ -10,6 +10,7 @@ function Core:OnEnable()
     self:RegisterEvent("CHALLENGE_MODE_COMPLETED")
     self:RegisterEvent("CHALLENGE_MODE_RESET")
     self:RegisterEvent("PLAYER_UNGHOST")
+    self:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
 
     self.refreshTimer = self:ScheduleRepeatingTimer("RefreshDisplay", 0.5)
     self:RebuildRoster()
@@ -139,6 +140,10 @@ function Core:PLAYER_UNGHOST()
             encounters:EndEncounter()
         end
     end
+end
+
+function Core:ACTIONBAR_SLOT_CHANGED()
+    OffBeat:InvalidateKeybindCache()
 end
 
 function Core:PLAYER_ENTERING_WORLD()

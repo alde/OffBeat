@@ -442,6 +442,7 @@ function RotationDisplay:ShowKeyCdIcon(keyCd)
     end
 
     local spellInfo = C_Spell.GetSpellInfo(keyCd.spellId)
+    if not spellInfo and keyCd.name then spellInfo = C_Spell.GetSpellInfo(keyCd.name) end
     f.icon:SetTexture(spellInfo and spellInfo.iconID or "Interface\\Icons\\INV_Misc_QuestionMark")
     f:Show()
 
@@ -454,6 +455,13 @@ function RotationDisplay:HideKeyCdIcon()
     if self.keyCdIcon.glowAnim then self.keyCdIcon.glowAnim:Stop() end
     if self.keyCdIcon.flipbookAnim then self.keyCdIcon.flipbookAnim:Stop() end
     self.keyCdIcon:SetAlpha(0)
+end
+
+function RotationDisplay:ResizeKeyCdIcon()
+    if not self.keyCdIcon then return end
+    local size = OffBeat.db.profile.keyCdIconSize
+    self.keyCdIcon:SetSize(size, size)
+    self.keyCdIcon.glow:SetSize(size * GLOW_SIZE_MULTIPLIER, size * GLOW_SIZE_MULTIPLIER)
 end
 
 function RotationDisplay:SetKeyCdIconAlpha(alpha)

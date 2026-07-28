@@ -8,6 +8,20 @@ local procWasteRules = {}     -- array of { procAura, wasteSpells={id->true}, na
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
 local keyCd                   -- profile.keyCooldown or nil
+local keyCdResolvedId         -- resolved spell ID for key cooldown
+
+local function ResolvePlayerSpell(spellId, name)
+    if IsPlayerSpell(spellId) then return spellId end
+    if FindSpellOverrideByID then
+        local override = FindSpellOverrideByID(spellId)
+        if override ~= spellId and IsPlayerSpell(override) then return override end
+    end
+    if name then
+        local info = C_Spell.GetSpellInfo(name)
+        if info and info.spellID and IsPlayerSpell(info.spellID) then return info.spellID end
+    end
+    return spellId
+end
 
 local MISTAKE_EVALUATORS = {
     repeat_cast = function(spellId, state)
@@ -72,6 +86,7 @@ function Rotation:BuildLookups()
     wipe(procWasteRules)
     hasRepeatCastMistake = false
     keyCd = nil
+    keyCdResolvedId = nil
 
     local profile = OffBeat.activeProfile
     if not profile then return end
@@ -103,11 +118,15 @@ function Rotation:BuildLookups()
 
     if profile.idleCooldowns then
         for _, cd in ipairs(profile.idleCooldowns) do
-            idleCooldownSet[cd.spellId] = { name = cd.name or tostring(cd.spellId) }
+            local resolved = ResolvePlayerSpell(cd.spellId, cd.name)
+            idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId) }
         end
     end
 
     keyCd = profile.keyCooldown
+    if keyCd then
+        keyCdResolvedId = ResolvePlayerSpell(keyCd.spellId, keyCd.name)
+    end
 end
 
 -- Cast tracking
@@ -191,12 +210,13 @@ end
 
 function Rotation:CheckKeyCdReady()
     if not keyCd then return end
-    if not IsPlayerSpell(keyCd.spellId) then return end
+    local spellId = keyCdResolvedId or keyCd.spellId
+    if not IsPlayerSpell(spellId) then return end
 
-    local info = C_Spell.GetSpellCooldown(keyCd.spellId)
+    local info = C_Spell.GetSpellCooldown(spellId)
     if not info then return end
 
-    local usable = C_Spell.IsSpellUsable(keyCd.spellId)
+    local usable = C_Spell.IsSpellUsable(spellId)
     local ready = not info.isActive and usable
 
     -- Spells like Avenging Wrath report isActive=false during the buff
@@ -204,7 +224,7 @@ function Rotation:CheckKeyCdReady()
     -- IsSpellUsable catches the gap between buff expiry and CD start.
     if ready then
         local auras = OffBeat:GetModule("Auras", true)
-        if auras and auras:IsActive(keyCd.spellId) then
+        if auras and (auras:IsActive(spellId) or auras:IsActive(keyCd.spellId)) then
             ready = false
         end
     end

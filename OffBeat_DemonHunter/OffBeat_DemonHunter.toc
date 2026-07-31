@@ -1,0 +1,10 @@
+## Interface: 120007
+## Title: OffBeat - Demon Hunter
+## Version: 1.0.0
+## Notes: Demon Hunter spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+VengeanceDemonHunter.lua
+HavocDemonHunter.lua
+DevourerDemonHunter.lua

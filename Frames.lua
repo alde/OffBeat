@@ -232,6 +232,29 @@ local function CacheKey(spellId, key)
     end
 end
 
+local MACRO_MOD_PREFIXES = {
+    shift = "SHIFT-",
+    ctrl  = "CTRL-",
+    alt   = "ALT-",
+}
+
+local function ExtractMacroMod(segment)
+    for cond in segment:gmatch("%b[]") do
+        local inner = cond:sub(2, -2)
+        for part in inner:gmatch("[^,]+") do
+            part = part:match("^%s*(.-)%s*$")
+            if not part:match("^[Nn][Oo]") then
+                local mod = part:match("^[Mm][Oo][Dd]%a*:(%a+)")
+                if mod then
+                    local prefix = MACRO_MOD_PREFIXES[mod:lower()]
+                    if prefix then return prefix end
+                end
+            end
+        end
+    end
+    return ""
+end
+
 local function CacheMacroSpells(slot, key)
     local macroName = GetActionText(slot)
     if not macroName then return false end
@@ -245,6 +268,7 @@ local function CacheMacroSpells(slot, key)
         if args then
             local sep = isCastSeq and "," or ";"
             for segment in args:gmatch("[^" .. sep .. "]+") do
+                local modPrefix = ExtractMacroMod(segment)
                 local name = segment:gsub("%b[]", "")
                                     :gsub("^%s+", ""):gsub("%s+$", "")
                                     :gsub("^!", "")
@@ -252,7 +276,7 @@ local function CacheMacroSpells(slot, key)
                 if name ~= "" then
                     local info = C_Spell.GetSpellInfo(name)
                     if info and info.spellID then
-                        CacheKey(info.spellID, key)
+                        CacheKey(info.spellID, modPrefix .. key)
                         found = true
                     end
                 end

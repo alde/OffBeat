@@ -273,10 +273,9 @@ function OffBeat:GetKeybindForSpell(spellId)
                     if actionType == "spell" then
                         CacheKey(id, key)
                     elseif actionType == "macro" then
-                        if not CacheMacroSpells(id, key) then
-                            local macroSpell = GetMacroSpell(id)
-                            if macroSpell then CacheKey(macroSpell, key) end
-                        end
+                        CacheMacroSpells(id, key)
+                        local macroSpell = GetMacroSpell(id)
+                        if macroSpell then CacheKey(macroSpell, key) end
                     end
                 end
             end

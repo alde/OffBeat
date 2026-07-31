@@ -11,6 +11,7 @@ function Core:OnEnable()
     self:RegisterEvent("CHALLENGE_MODE_RESET")
     self:RegisterEvent("PLAYER_UNGHOST")
     self:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+    self:RegisterEvent("UPDATE_MACROS")
 
     self.refreshTimer = self:ScheduleRepeatingTimer("RefreshDisplay", 0.5)
     self:RebuildRoster()
@@ -143,6 +144,10 @@ function Core:PLAYER_UNGHOST()
 end
 
 function Core:ACTIONBAR_SLOT_CHANGED()
+    OffBeat:InvalidateKeybindCache()
+end
+
+function Core:UPDATE_MACROS()
     OffBeat:InvalidateKeybindCache()
 end
 

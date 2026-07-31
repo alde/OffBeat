@@ -232,12 +232,10 @@ local function CacheKey(spellId, key)
     end
 end
 
-local function CacheMacroSpells(macroIndex, key)
-    local body = GetMacroBody(macroIndex)
-    if not body then
-        local macroName = GetMacroInfo(macroIndex)
-        if macroName then body = GetMacroBody(macroName) end
-    end
+local function CacheMacroSpells(slot, key)
+    local macroName = GetActionText(slot)
+    if not macroName then return false end
+    local body = GetMacroBody(macroName)
     if not body then return false end
     local found = false
     for line in body:gmatch("[^\n\r]+") do
@@ -277,9 +275,8 @@ function OffBeat:GetKeybindForSpell(spellId)
                     if actionType == "spell" then
                         CacheKey(id, key)
                     elseif actionType == "macro" then
-                        CacheMacroSpells(id, key)
-                        local macroSpell = GetMacroSpell(id)
-                        if macroSpell then CacheKey(macroSpell, key) end
+                        CacheMacroSpells(slot, key)
+                        if id and id > 0 then CacheKey(id, key) end
                     end
                 end
             end

@@ -234,6 +234,10 @@ end
 
 local function CacheMacroSpells(macroIndex, key)
     local body = GetMacroBody(macroIndex)
+    if not body then
+        local macroName = GetMacroInfo(macroIndex)
+        if macroName then body = GetMacroBody(macroName) end
+    end
     if not body then return false end
     local found = false
     for line in body:gmatch("[^\n\r]+") do

@@ -232,6 +232,34 @@ local function CacheKey(spellId, key)
     end
 end
 
+local function CacheMacroSpells(macroIndex, key)
+    local body = GetMacroBody(macroIndex)
+    if not body then return false end
+    local found = false
+    for line in body:gmatch("[^\n\r]+") do
+        local isCastSeq = line:match("^/[Cc][Aa][Ss][Tt][Ss][Ee][Qq]")
+        local args = line:match("^/[Cc][Aa][Ss][Tt][Ss]?[Ee]?[Qq]?[Uu]?[Ee]?[Nn]?[Cc]?[Ee]?%s+(.+)")
+                  or line:match("^/[Uu][Ss][Ee]%s+(.+)")
+        if args then
+            local sep = isCastSeq and "," or ";"
+            for segment in args:gmatch("[^" .. sep .. "]+") do
+                local name = segment:gsub("%b[]", "")
+                                    :gsub("^%s+", ""):gsub("%s+$", "")
+                                    :gsub("^!", "")
+                                    :gsub("^reset=%S+%s*", "")
+                if name ~= "" then
+                    local info = C_Spell.GetSpellInfo(name)
+                    if info and info.spellID then
+                        CacheKey(info.spellID, key)
+                        found = true
+                    end
+                end
+            end
+        end
+    end
+    return found
+end
+
 function OffBeat:GetKeybindForSpell(spellId)
     if keybindCacheDirty then
         wipe(keybindCache)
@@ -245,8 +273,10 @@ function OffBeat:GetKeybindForSpell(spellId)
                     if actionType == "spell" then
                         CacheKey(id, key)
                     elseif actionType == "macro" then
-                        local macroSpell = GetMacroSpell(id)
-                        if macroSpell then CacheKey(macroSpell, key) end
+                        if not CacheMacroSpells(id, key) then
+                            local macroSpell = GetMacroSpell(id)
+                            if macroSpell then CacheKey(macroSpell, key) end
+                        end
                     end
                 end
             end

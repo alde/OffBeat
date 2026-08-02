@@ -404,17 +404,37 @@ end
 function Rotation:PrintCombatReport(stats, label)
     if not OffBeat.db.profile.combatReport then return end
 
-    local pct = stats.totalCasts > 0
-        and (1 - stats.mistakes / stats.totalCasts) * 100
-        or 100
+    local hasMistakeRules = hasRepeatCastMistake or #procWasteRules > 0
+    local hasProcs = stats.procsGained and stats.procsGained > 0
 
-    local color = pct == 100 and "|cff00ff00" or (pct >= 95 and "|cffffff00" or "|cffff4444")
-    OffBeat:Print(string.format(
-        "%s end — %s%.1f%%|r accuracy (%d/%d casts, %d mistake%s)",
-        label, color, pct,
-        stats.totalCasts - stats.mistakes, stats.totalCasts,
-        stats.mistakes, stats.mistakes == 1 and "" or "s"
-    ))
+    if not hasMistakeRules and not hasProcs then return end
+
+    local segments = {}
+
+    if hasMistakeRules then
+        local pct = stats.totalCasts > 0
+            and (1 - stats.mistakes / stats.totalCasts) * 100
+            or 100
+        local color = pct == 100 and "|cff00ff00" or (pct >= 95 and "|cffffff00" or "|cffff4444")
+        segments[#segments + 1] = string.format(
+            "%s%.1f%%|r accuracy (%d/%d, %d mistake%s)",
+            color, pct,
+            stats.totalCasts - stats.mistakes, stats.totalCasts,
+            stats.mistakes, stats.mistakes == 1 and "" or "s")
+    end
+
+    if hasProcs then
+        local gained = stats.procsGained
+        local expired = stats.procsExpired or 0
+        local consumed = gained - expired
+        local pct = (consumed / gained) * 100
+        local color = pct == 100 and "|cff00ff00" or (pct >= 80 and "|cffffff00" or "|cffff4444")
+        segments[#segments + 1] = string.format(
+            "%s%.0f%%|r proc use (%d/%d, %d wasted)",
+            color, pct, consumed, gained, expired)
+    end
+
+    OffBeat:Print(string.format("%s end — %s", label, table.concat(segments, ", ")))
 
     if #stats.mistakeLog > 0 then
         local counts = {}

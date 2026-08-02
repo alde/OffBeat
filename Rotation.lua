@@ -84,8 +84,20 @@ end
 
 local function GetSpecSettings()
     if not activeSpecId then return nil end
-    local ss = OffBeat.db.profile.specSettings[activeSpecId]
-    return ss
+    return OffBeat.db.profile.specSettings[activeSpecId]
+end
+
+local function GetSpecOr(key)
+    local ss = GetSpecSettings()
+    if ss and ss[key] ~= nil then return ss[key] end
+    return OffBeat.db.profile[key]
+end
+
+local function PlaySpecOrGlobalSound(specKey, globalKey)
+    local ss = GetSpecSettings()
+    local soundKey = ss and ss[specKey]
+    if soundKey then OffBeat:PlaySoundKey(soundKey)
+    else OffBeat:PlayConfigSound(globalKey) end
 end
 
 function Rotation:BuildLookups()
@@ -179,29 +191,22 @@ function Rotation:RecordAbility(spellId)
     local mistakeName = self:EvaluateMistakes(spellId, state)
 
     if mistakeName then
-        if OffBeat.db.profile.soundEnabled then
-            OffBeat:PlayConfigSound("mistakeSound")
+        if GetSpecOr("soundEnabled") then
+            PlaySpecOrGlobalSound("mistakeSound", "mistakeSound")
         end
         self:SendMessage("OFFBEAT_MISTAKE", spellId, mistakeName)
     end
 
-    if keyCd and keyCd.wasteSpell then
-        local ss2 = GetSpecSettings()
-        local wasteAlert = ss2 and ss2.keyCdWasteAlert
-        if wasteAlert == nil then wasteAlert = OffBeat.db.profile.keyCdWasteAlert end
-        if wasteAlert then
-            local wasteId = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.spellId or keyCd.wasteSpell
-            if spellId == wasteId then
-                local auras = OffBeat:GetModule("Auras", true)
-                local cdActive = (auras and auras:IsActive(keyCd.spellId))
-                    or (self.keyCdActiveUntil and GetTime() < self.keyCdActiveUntil)
-                if cdActive then
-                    local wasteSoundKey = ss2 and ss2.keyCdWasteSound
-                    if wasteSoundKey then OffBeat:PlaySoundKey(wasteSoundKey)
-                    else OffBeat:PlayConfigSound("keyCdWasteSound") end
-                    local wasteName = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.name or nil
-                    self:SendMessage("OFFBEAT_PROC_WASTE", spellId, wasteName)
-                end
+    if keyCd and keyCd.wasteSpell and GetSpecOr("keyCdWasteAlert") then
+        local wasteId = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.spellId or keyCd.wasteSpell
+        if spellId == wasteId then
+            local auras = OffBeat:GetModule("Auras", true)
+            local cdActive = (auras and auras:IsActive(keyCd.spellId))
+                or (self.keyCdActiveUntil and GetTime() < self.keyCdActiveUntil)
+            if cdActive then
+                PlaySpecOrGlobalSound("keyCdWasteSound", "keyCdWasteSound")
+                local wasteName = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.name or nil
+                self:SendMessage("OFFBEAT_PROC_WASTE", spellId, wasteName)
             end
         end
     end
@@ -245,7 +250,7 @@ end
 
 function Rotation:SPELL_UPDATE_COOLDOWN()
     self:CheckKeyCdReady()
-    if OffBeat.db.profile.idleCooldownAlert and UnitAffectingCombat("player") then
+    if GetSpecOr("idleCooldownAlert") and UnitAffectingCombat("player") then
         self:CheckIdleCooldowns()
     end
 end
@@ -273,13 +278,8 @@ function Rotation:CheckKeyCdReady()
 
     if ready and not self.keyCdReady then
         self.keyCdReady = true
-        local ss = GetSpecSettings()
-        local alert = ss and ss.keyCdAlert
-        if alert == nil then alert = OffBeat.db.profile.keyCdAlert end
-        if alert and UnitAffectingCombat("player") then
-            local soundKey = ss and ss.keyCdSound
-            if soundKey then OffBeat:PlaySoundKey(soundKey)
-            else OffBeat:PlayConfigSound("keyCdSound") end
+        if GetSpecOr("keyCdAlert") and UnitAffectingCombat("player") then
+            PlaySpecOrGlobalSound("keyCdSound", "keyCdSound")
         end
         self:SendMessage("OFFBEAT_KEY_CD_READY", keyCd)
     elseif not ready and self.keyCdReady then
@@ -295,7 +295,7 @@ end
 
 function Rotation:CheckIdleCooldowns()
     local now = GetTime()
-    local threshold = OffBeat.db.profile.idleCooldownThreshold
+    local threshold = GetSpecOr("idleCooldownThreshold")
 
     if not self.idleState then self.idleState = {} end
 
@@ -311,7 +311,7 @@ function Rotation:CheckIdleCooldowns()
                     self.idleState[spellId] = { readySince = now, warned = false }
                 elseif not st.warned and (now - st.readySince) >= threshold then
                     st.warned = true
-                    OffBeat:PlayConfigSound("idleCooldownSound")
+                    PlaySpecOrGlobalSound("idleCooldownSound", "idleCooldownSound")
                     self:SendMessage("OFFBEAT_COOLDOWN_IDLE", spellId, info.name)
                 end
             else
@@ -354,8 +354,8 @@ function Rotation:OnAuraLost(_, spellId)
                 end
             end
             if not consumed then
-                if OffBeat.db.profile.procExpireAlert then
-                    OffBeat:PlayConfigSound("procExpireSound")
+                if GetSpecOr("procExpireAlert") then
+                    PlaySpecOrGlobalSound("procExpireSound", "procExpireSound")
                 end
                 self:SendMessage("OFFBEAT_PROC_EXPIRED", spellId, pt.name)
                 if OffBeat.state.combat then

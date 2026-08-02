@@ -567,9 +567,14 @@ function RotationDisplay:OnProcExpired(_, spellId, procName)
 end
 
 function RotationDisplay:OnCooldownIdle(_, spellId, spellName)
-    if not OffBeat.db.profile.idleCooldownNag then return end
+    local specId = OffBeat.activeSpecId
+    local ss = specId and OffBeat.db.profile.specSettings[specId]
+    local nag = ss and ss.idleCooldownNag
+    if nag == nil then nag = OffBeat.db.profile.idleCooldownNag end
+    if not nag then return end
 
-    local idleSince = GetTime() - OffBeat.db.profile.idleCooldownThreshold
+    local threshold = (ss and ss.idleCooldownThreshold) or OffBeat.db.profile.idleCooldownThreshold
+    local idleSince = GetTime() - threshold
 
     self:ShowWarning(spellName .. " available", "warning", nil, function()
         local elapsed = GetTime() - idleSince

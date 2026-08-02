@@ -415,48 +415,7 @@ end
 pageBuilders.alerts = function(parent, y)
     local W = OffBeat.Widgets
     local db = OffBeat.db.profile
-    local profile = OffBeat.activeProfile
     local _, h
-
-    if profile and profile.rotationSpells then
-        _, h = W:SectionHeader(parent, "MISTAKE SOUND", y); y = y - h
-        _, h = W:Toggle(parent, "Enable Sound", y,
-            function() return db.soundEnabled end,
-            function(v) db.soundEnabled = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Sound", y, "mistakeSound"); y = y - h
-    end
-
-    if profile and profile.keyCooldown then
-        _, h = W:SectionHeader(parent, "KEY COOLDOWN", y); y = y - h
-        _, h = W:Toggle(parent, "Ready Alert", y,
-            function() return db.keyCdAlert end,
-            function(v) db.keyCdAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Ready Sound", y, "keyCdSound"); y = y - h
-        _, h = W:Toggle(parent, "Waste Warning", y,
-            function() return db.keyCdWasteAlert end,
-            function(v) db.keyCdWasteAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Waste Sound", y, "keyCdWasteSound"); y = y - h
-    end
-
-    if profile and profile.procTracking and #profile.procTracking > 0 then
-        _, h = W:SectionHeader(parent, "PROC EXPIRY", y); y = y - h
-        _, h = W:Toggle(parent, "Expire Warning", y,
-            function() return db.procExpireAlert end,
-            function(v) db.procExpireAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Expire Sound", y, "procExpireSound"); y = y - h
-    end
-
-    _, h = W:SectionHeader(parent, "COOLDOWN IDLE", y); y = y - h
-    _, h = W:Toggle(parent, "Idle Warning", y,
-        function() return db.idleCooldownAlert end,
-        function(v) db.idleCooldownAlert = v end); y = y - h
-    _, h = W:Toggle(parent, "Visual Nag", y,
-        function() return db.idleCooldownNag end,
-        function(v) db.idleCooldownNag = v end); y = y - h
-    _, h = W:Slider(parent, "Delay (seconds)", y, 2, 15, 1,
-        function() return db.idleCooldownThreshold end,
-        function(v) db.idleCooldownThreshold = v end); y = y - h
-    _, h = W:SoundPicker(parent, "Sound", y, "idleCooldownSound"); y = y - h
 
     _, h = W:SectionHeader(parent, "WARNING FRAME", y); y = y - h
     _, h = W:Slider(parent, "Background Opacity", y, 0, 1.0, 0.05,
@@ -559,9 +518,61 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.keyCdWasteSound = v end); y = y - h
     end
 
+    -- Mistake Sound
+    if profile.mistakes and #profile.mistakes > 0 then
+        _, h = W:SectionHeader(parent, "MISTAKE SOUND", y); y = y - h
+        _, h = W:Toggle(parent, "Enable Sound", y,
+            function()
+                local v = ss.soundEnabled
+                if v == nil then return db.soundEnabled end
+                return v
+            end,
+            function(v) ss.soundEnabled = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Sound", y,
+            function() return ss.mistakeSound or db.mistakeSound end,
+            function(v) ss.mistakeSound = v end); y = y - h
+    end
+
+    -- Proc Expiry
+    if profile.procTracking and #profile.procTracking > 0 then
+        _, h = W:SectionHeader(parent, "PROC EXPIRY", y); y = y - h
+        _, h = W:Toggle(parent, "Expire Warning", y,
+            function()
+                local v = ss.procExpireAlert
+                if v == nil then return db.procExpireAlert end
+                return v
+            end,
+            function(v) ss.procExpireAlert = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Expire Sound", y,
+            function() return ss.procExpireSound or db.procExpireSound end,
+            function(v) ss.procExpireSound = v end); y = y - h
+    end
+
     -- Idle Cooldowns
     if profile.idleCooldowns and #profile.idleCooldowns > 0 then
         _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h
+        _, h = W:Toggle(parent, "Idle Warning", y,
+            function()
+                local v = ss.idleCooldownAlert
+                if v == nil then return db.idleCooldownAlert end
+                return v
+            end,
+            function(v) ss.idleCooldownAlert = v end); y = y - h
+        _, h = W:Toggle(parent, "Visual Nag", y,
+            function()
+                local v = ss.idleCooldownNag
+                if v == nil then return db.idleCooldownNag end
+                return v
+            end,
+            function(v) ss.idleCooldownNag = v end); y = y - h
+        _, h = W:Slider(parent, "Delay (seconds)", y, 2, 15, 1,
+            function() return ss.idleCooldownThreshold or db.idleCooldownThreshold end,
+            function(v) ss.idleCooldownThreshold = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Sound", y,
+            function() return ss.idleCooldownSound or db.idleCooldownSound end,
+            function(v) ss.idleCooldownSound = v end); y = y - h
+
+        _, h = W:Spacer(parent, y, 8); y = y - h
         if not ss.disabledIdleCooldowns then ss.disabledIdleCooldowns = {} end
         for _, cd in ipairs(profile.idleCooldowns) do
             _, h = W:Toggle(parent, cd.name, y,

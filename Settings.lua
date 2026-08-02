@@ -490,6 +490,7 @@ pageBuilders.specConfig = function(parent, y)
     if not profile then return y end
 
     local specId = profile.meta.specId
+    local db = OffBeat.db.profile
     local ss = GetSpecSettings(specId)
     local _, h
 

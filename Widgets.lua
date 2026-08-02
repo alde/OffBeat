@@ -379,11 +379,56 @@ function W:ColorPicker(parent, text, y, getValue, setValue, resetLabel)
     return f, ROW_H
 end
 
+-- Text input
+
+function W:TextInput(parent, text, y, getValue, setValue)
+    local f = MakeRow(parent, y)
+    MakeLabel(f, text)
+
+    local INPUT_W = 200
+    local box = CreateFrame("EditBox", nil, f, "BackdropTemplate")
+    box:SetSize(INPUT_W, 22)
+    box:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
+    box:SetAutoFocus(false)
+    box:SetFont(FONT, FONT_SIZE, "")
+    box:SetTextColor(1, 1, 1, 0.9)
+    box:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeSize = 8,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    box:SetBackdropColor(0.08, 0.10, 0.14, 0.9)
+    box:SetBackdropBorderColor(1, 1, 1, 0.15)
+    box:SetTextInsets(6, 6, 0, 0)
+    box:SetText(getValue() or "")
+
+    box:SetScript("OnEnterPressed", function(self)
+        setValue(self:GetText())
+        self:ClearFocus()
+    end)
+    box:SetScript("OnEscapePressed", function(self)
+        self:SetText(getValue() or "")
+        self:ClearFocus()
+    end)
+
+    f._refresh = function() box:SetText(getValue() or "") end
+    return f, ROW_H
+end
+
 -- Sound picker (dropdown + test button, built inline)
 
-function W:SoundPicker(parent, text, y, settingKey)
-    local getValue = function() return OffBeat.db.profile[settingKey] end
-    local setValue = function(val) OffBeat.db.profile[settingKey] = val end
+function W:SoundPicker(parent, text, y, getOrKey, setter)
+    local getValue, setValue, testFn
+    if type(getOrKey) == "function" then
+        getValue = getOrKey
+        setValue = setter
+        testFn = function() OffBeat:PlaySoundKey(getValue()) end
+    else
+        getValue = function() return OffBeat.db.profile[getOrKey] end
+        setValue = function(val) OffBeat.db.profile[getOrKey] = val end
+        testFn = function() OffBeat:PlayConfigSound(getOrKey) end
+    end
 
     local f, h = W:Dropdown(parent, text, y, OffBeat.SOUND_VALUES, getValue, setValue)
 
@@ -395,7 +440,7 @@ function W:SoundPicker(parent, text, y, settingKey)
     testLabel:SetAllPoints()
     testLabel:SetText("Test")
     testLabel:SetTextColor(1, 1, 1, 0.6)
-    testBtn:SetScript("OnClick", function() OffBeat:PlayConfigSound(settingKey) end)
+    testBtn:SetScript("OnClick", testFn)
     testBtn:SetScript("OnEnter", function() testLabel:SetTextColor(ACCENT[1], ACCENT[2], ACCENT[3]) end)
     testBtn:SetScript("OnLeave", function() testLabel:SetTextColor(1, 1, 1, 0.6) end)
 

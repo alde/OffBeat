@@ -72,7 +72,7 @@ function OffBeat:GetDefaults()
             mistakeSoundCustomId = "",
             castWarnings = true,
             castAnnouncements = true,
-            castAnnouncementOverrides = {},
+            specSettings = {},
             idleCooldownAlert = true,
             idleCooldownNag = true,
             idleCooldownThreshold = 5,

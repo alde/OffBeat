@@ -40,6 +40,14 @@ function OffBeat:PlayConfigSound(settingKey)
     end
 end
 
+function OffBeat:PlaySoundKey(key)
+    if not key or key == "none" then return end
+    local entry = SOUND_BY_KEY[key]
+    if entry and entry.id then
+        PlaySound(entry.id, "Master")
+    end
+end
+
 function OffBeat:GetSoundId(settingKey)
     local key = self.db.profile[settingKey]
     if key == "custom" then

@@ -24,6 +24,7 @@ local CATEGORIES = {
     { key = "rotation",   label = "Rotation",     requires = "rotationSpells" },
     { key = "alerts",     label = "Alerts" },
     { key = "appearance", label = "Appearance" },
+    { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
     { key = "profiles",   label = "Profiles" },
 }
 
@@ -511,6 +512,95 @@ pageBuilders.appearance = function(parent, y)
     _, h = W:Slider(parent, "Background Opacity", y, 0, 1.0, 0.05,
         function() return db.bgAlpha end,
         function(v) db.bgAlpha = v; OffBeat:ApplyAppearance() end); y = y - h
+
+    return y
+end
+
+local function GetSpecSettings(specId)
+    local db = OffBeat.db.profile
+    if not db.specSettings[specId] then db.specSettings[specId] = {} end
+    return db.specSettings[specId]
+end
+
+local CHANNEL_VALUES = { SAY = "Say", YELL = "Yell", PARTY = "Party", RAID = "Raid", INSTANCE_CHAT = "Instance" }
+local CHANNEL_ORDER = { "SAY", "YELL", "PARTY", "RAID", "INSTANCE_CHAT" }
+
+pageBuilders.specConfig = function(parent, y)
+    local W = OffBeat.Widgets
+    local profile = OffBeat.activeProfile
+    if not profile then return y end
+
+    local specId = profile.meta.specId
+    local ss = GetSpecSettings(specId)
+    local _, h
+
+    -- Key Cooldown
+    if profile.keyCooldown then
+        _, h = W:SectionHeader(parent, "KEY COOLDOWN — " .. (profile.keyCooldown.name or ""), y); y = y - h
+        _, h = W:Toggle(parent, "Ready Alert", y,
+            function()
+                local v = ss.keyCdAlert
+                if v == nil then return OffBeat.db.profile.keyCdAlert end
+                return v
+            end,
+            function(v) ss.keyCdAlert = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Ready Sound", y,
+            function() return ss.keyCdSound or OffBeat.db.profile.keyCdSound end,
+            function(v) ss.keyCdSound = v end); y = y - h
+        _, h = W:Toggle(parent, "Waste Warning", y,
+            function()
+                local v = ss.keyCdWasteAlert
+                if v == nil then return OffBeat.db.profile.keyCdWasteAlert end
+                return v
+            end,
+            function(v) ss.keyCdWasteAlert = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Waste Sound", y,
+            function() return ss.keyCdWasteSound or OffBeat.db.profile.keyCdWasteSound end,
+            function(v) ss.keyCdWasteSound = v end); y = y - h
+    end
+
+    -- Idle Cooldowns
+    if profile.idleCooldowns and #profile.idleCooldowns > 0 then
+        _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h
+        if not ss.disabledIdleCooldowns then ss.disabledIdleCooldowns = {} end
+        for _, cd in ipairs(profile.idleCooldowns) do
+            _, h = W:Toggle(parent, cd.name, y,
+                function() return not ss.disabledIdleCooldowns[cd.spellId] end,
+                function(v)
+                    ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil
+                    OffBeat:GetModule("Rotation"):BuildLookups()
+                end); y = y - h
+        end
+    end
+
+    -- Cast Announcements
+    if profile.castAnnouncements and #profile.castAnnouncements > 0 then
+        _, h = W:SectionHeader(parent, "CAST ANNOUNCEMENTS", y); y = y - h
+        _, h = W:Toggle(parent, "Enable Announcements", y,
+            function() return OffBeat.db.profile.castAnnouncements end,
+            function(v) OffBeat.db.profile.castAnnouncements = v end); y = y - h
+
+        if not ss.castAnnouncements then ss.castAnnouncements = {} end
+        for _, ann in ipairs(profile.castAnnouncements) do
+            local sid = ann.spellId
+            if not ss.castAnnouncements[sid] then ss.castAnnouncements[sid] = {} end
+            local ca = ss.castAnnouncements[sid]
+
+            _, h = W:SectionHeader(parent, ann.name or tostring(sid), y); y = y - h
+            _, h = W:Toggle(parent, "Enabled", y,
+                function() return ca.enabled ~= false end,
+                function(v) ca.enabled = v or nil end); y = y - h
+            _, h = W:TextInput(parent, "Message", y,
+                function() return ca.message or ann.message end,
+                function(v)
+                    ca.message = (v ~= ann.message) and v or nil
+                end); y = y - h
+            _, h = W:Dropdown(parent, "Channel", y, CHANNEL_VALUES,
+                function() return ca.channel or ann.channel or "SAY" end,
+                function(v) ca.channel = (v ~= (ann.channel or "SAY")) and v or nil end,
+                CHANNEL_ORDER); y = y - h
+        end
+    end
 
     return y
 end

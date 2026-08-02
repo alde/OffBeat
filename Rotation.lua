@@ -7,7 +7,8 @@ local idleCooldownSet = {}    -- spellId -> { name }
 local procWasteRules = {}     -- array of { procAura, wasteSpells={id->true}, name }
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
-local announcementSet = {}    -- spellId -> { message, channel }
+local announcementSet = {}    -- spellId -> { message, channel, spellId }
+local activeSpecId            -- cached for specSettings lookups
 local keyCd                   -- profile.keyCooldown or nil
 local keyCdResolvedId         -- resolved spell ID for key cooldown
 
@@ -81,6 +82,12 @@ function Rotation:OnDisable()
     self.procState = nil
 end
 
+local function GetSpecSettings()
+    if not activeSpecId then return nil end
+    local ss = OffBeat.db.profile.specSettings[activeSpecId]
+    return ss
+end
+
 function Rotation:BuildLookups()
     wipe(rotationSpellSet)
     wipe(idleCooldownSet)
@@ -91,7 +98,11 @@ function Rotation:BuildLookups()
     keyCdResolvedId = nil
 
     local profile = OffBeat.activeProfile
-    if not profile then return end
+    if not profile then activeSpecId = nil; return end
+
+    activeSpecId = profile.meta.specId
+    local ss = GetSpecSettings()
+    local disabledIdle = ss and ss.disabledIdleCooldowns
 
     if profile.rotationSpells then
         for _, spell in ipairs(profile.rotationSpells) do
@@ -120,8 +131,10 @@ function Rotation:BuildLookups()
 
     if profile.idleCooldowns then
         for _, cd in ipairs(profile.idleCooldowns) do
-            local resolved = ResolvePlayerSpell(cd.spellId, cd.name)
-            idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId) }
+            if not (disabledIdle and disabledIdle[cd.spellId]) then
+                local resolved = ResolvePlayerSpell(cd.spellId, cd.name)
+                idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId) }
+            end
         end
     end
 
@@ -150,10 +163,11 @@ function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, _, spellId)
     end
     local ann = announcementSet[spellId]
     if ann and OffBeat.db.profile.castAnnouncements then
-        local overrides = OffBeat.db.profile.castAnnouncementOverrides
-        local custom = overrides and overrides[ann.spellId]
-        local msg = custom and custom.message or ann.message
-        local channel = custom and custom.channel or ann.channel or "SAY"
+        local ss = GetSpecSettings()
+        local ca = ss and ss.castAnnouncements and ss.castAnnouncements[ann.spellId]
+        if ca and ca.enabled == false then return end
+        local msg = ca and ca.message or ann.message
+        local channel = ca and ca.channel or ann.channel or "SAY"
         C_ChatInfo.SendChatMessage(msg, channel)
     end
 end
@@ -171,16 +185,23 @@ function Rotation:RecordAbility(spellId)
         self:SendMessage("OFFBEAT_MISTAKE", spellId, mistakeName)
     end
 
-    if keyCd and keyCd.wasteSpell and OffBeat.db.profile.keyCdWasteAlert then
-        local wasteId = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.spellId or keyCd.wasteSpell
-        if spellId == wasteId then
-            local auras = OffBeat:GetModule("Auras", true)
-            local cdActive = (auras and auras:IsActive(keyCd.spellId))
-                or (self.keyCdActiveUntil and GetTime() < self.keyCdActiveUntil)
-            if cdActive then
-                OffBeat:PlayConfigSound("keyCdWasteSound")
-                local wasteName = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.name or nil
-                self:SendMessage("OFFBEAT_PROC_WASTE", spellId, wasteName)
+    if keyCd and keyCd.wasteSpell then
+        local ss2 = GetSpecSettings()
+        local wasteAlert = ss2 and ss2.keyCdWasteAlert
+        if wasteAlert == nil then wasteAlert = OffBeat.db.profile.keyCdWasteAlert end
+        if wasteAlert then
+            local wasteId = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.spellId or keyCd.wasteSpell
+            if spellId == wasteId then
+                local auras = OffBeat:GetModule("Auras", true)
+                local cdActive = (auras and auras:IsActive(keyCd.spellId))
+                    or (self.keyCdActiveUntil and GetTime() < self.keyCdActiveUntil)
+                if cdActive then
+                    local wasteSoundKey = ss2 and ss2.keyCdWasteSound
+                    if wasteSoundKey then OffBeat:PlaySoundKey(wasteSoundKey)
+                    else OffBeat:PlayConfigSound("keyCdWasteSound") end
+                    local wasteName = type(keyCd.wasteSpell) == "table" and keyCd.wasteSpell.name or nil
+                    self:SendMessage("OFFBEAT_PROC_WASTE", spellId, wasteName)
+                end
             end
         end
     end
@@ -252,8 +273,13 @@ function Rotation:CheckKeyCdReady()
 
     if ready and not self.keyCdReady then
         self.keyCdReady = true
-        if OffBeat.db.profile.keyCdAlert and UnitAffectingCombat("player") then
-            OffBeat:PlayConfigSound("keyCdSound")
+        local ss = GetSpecSettings()
+        local alert = ss and ss.keyCdAlert
+        if alert == nil then alert = OffBeat.db.profile.keyCdAlert end
+        if alert and UnitAffectingCombat("player") then
+            local soundKey = ss and ss.keyCdSound
+            if soundKey then OffBeat:PlaySoundKey(soundKey)
+            else OffBeat:PlayConfigSound("keyCdSound") end
         end
         self:SendMessage("OFFBEAT_KEY_CD_READY", keyCd)
     elseif not ready and self.keyCdReady then

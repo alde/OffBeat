@@ -154,7 +154,7 @@ function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, _, spellId)
         local custom = overrides and overrides[ann.spellId]
         local msg = custom and custom.message or ann.message
         local channel = custom and custom.channel or ann.channel or "SAY"
-        SendChatMessage(msg, channel)
+        C_Timer.After(0, function() SendChatMessage(msg, channel) end)
     end
 end
 

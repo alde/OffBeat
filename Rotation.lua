@@ -7,6 +7,7 @@ local idleCooldownSet = {}    -- spellId -> { name }
 local procWasteRules = {}     -- array of { procAura, wasteSpells={id->true}, name }
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
+local announcementSet = {}    -- spellId -> { message, channel }
 local keyCd                   -- profile.keyCooldown or nil
 local keyCdResolvedId         -- resolved spell ID for key cooldown
 
@@ -84,6 +85,7 @@ function Rotation:BuildLookups()
     wipe(rotationSpellSet)
     wipe(idleCooldownSet)
     wipe(procWasteRules)
+    wipe(announcementSet)
     hasRepeatCastMistake = false
     keyCd = nil
     keyCdResolvedId = nil
@@ -127,14 +129,33 @@ function Rotation:BuildLookups()
     if keyCd then
         keyCdResolvedId = ResolvePlayerSpell(keyCd.spellId, keyCd.name)
     end
+
+    if profile.castAnnouncements then
+        for _, entry in ipairs(profile.castAnnouncements) do
+            local resolved = ResolvePlayerSpell(entry.spellId, entry.name)
+            announcementSet[resolved] = entry
+            if resolved ~= entry.spellId then
+                announcementSet[entry.spellId] = entry
+            end
+        end
+    end
 end
 
 -- Cast tracking
 
 function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, _, spellId)
     if unit ~= "player" then return end
-    if not rotationSpellSet[spellId] then return end
-    self:RecordAbility(spellId)
+    if rotationSpellSet[spellId] then
+        self:RecordAbility(spellId)
+    end
+    local ann = announcementSet[spellId]
+    if ann and OffBeat.db.profile.castAnnouncements then
+        local overrides = OffBeat.db.profile.castAnnouncementOverrides
+        local custom = overrides and overrides[ann.spellId]
+        local msg = custom and custom.message or ann.message
+        local channel = custom and custom.channel or ann.channel or "SAY"
+        SendChatMessage(msg, channel)
+    end
 end
 
 function Rotation:RecordAbility(spellId)

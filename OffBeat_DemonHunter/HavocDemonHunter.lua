@@ -24,12 +24,16 @@ OffBeat:RegisterProfile({
         { spellId = 195072 }, -- Fel Rush
         { spellId = 198793 }, -- Vengeful Retreat
         { spellId = 204596 }, -- Sigil of Flame
+        { spellId = 232893 }, -- Felblade
+        { spellId = 442294 }, -- Reaver's Glaive (Aldrachi Reaver)
     },
 
     trackedAuras = {
         { spellId = 162264, name = "Metamorphosis",  baseDuration = 24, stacks = false },
         { spellId = 347462, name = "Unbound Chaos",  baseDuration = 20, stacks = false },
         { spellId = 343312, name = "Furious Gaze",   baseDuration = 12, stacks = false },
+        { spellId = 391215, name = "Initiative",     baseDuration = 5,  stacks = false },
+        { spellId = 427640, name = "Inertia",        baseDuration = 5,  stacks = false },
     },
 
     keyCooldown = {
@@ -42,6 +46,8 @@ OffBeat:RegisterProfile({
         { spellId = 198013, name = "Eye Beam" },
         { spellId = 258860, name = "Essence Break" },
         { spellId = 370965, name = "The Hunt" },
+        { spellId = 198793, name = "Vengeful Retreat" },
+        { spellId = 232893, name = "Felblade" },
     },
 
     procTracking = {
@@ -50,6 +56,15 @@ OffBeat:RegisterProfile({
             consumeSpell = 195072,
             window = 0.5,
             name = "Unbound Chaos",
+        },
+    },
+
+    castAnnouncements = {
+        {
+            spellId = 196718,
+            name = "Darkness",
+            message = "Embrace the darkness!",
+            channel = "SAY",
         },
     },
 })

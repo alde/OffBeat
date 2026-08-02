@@ -37,4 +37,13 @@ OffBeat:RegisterProfile({
     idleCooldowns = {
         { spellId = 1241937, name = "Soul Immolation" },
     },
+
+    castAnnouncements = {
+        {
+            spellId = 196718,
+            name = "Darkness",
+            message = "Embrace the darkness!",
+            channel = "SAY",
+        },
+    },
 })

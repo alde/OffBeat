@@ -58,13 +58,4 @@ OffBeat:RegisterProfile({
             name = "Unbound Chaos",
         },
     },
-
-    castAnnouncements = {
-        {
-            spellId = 196718,
-            name = "Darkness",
-            message = "Embrace the darkness!",
-            channel = "SAY",
-        },
-    },
 })

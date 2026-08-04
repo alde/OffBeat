@@ -7,7 +7,6 @@ local idleCooldownSet = {}    -- spellId -> { name }
 local procWasteRules = {}     -- array of { procAura, wasteSpells={id->true}, name }
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
-local announcementSet = {}    -- spellId -> { message, channel, spellId }
 local activeSpecId            -- cached for specSettings lookups
 local keyCd                   -- profile.keyCooldown or nil
 local keyCdResolvedId         -- resolved spell ID for key cooldown
@@ -104,7 +103,6 @@ function Rotation:BuildLookups()
     wipe(rotationSpellSet)
     wipe(idleCooldownSet)
     wipe(procWasteRules)
-    wipe(announcementSet)
     hasRepeatCastMistake = false
     keyCd = nil
     keyCdResolvedId = nil
@@ -155,15 +153,6 @@ function Rotation:BuildLookups()
         keyCdResolvedId = ResolvePlayerSpell(keyCd.spellId, keyCd.name)
     end
 
-    if profile.castAnnouncements then
-        for _, entry in ipairs(profile.castAnnouncements) do
-            local resolved = ResolvePlayerSpell(entry.spellId, entry.name)
-            announcementSet[resolved] = entry
-            if resolved ~= entry.spellId then
-                announcementSet[entry.spellId] = entry
-            end
-        end
-    end
 end
 
 -- Cast tracking
@@ -172,15 +161,6 @@ function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, _, spellId)
     if unit ~= "player" then return end
     if rotationSpellSet[spellId] then
         self:RecordAbility(spellId)
-    end
-    local ann = announcementSet[spellId]
-    if ann and OffBeat.db.profile.castAnnouncements then
-        local ss = GetSpecSettings()
-        local ca = ss and ss.castAnnouncements and ss.castAnnouncements[ann.spellId]
-        if ca and ca.enabled == false then return end
-        local msg = ca and ca.message or ann.message
-        local channel = ca and ca.channel or ann.channel or "SAY"
-        C_ChatInfo.SendChatMessage(msg, channel)
     end
 end
 

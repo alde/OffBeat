@@ -55,13 +55,4 @@ OffBeat:RegisterProfile({
             name = "Moment of Craving",
         },
     },
-
-    castAnnouncements = {
-        {
-            spellId = 196718,
-            name = "Darkness",
-            message = "Embrace the darkness!",
-            channel = "SAY",
-        },
-    },
 })

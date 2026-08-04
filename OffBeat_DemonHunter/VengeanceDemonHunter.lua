@@ -57,13 +57,4 @@ OffBeat:RegisterProfile({
             name = "Untethered Rage",
         },
     },
-
-    castAnnouncements = {
-        {
-            spellId = 196718,
-            name = "Darkness",
-            message = "Embrace the darkness!",
-            channel = "SAY",
-        },
-    },
 })

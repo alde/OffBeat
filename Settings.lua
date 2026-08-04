@@ -481,9 +481,6 @@ local function GetSpecSettings(specId)
     return db.specSettings[specId]
 end
 
-local CHANNEL_VALUES = { SAY = "Say", YELL = "Yell", PARTY = "Party", RAID = "Raid", INSTANCE_CHAT = "Instance" }
-local CHANNEL_ORDER = { "SAY", "YELL", "PARTY", "RAID", "INSTANCE_CHAT" }
-
 pageBuilders.specConfig = function(parent, y)
     local W = OffBeat.Widgets
     local profile = OffBeat.activeProfile
@@ -582,35 +579,6 @@ pageBuilders.specConfig = function(parent, y)
                     ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil
                     OffBeat:GetModule("Rotation"):BuildLookups()
                 end); y = y - h
-        end
-    end
-
-    -- Cast Announcements
-    if profile.castAnnouncements and #profile.castAnnouncements > 0 then
-        _, h = W:SectionHeader(parent, "CAST ANNOUNCEMENTS", y); y = y - h
-        _, h = W:Toggle(parent, "Enable Announcements", y,
-            function() return OffBeat.db.profile.castAnnouncements end,
-            function(v) OffBeat.db.profile.castAnnouncements = v end); y = y - h
-
-        if not ss.castAnnouncements then ss.castAnnouncements = {} end
-        for _, ann in ipairs(profile.castAnnouncements) do
-            local sid = ann.spellId
-            if not ss.castAnnouncements[sid] then ss.castAnnouncements[sid] = {} end
-            local ca = ss.castAnnouncements[sid]
-
-            _, h = W:SectionHeader(parent, ann.name or tostring(sid), y); y = y - h
-            _, h = W:Toggle(parent, "Enabled", y,
-                function() return ca.enabled ~= false end,
-                function(v) ca.enabled = v or nil end); y = y - h
-            _, h = W:TextInput(parent, "Message", y,
-                function() return ca.message or ann.message end,
-                function(v)
-                    ca.message = (v ~= ann.message) and v or nil
-                end); y = y - h
-            _, h = W:Dropdown(parent, "Channel", y, CHANNEL_VALUES,
-                function() return ca.channel or ann.channel or "SAY" end,
-                function(v) ca.channel = (v ~= (ann.channel or "SAY")) and v or nil end,
-                CHANNEL_ORDER); y = y - h
         end
     end
 

@@ -71,7 +71,6 @@ function OffBeat:GetDefaults()
             mistakeSound = "raid_warning",
             mistakeSoundCustomId = "",
             castWarnings = true,
-            castAnnouncements = true,
             specSettings = {},
             idleCooldownAlert = true,
             idleCooldownNag = true,

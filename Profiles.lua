@@ -14,7 +14,6 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "castAnnouncements",
 }
 
 function OffBeat:ValidateProfile(profile)
@@ -207,4 +206,3 @@ function OffBeat:RemoveImportedProfile(profile)
         end
     end
 end
-

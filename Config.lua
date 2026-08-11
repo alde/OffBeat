@@ -103,7 +103,9 @@ end
 function OffBeat:GetFont(sizeOffset)
     local path = LSM:Fetch("font", self.db.profile.font)
     local size = self.db.profile.fontSize + (sizeOffset or 0)
-    return path, size, self.db.profile.fontOutline
+    local outline = self.db.profile.fontOutline
+    if outline == "NONE" then outline = "" end
+    return path, size, outline
 end
 
 function OffBeat:GetBorderTexture()

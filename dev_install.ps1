@@ -4,7 +4,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$satellites = @("OffBeat_Evoker", "OffBeat_Mage", "OffBeat_Monk", "OffBeat_DeathKnight", "OffBeat_Paladin", "OffBeat_Shaman", "OffBeat_DemonHunter")
+$satellites = @("OffBeat_Evoker", "OffBeat_Mage", "OffBeat_Monk", "OffBeat_DeathKnight", "OffBeat_Paladin", "OffBeat_Shaman", "OffBeat_DemonHunter", "OffBeat_Warlock")
 
 foreach ($sat in $satellites) {
     $src = Join-Path $PSScriptRoot $sat

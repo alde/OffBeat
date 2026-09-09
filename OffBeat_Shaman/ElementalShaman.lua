@@ -20,7 +20,8 @@ OffBeat:RegisterProfile({
         { spellId = 452201 }, -- Tempest (Stormbringer proc)
         { spellId = 114050 }, -- Ascendance
         { spellId = 191634 }, -- Stormkeeper
-        { spellId = 470053 }, -- Voltaic Blaze
+        { spellId = 443454 }, -- Ancestral Swiftness (Stormbringer)
+        { spellId = 470057 }, -- Voltaic Blaze
         { spellId = 196840 }, -- Frost Shock
     },
 
@@ -52,6 +53,8 @@ OffBeat:RegisterProfile({
     idleCooldowns = {
         { spellId = 114050, name = "Ascendance" },
         { spellId = 191634, name = "Stormkeeper" },
+        { spellId = 198067, name = "Fire Elemental" },
+        { spellId = 443454, name = "Ancestral Swiftness" },
     },
 
     procTracking = {

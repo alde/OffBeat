@@ -19,6 +19,7 @@ OffBeat:RegisterProfile({
         { spellId = 321507 },  -- Touch of the Magi
         { spellId = 12051 },   -- Evocation
         { spellId = 205025 },  -- Presence of Mind
+        { spellId = 1295942 }, -- Prismatic Bolt (Spellslinger)
     },
 
     trackedAuras = {
@@ -26,6 +27,7 @@ OffBeat:RegisterProfile({
         { spellId = 365350, name = "Arcane Surge",   baseDuration = 12, stacks = false },
         { spellId = 384452, name = "Arcane Salvo",   baseDuration = 0,  stacks = true },
         { spellId = 451038, name = "Arcane Soul",    baseDuration = 0,  stacks = false },
+        { spellId = 1296930, name = "Cumulative Power", baseDuration = 0,  stacks = true },
     },
 
     keyCooldown = {

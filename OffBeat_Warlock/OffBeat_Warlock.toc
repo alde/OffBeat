@@ -1,0 +1,8 @@
+## Interface: 120100
+## Title: OffBeat - Warlock
+## Version: 1.0.0
+## Notes: Warlock spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+DemonologyWarlock.lua

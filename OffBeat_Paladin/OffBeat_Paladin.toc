@@ -1,4 +1,4 @@
-## Interface: 120007
+## Interface: 120100
 ## Title: OffBeat - Paladin
 ## Version: 1.0.0
 ## Notes: Paladin spec profiles for OffBeat

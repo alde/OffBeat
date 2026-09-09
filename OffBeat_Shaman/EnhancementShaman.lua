@@ -17,9 +17,11 @@ OffBeat:RegisterProfile({
         { spellId = 188196 }, -- Lightning Bolt (MW spender)
         { spellId = 188443 }, -- Chain Lightning (MW spender, AoE)
         { spellId = 454009 }, -- Tempest (Stormbringer proc)
-        { spellId = 114049 }, -- Ascendance
+        { spellId = 114051 }, -- Ascendance
         { spellId = 197214 }, -- Sundering
-        { spellId = 470053 }, -- Voltaic Blaze
+        { spellId = 470057 }, -- Voltaic Blaze
+        { spellId = 444995 }, -- Surging Totem (Totemic)
+        { spellId = 1218047 }, -- Primordial Storm (Totemic)
         { spellId = 333974 }, -- Fire Nova
         { spellId = 196840 }, -- Frost Shock
     },
@@ -38,19 +40,21 @@ OffBeat:RegisterProfile({
         { spellId = 344179,  name = "Maelstrom Weapon",  baseDuration = 30, stacks = true },
         { spellId = 201900,  name = "Hot Hand",           baseDuration = 8,  stacks = false },
         { spellId = 384352,  name = "Doom Winds",         baseDuration = 8,  stacks = false },
-        { spellId = 114049,  name = "Ascendance",         baseDuration = 15, stacks = false },
+        { spellId = 114051,  name = "Ascendance",         baseDuration = 15, stacks = false },
         { spellId = 201846,  name = "Stormsurge",         baseDuration = 5,  stacks = true },
     },
 
     keyCooldown = {
-        spellId = 114049,
+        spellId = 114051,
         name = "Ascendance",
         duration = 15,
     },
 
     idleCooldowns = {
-        { spellId = 114049, name = "Ascendance" },
+        { spellId = 114051, name = "Ascendance" },
         { spellId = 197214, name = "Sundering" },
+        { spellId = 384352, name = "Doom Winds" },
+        { spellId = 444995, name = "Surging Totem" },
     },
 
     procTracking = {

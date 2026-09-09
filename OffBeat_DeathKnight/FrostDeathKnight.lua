@@ -18,7 +18,7 @@ OffBeat:RegisterProfile({
         { spellId = 196770 }, -- Remorseless Winter
         { spellId = 279302 }, -- Frostwyrm's Fury
         { spellId = 47568 },  -- Empower Rune Weapon
-        { spellId = 152279 }, -- Breath of Sindragosa
+        { spellId = 1249658 }, -- Breath of Sindragosa
         { spellId = 439843 }, -- Reaper's Mark
         { spellId = 343294 }, -- Soul Reaper
         { spellId = 46585 },  -- Raise Dead
@@ -39,8 +39,9 @@ OffBeat:RegisterProfile({
         { spellId = 51124,  name = "Killing Machine",       baseDuration = 10, stacks = true },
         { spellId = 59052,  name = "Rime",                  baseDuration = 15, stacks = false },
         { spellId = 51271,  name = "Pillar of Frost",       baseDuration = 12, stacks = false },
-        { spellId = 152279, name = "Breath of Sindragosa",  baseDuration = 0,  stacks = false },
-        { spellId = 194879, name = "Icy Talons",            baseDuration = 6,  stacks = true },
+        { spellId = 1249658, name = "Breath of Sindragosa", baseDuration = 0,  stacks = false },
+        { spellId = 194879,  name = "Icy Talons",           baseDuration = 6,  stacks = true },
+        { spellId = 377098,  name = "Bonegrinder",          baseDuration = 10, stacks = true },
     },
 
     keyCooldown = {

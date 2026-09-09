@@ -1,4 +1,4 @@
-## Interface: 120007
+## Interface: 120100
 ## Title: OffBeat - Death Knight
 ## Version: 1.0.0
 ## Notes: Death Knight spec profiles for OffBeat

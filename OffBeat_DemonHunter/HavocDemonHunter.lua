@@ -26,11 +26,14 @@ OffBeat:RegisterProfile({
         { spellId = 204596 }, -- Sigil of Flame
         { spellId = 232893 }, -- Felblade
         { spellId = 442294 }, -- Reaver's Glaive (Aldrachi Reaver)
+        { spellId = 452402 }, -- Demonsurge (Fel-Scarred)
+        { spellId = 456640 }, -- Consuming Fire (Fel-Scarred)
+        { spellId = 452497 }, -- Abyssal Gaze (Fel-Scarred, replaces Eye Beam)
     },
 
     trackedAuras = {
-        { spellId = 162264, name = "Metamorphosis",  baseDuration = 24, stacks = false },
-        { spellId = 347462, name = "Unbound Chaos",  baseDuration = 20, stacks = false },
+        { spellId = 162264, name = "Metamorphosis",  baseDuration = 20, stacks = false },
+        { spellId = 347462, name = "Unbound Chaos",  baseDuration = 12, stacks = false },
         { spellId = 343312, name = "Furious Gaze",   baseDuration = 12, stacks = false },
         { spellId = 391215, name = "Initiative",     baseDuration = 5,  stacks = false },
         { spellId = 427640, name = "Inertia",        baseDuration = 5,  stacks = false },

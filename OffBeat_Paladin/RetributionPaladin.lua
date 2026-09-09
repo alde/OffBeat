@@ -26,7 +26,7 @@ OffBeat:RegisterProfile({
 
     trackedAuras = {
         { spellId = 31884,  name = "Avenging Wrath",  baseDuration = 20, stacks = false },
-        { spellId = 231895, name = "Crusade",         baseDuration = 25, stacks = true },
+        { spellId = 231895, name = "Crusade",         baseDuration = 27, stacks = true },
         { spellId = 267344, name = "Art of War",      baseDuration = 15, stacks = false },
         { spellId = 326733, name = "Empyrean Power",  baseDuration = 15, stacks = false },
     },

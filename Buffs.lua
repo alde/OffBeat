@@ -51,67 +51,107 @@ local function ResolveSpellId(auraSpellId)
     return OffBeat.ResolveSpellId(auraSpellId, trackedById, spellNameToId, auraIdCache)
 end
 
-local scanErrorLogged = false
+local function IsSecret(val)
+    if val == nil then return false end
+    if _G.issecretvalue then
+        local ok, secret = pcall(_G.issecretvalue, val)
+        return ok and secret
+    end
+    return false
+end
+
+local function SafeNumber(val, default)
+    if val == nil or IsSecret(val) then return default or 0 end
+    local ok, num = pcall(tonumber, val)
+    if ok and num and not IsSecret(num) then
+        return num
+    end
+    return default or 0
+end
 
 function Buffs:ScanUnit(unitId)
     local found = {}
     if not cachedPlayerGUID then cachedPlayerGUID = UnitGUID("player") end
 
-    local ids = C_UnitAuras.GetUnitAuraInstanceIDs(unitId, "HELPFUL")
-    if not ids then return found end
-
     local unitIsPlayer = UnitIsUnit(unitId, "player")
 
+    -- For player, direct lookup via GetPlayerAuraBySpellID avoids secret aura restrictions
+    if unitIsPlayer and C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        local profile = OffBeat.activeProfile
+        if profile and profile.trackedBuffs then
+            for _, info in ipairs(profile.trackedBuffs) do
+                local trackedId = info.spellId
+                local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, trackedId)
+                if ok and aura and not IsSecret(aura) then
+                    local d = SafeNumber(aura.duration, 0)
+                    local e = SafeNumber(aura.expirationTime, 0)
+                    local duration = (d > 0) and d or (info.baseDuration or 0)
+                    local expirationTime = (d > 0) and e or (GetTime() + duration)
+                    found[trackedId] = {
+                        name = info.name,
+                        duration = duration,
+                        expirationTime = expirationTime,
+                        applied = expirationTime - duration,
+                    }
+                end
+            end
+        end
+    end
+
+    local shouldSkip = false
+    if C_Secrets and C_Secrets.ShouldAurasBeSecret then
+        local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
+        if ok and secret then
+            shouldSkip = true
+        end
+    end
+    if shouldSkip then return found end
+
+    if not C_UnitAuras or not C_UnitAuras.GetUnitAuraInstanceIDs then return found end
+
+    local ok, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, unitId, "HELPFUL")
+    if not ok or not ids or IsSecret(ids) then return found end
+
     for _, instanceId in ipairs(ids) do
-        local ok, err = pcall(function()
-            local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(unitId, instanceId)
-            if not aura or not aura.spellId or issecretvalue(aura.spellId) then return end
+        if not IsSecret(instanceId) then
+            local auraOk, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, unitId, instanceId)
+            if auraOk and aura and not IsSecret(aura) then
+                local trackedId
+                if aura.spellId and not IsSecret(aura.spellId) then
+                    trackedId = ResolveSpellId(aura.spellId)
+                end
+                if not trackedId and aura.name and not IsSecret(aura.name) and spellNameToId[aura.name] then
+                    trackedId = spellNameToId[aura.name]
+                end
 
-            local trackedId = ResolveSpellId(aura.spellId)
-            if not trackedId then return end
-
-            local info = trackedById[trackedId]
-
-            if info.selfBuff and not unitIsPlayer then return end
-
-            if not unitIsPlayer then
-                local sourceOk, isOurs = pcall(function()
-                    if aura.sourceUnit and not issecretvalue(aura.sourceUnit) then
-                        return UnitIsUnit(aura.sourceUnit, "player")
+                if trackedId and not found[trackedId] then
+                    local info = trackedById[trackedId]
+                    if info and (not info.selfBuff or unitIsPlayer) then
+                        local isOurs = true
+                        if not unitIsPlayer and aura.sourceUnit and not IsSecret(aura.sourceUnit) then
+                            isOurs = UnitIsUnit(aura.sourceUnit, "player")
+                        end
+                        if isOurs then
+                            local d = SafeNumber(aura.duration, 0)
+                            local e = SafeNumber(aura.expirationTime, 0)
+                            local duration = (d > 0) and d or (info.baseDuration or 0)
+                            local expirationTime = (d > 0) and e or (GetTime() + duration)
+                            found[trackedId] = {
+                                name = info.name,
+                                duration = duration,
+                                expirationTime = expirationTime,
+                                applied = expirationTime - duration,
+                            }
+                        end
                     end
-                    return true
-                end)
-                if sourceOk and not isOurs then return end
+                end
             end
-
-            local duration, expirationTime
-            local durOk, d, e = pcall(function()
-                return tonumber(aura.duration) or 0, tonumber(aura.expirationTime) or 0
-            end)
-            if durOk and d and d > 0 then
-                duration = d
-                expirationTime = e
-            else
-                duration = info.baseDuration or 0
-                expirationTime = GetTime() + duration
-            end
-
-            found[trackedId] = {
-                name = info.name,
-                duration = duration,
-                expirationTime = expirationTime,
-                applied = expirationTime - duration,
-            }
-        end)
-
-        if not ok and not scanErrorLogged then
-            OffBeat:Print("Aura scan error (subsequent errors suppressed): " .. tostring(err))
-            scanErrorLogged = true
         end
     end
 
     return found
 end
+
 
 function Buffs:UNIT_AURA(_, unitId)
     if not self:IsTrackedUnit(unitId) then return end

@@ -41,6 +41,16 @@ function OffBeat:GetDefaults()
             bgAlpha = 0.8,
             rotationPosition = nil,
 
+            -- Stat Priority panel (StatDisplay)
+            statDisplayShown = true,
+            statDisplayCombatOnly = false,
+            statDisplayPosition = nil,
+            statDisplayWidth = 250,
+            statDisplayShowDR = true,
+            statDisplayShowValues = true,
+            statDisplayCompact = false,
+
+
             -- Key cooldown icon
             keyCdAlert = true,
             keyCdSound = "talent_ready",

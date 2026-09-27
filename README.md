@@ -10,7 +10,7 @@
 
 ## What it does
 
-OffBeat is a single addon framework that tracks buffs on party members **or** your own rotation accuracy — depending on the profile loaded for your spec. Profiles are pure data: no code, just spell IDs and rules. Import and export them like WeakAura strings.
+OffBeat is a single addon framework that tracks buffs on party members **or** your own rotation accuracy - depending on the profile loaded for your spec. Profiles are pure data: no code, just spell IDs and rules. Import and export them like WeakAura strings. It's meant to codify the guide from [method.gg](https://method.gg).
 
 **Buff tracking** (e.g. Augmentation Evoker): countdown bars for party buffs, uptime percentages, Gantt-chart timeline, cast warnings.
 
@@ -24,12 +24,30 @@ A profile can use both at once.
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
+| OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (KM waste, Rime) |
+| OffBeat_DeathKnight | Unholy Death Knight | Rotation (Apocalypse, Sudden Doom) |
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
+| OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
+| OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
+| OffBeat_Warlock | Demonology | Rotation & Pet Spenders |
+| OffBeat_Mage | Arcane | Rotation & Burn Phases |
+
+## Stat Priority & Diminishing Returns
+
+OffBeat includes a movable display showing recommended stat priority tailored to your current specialization and active **Hero Talent Tree**. It also monitors secondary stat diminishing returns (DR) in real time:
+- **0% – 30% rating bonus**: 100% efficiency (optimal returns)
+- **30% – 39%**: 10% penalty
+- **39% – 47%**: 20% penalty
+- **47% – 54%**: 30% penalty
+- **54% – 66%**: 40% penalty
+- **>66%**: 50% penalty
+
+The display flags penalized stats in real time and provides re-allocation advice when your top secondary stats exceed optimal thresholds.
 
 ## Installation
 
-Install **OffBeat** (the core) plus whichever `OffBeat_<Class>` addons you need. Each class addon must be its own folder in `Interface/AddOns/` — the CurseForge packager handles this automatically via `move-folders`.
+Install **OffBeat** (the core) plus whichever `OffBeat_<Class>` addons you need. Each class addon must be its own folder in `Interface/AddOns/` - the CurseForge packager handles this automatically via `move-folders`.
 
 **From source** (development): clone the repo into your AddOns directory, then symlink the satellites so WoW can find them:
 
@@ -45,10 +63,12 @@ cd Interface/AddOns/OffBeat
 |---------|--------|
 | `/ob` | Open settings |
 | `/ob show` | Toggle display panel |
+| `/ob stats` | Toggle stat priority display |
 | `/ob timeline` | Toggle timeline |
 | `/ob lock` | Lock/unlock frames |
 | `/ob profile <name>` | Switch profile |
 | `/ob test` | Inject test data |
+
 
 ## Creating a profile
 

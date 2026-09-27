@@ -45,73 +45,116 @@ local function ResolveSpellId(auraSpellId)
     return OffBeat.ResolveSpellId(auraSpellId, trackedById, nameToId, auraIdCache)
 end
 
-local scanErrorLogged = false
+local function IsSecret(val)
+    if val == nil then return false end
+    if _G.issecretvalue then
+        local ok, secret = pcall(_G.issecretvalue, val)
+        return ok and secret
+    end
+    return false
+end
+
+local function SafeNumber(val, default)
+    if val == nil or IsSecret(val) then return default or 0 end
+    local ok, num = pcall(tonumber, val)
+    if ok and num and not IsSecret(num) then
+        return num
+    end
+    return default or 0
+end
+
+local function ExtractAuraRecord(aura, info)
+    local d = SafeNumber(aura.duration, 0)
+    local e = SafeNumber(aura.expirationTime, 0)
+    local duration, expirationTime
+
+    if d > 0 then
+        duration = d
+        expirationTime = e
+    else
+        duration = info.baseDuration or 0
+        expirationTime = duration > 0 and (GetTime() + duration) or 0
+    end
+
+    local stacks = SafeNumber(aura.applications, 0)
+
+    return {
+        name = info.name,
+        duration = duration,
+        expirationTime = expirationTime,
+        stacks = stacks,
+    }
+end
 
 function Auras:ScanPlayer()
     local found = {}
 
-    for _, filter in ipairs(self.auraFilters) do
-        self:ScanPlayerFilter(found, filter)
+    local profile = OffBeat.activeProfile
+    if not profile or not profile.trackedAuras then return found end
+
+    -- 1. Direct query via GetPlayerAuraBySpellID for each tracked aura.
+    -- This targets specific spell IDs and completely sidesteps secret encounter auras,
+    -- avoiding the "Auras cannot be accessed when secret while tainted" engine restriction.
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        for _, info in ipairs(profile.trackedAuras) do
+            local trackedId = info.spellId
+            local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, trackedId)
+            if ok and aura and not IsSecret(aura) then
+                found[trackedId] = ExtractAuraRecord(aura, info)
+            end
+        end
+    end
+
+    -- 2. Fallback scan using GetUnitAuraInstanceIDs for any tracked auras not found above
+    -- (e.g. if an aura is applied by a different sub-spell ID or matched by name).
+    -- We skip this if C_Secrets flags that secret auras are active, and guard the call with pcall.
+    local shouldSkip = false
+    if C_Secrets and C_Secrets.ShouldAurasBeSecret then
+        local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
+        if ok and secret then
+            shouldSkip = true
+        end
+    end
+
+    if not shouldSkip then
+        for _, filter in ipairs(self.auraFilters) do
+            self:ScanPlayerFilter(found, filter)
+        end
     end
 
     return found
 end
 
 function Auras:ScanPlayerFilter(found, filter)
-    local ids = C_UnitAuras.GetUnitAuraInstanceIDs("player", filter)
-    if not ids then return end
+    if not C_UnitAuras or not C_UnitAuras.GetUnitAuraInstanceIDs then return end
+
+    local ok, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, "player", filter)
+    if not ok or not ids or IsSecret(ids) then return end
 
     for _, instanceId in ipairs(ids) do
-        local ok, err = pcall(function()
-            local aura = C_UnitAuras.GetAuraDataByAuraInstanceID("player", instanceId)
-            if not aura then return end
+        if not IsSecret(instanceId) then
+            local auraOk, aura = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, "player", instanceId)
+            if auraOk and aura and not IsSecret(aura) then
+                local trackedId
+                if aura.spellId and not IsSecret(aura.spellId) then
+                    trackedId = ResolveSpellId(aura.spellId)
+                end
 
-            local trackedId
-            local spellIdOk, sid = pcall(function() return aura.spellId end)
-            if spellIdOk and sid and not issecretvalue(sid) then
-                trackedId = ResolveSpellId(sid)
-            end
+                if not trackedId and aura.name and not IsSecret(aura.name) and nameToId[aura.name] then
+                    trackedId = nameToId[aura.name]
+                end
 
-            if not trackedId then
-                local nameOk, auraName = pcall(function() return aura.name end)
-                if nameOk and auraName and not issecretvalue(auraName) and nameToId[auraName] then
-                    trackedId = nameToId[auraName]
+                if trackedId and not found[trackedId] then
+                    local info = trackedById[trackedId]
+                    if info then
+                        found[trackedId] = ExtractAuraRecord(aura, info)
+                    end
                 end
             end
-
-            if not trackedId then return end
-
-            local info = trackedById[trackedId]
-
-            local duration, expirationTime, stacks
-            local durOk, d, e = pcall(function()
-                return tonumber(aura.duration) or 0, tonumber(aura.expirationTime) or 0
-            end)
-            if durOk and d and d > 0 then
-                duration = d
-                expirationTime = e
-            else
-                duration = info.baseDuration or 0
-                expirationTime = duration > 0 and (GetTime() + duration) or 0
-            end
-
-            local stackOk, s = pcall(function() return aura.applications or 0 end)
-            stacks = stackOk and s or 0
-
-            found[trackedId] = {
-                name = info.name,
-                duration = duration,
-                expirationTime = expirationTime,
-                stacks = stacks,
-            }
-        end)
-
-        if not ok and not scanErrorLogged then
-            OffBeat:Print("Aura scan error (subsequent errors suppressed): " .. tostring(err))
-            scanErrorLogged = true
         end
     end
 end
+
 
 function Auras:UNIT_AURA(_, unit)
     if unit ~= "player" then return end

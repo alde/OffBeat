@@ -40,7 +40,7 @@ do
     end
 end
 
-local ALWAYS_ON_MODULES = { "Core", "Encounters" }
+local ALWAYS_ON_MODULES = { "Core", "Encounters", "StatDisplay" }
 
 -- Debug logging (deduped)
 
@@ -134,7 +134,10 @@ function OffBeat:LoadForCurrentSpec()
     if not specId then return end
 
     local available = self.profiles[specId]
-    if not available or #available == 0 then return end
+    if not available or #available == 0 then
+        self:EnableAlwaysOnModules()
+        return
+    end
 
     local savedName = self.db.profile.activeProfiles and self.db.profile.activeProfiles[specId]
     local profile = available[1]
@@ -152,13 +155,18 @@ function OffBeat:LoadForCurrentSpec()
     self:Debug("Loaded profile:", profile.meta.name)
 end
 
-function OffBeat:EnableModulesForProfile(profile)
+function OffBeat:EnableAlwaysOnModules()
     for _, name in ipairs(ALWAYS_ON_MODULES) do
         local mod = self:GetModule(name, true)
         if mod and not mod:IsEnabled() then mod:Enable() end
     end
+end
+
+function OffBeat:EnableModulesForProfile(profile)
+    self:EnableAlwaysOnModules()
 
     for section, modules in pairs(FEATURE_MODULES) do
+
         if profile[section] then
             for _, name in ipairs(modules) do
                 local mod = self:GetModule(name, true)
@@ -222,6 +230,8 @@ function OffBeat:OnSlashCommand(input)
         self:ToggleTimeline()
     elseif cmd == "lock" then
         self:ToggleLock()
+    elseif cmd == "stats" or cmd == "stat" then
+        self:ToggleStatDisplay()
     elseif cmd == "reset" then
         self:ResetEncounterData()
         self:Print("Encounter data reset.")
@@ -241,6 +251,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("OffBeat v" .. self.VERSION)
         self:Print("  /ob              — Open settings")
         self:Print("  /ob show         — Toggle display")
+        self:Print("  /ob stats        — Toggle stat priority display")
         self:Print("  /ob timeline     — Toggle timeline")
         self:Print("  /ob lock         — Lock/unlock frames")
         self:Print("  /ob reset        — Reset encounter data")
@@ -248,6 +259,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob debug        — Toggle debug logging")
         self:Print("  /ob test         — Inject test data")
     end
+
 end
 
 function OffBeat:SwitchProfile(name)
@@ -304,6 +316,7 @@ end
 function OffBeat:ToggleDisplay() end
 function OffBeat:OpenConfig() end
 function OffBeat:ToggleTimeline() end
+function OffBeat:ToggleStatDisplay() end
 function OffBeat:ResetEncounterData() end
 function OffBeat:InjectTestData() end
 

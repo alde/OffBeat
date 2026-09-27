@@ -64,4 +64,11 @@ OffBeat:RegisterProfile({
             name = "Rime",
         },
     },
+
+    statPriority = "Critical Strike >= Mastery > Haste > Versatility",
+    heroStatPriorities = {
+        ["Deathbringer"] = "Mastery > Haste > Critical Strike > Versatility",
+        ["Rider of the Apocalypse"] = "Critical Strike >= Mastery > Haste > Versatility",
+    },
 })
+

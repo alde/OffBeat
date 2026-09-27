@@ -5,4 +5,6 @@
 ## Author: Rickard Dybeck
 ## Dependencies: OffBeat
 
+BloodDeathKnight.lua
 FrostDeathKnight.lua
+UnholyDeathKnight.lua

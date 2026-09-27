@@ -14,7 +14,9 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
+    "statPriority", "heroStatPriorities",
 }
+
 
 function OffBeat:ValidateProfile(profile)
     if type(profile) ~= "table" then

@@ -42,6 +42,10 @@ Rotation.lua
 RotationDisplay.lua
 RotationTimeline.lua
 
+## Stat Display
+StatDisplay.lua
+
 ## Settings
 Widgets.lua
 Settings.lua
+

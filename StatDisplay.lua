@@ -191,9 +191,9 @@ local STATS = {
 
 
 -- Comprehensive Stat Priority Database by Spec ID and Hero Talent Tree
--- Entries marked "Method 12.1" were checked against Method's 12.1 guides
--- (Sep 2026); where Method splits raid / M+ or ST / AoE, the noted one is used.
--- Unmarked entries date from The War Within and have not been re-verified.
+-- All entries checked against Method's 12.1 guides (Sep 2026). Where Method
+-- splits raid / M+ or single target / AoE, the variant is noted and used.
+-- ">>" / ">>>" in the guides are treated as ">".
 -- Values are rank maps (lower = higher priority); see NormalizePriority above.
 local SPEC_STAT_PRIORITIES = {
     -- Death Knight
@@ -215,21 +215,17 @@ local SPEC_STAT_PRIORITIES = {
     },
 
     -- Demon Hunter
-    [577] = { -- Havoc
+    [577] = { -- Havoc (Method 12.1)
         specName = "Havoc Demon Hunter",
         default = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
-        heroTrees = {
-            ["Aldrachi Reaver"] = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
-            ["Fel-Scarred"]     = { CRIT = 1, MASTERY = 2, VERS = 3, HASTE = 4 },
-        },
     },
-    [581] = { -- Vengeance
+    [581] = { -- Vengeance (Method 12.1, defensive)
         specName = "Vengeance Demon Hunter",
-        default = { HASTE = 1, CRIT = 2, VERS = 2.5, MASTERY = 3.5 },
-        heroTrees = {
-            ["Aldrachi Reaver"] = { HASTE = 1, CRIT = 2, VERS = 2.5, MASTERY = 3.5 },
-            ["Fel-Scarred"]     = { HASTE = 1, VERS = 2, CRIT = 2.5, MASTERY = 3.5 },
-        },
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 2 },
+    },
+    [1480] = { -- Devourer (Method 12.1)
+        specName = "Devourer Demon Hunter",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 2.5, VERS = 3.5 },
     },
 
     -- Paladin
@@ -237,61 +233,37 @@ local SPEC_STAT_PRIORITIES = {
         specName = "Holy Paladin",
         default = { MASTERY = 1, CRIT = 2, HASTE = 2, VERS = 3 },
     },
-    [66] = { -- Protection
+    [66] = { -- Protection (Method 12.1)
         specName = "Protection Paladin",
-        default = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
-        heroTrees = {
-            ["Templar"]    = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-            ["Lightsmith"] = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-        },
+        default = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
     },
-    [70] = { -- Retribution
+    [70] = { -- Retribution (Method 12.1)
         specName = "Retribution Paladin",
-        default = { MASTERY = 1, HASTE = 1.5, CRIT = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Herald of the Sun"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Templar"]           = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
-        },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
     },
 
     -- Evoker
-    [1467] = { -- Devastation
+    [1467] = { -- Devastation (Method 12.1)
         specName = "Devastation Evoker",
-        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Flameshaper"]    = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-            ["Scalecommander"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        },
+        default = { CRIT = 1, HASTE = 2, MASTERY = 2, VERS = 3 },
     },
     [1468] = { -- Preservation (Method 12.1, raid)
         specName = "Preservation Evoker",
         default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 3 },
     },
-    [1473] = { -- Augmentation
+    [1473] = { -- Augmentation (Method 12.1)
         specName = "Augmentation Evoker",
-        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Chronowarden"]   = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Scalecommander"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, CRIT = 2, HASTE = 2, VERS = 3 },
     },
 
     -- Monk
-    [268] = { -- Brewmaster
+    [268] = { -- Brewmaster (Method 12.1)
         specName = "Brewmaster Monk",
-        default = { VERS = 1, CRIT = 1.5, MASTERY = 2.5, HASTE = 3.5 },
-        heroTrees = {
-            ["Master of Harmony"] = { VERS = 1, CRIT = 1.5, MASTERY = 2.5, HASTE = 3.5 },
-            ["Shado-Pan"]         = { CRIT = 1, VERS = 1.5, MASTERY = 2.5, HASTE = 3.5 },
-        },
+        default = { CRIT = 1, VERS = 1, MASTERY = 2, HASTE = 3 },
     },
-    [269] = { -- Windwalker
+    [269] = { -- Windwalker (Method 12.1)
         specName = "Windwalker Monk",
-        default = { MASTERY = 1, CRIT = 1.5, VERS = 2.5, HASTE = 3.5 },
-        heroTrees = {
-            ["Conduit of the Celestials"] = { MASTERY = 1, CRIT = 1.5, VERS = 2.5, HASTE = 3.5 },
-            ["Shado-Pan"]                 = { MASTERY = 1, CRIT = 1.5, HASTE = 2.5, VERS = 3.5 },
-        },
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 3 },
     },
     [270] = { -- Mistweaver (Method 12.1)
         specName = "Mistweaver Monk",
@@ -299,21 +271,17 @@ local SPEC_STAT_PRIORITIES = {
     },
 
     -- Shaman
-    [262] = { -- Elemental
+    [262] = { -- Elemental (Method 12.1)
         specName = "Elemental Shaman",
-        default = { MASTERY = 1, HASTE = 1.5, CRIT = 2.5, VERS = 3.5 },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Stormbringer"] = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
-            ["Farseer"]      = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Farseer"]      = { MASTERY = 1, HASTE = 2, CRIT = 2.5, VERS = 3.5 },
+            ["Stormbringer"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         },
     },
-    [263] = { -- Enhancement
+    [263] = { -- Enhancement (Method 12.1)
         specName = "Enhancement Shaman",
-        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Stormbringer"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Totemic"]      = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, HASTE = 1.5, CRIT = 2.5, VERS = 3 },
     },
     [264] = { -- Restoration (Method 12.1, raid)
         specName = "Restoration Shaman",
@@ -329,116 +297,68 @@ local SPEC_STAT_PRIORITIES = {
         specName = "Demonology Warlock",
         default = { CRIT = 1, HASTE = 2, MASTERY = 2, VERS = 3 },
     },
-    [267] = { -- Destruction
+    [267] = { -- Destruction (Method 12.1)
         specName = "Destruction Warlock",
-        default = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Diabolist"]  = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-            ["Hellcaller"] = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
-        },
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 3 },
     },
 
     -- Mage
-    [62] = { -- Arcane
+    [62] = { -- Arcane (Method 12.1)
         specName = "Arcane Mage",
-        default = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-        heroTrees = {
-            ["Spellslinger"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-            ["Sunfury"]      = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-        },
+        default = { HASTE = 1, VERS = 2, CRIT = 3, MASTERY = 4 },
     },
-    [63] = { -- Fire
+    [63] = { -- Fire (Method 12.1)
         specName = "Fire Mage",
-        default = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-        heroTrees = {
-            ["Frostfire"] = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-            ["Sunfury"]   = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
-        },
+        default = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
     },
-    [64] = { -- Frost
+    [64] = { -- Frost (Method 12.1)
         specName = "Frost Mage",
-        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Frostfire"]    = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Spellslinger"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, MASTERY = 1, HASTE = 2, VERS = 3 },
     },
 
     -- Warrior
-    [71] = { -- Arms
+    [71] = { -- Arms (Method 12.1)
         specName = "Arms Warrior",
         default = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
-        heroTrees = {
-            ["Colossus"] = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
-            ["Slayer"]   = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-        },
     },
-    [72] = { -- Fury
+    [72] = { -- Fury (Method 12.1)
         specName = "Fury Warrior",
-        default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Mountain Thane"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-            ["Slayer"]         = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 3 },
     },
-    [73] = { -- Protection
+    [73] = { -- Protection (Method 12.1)
         specName = "Protection Warrior",
-        default = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-        heroTrees = {
-            ["Colossus"]       = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-            ["Mountain Thane"] = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
-        },
+        default = { HASTE = 1, CRIT = 2, VERS = 2, MASTERY = 3 },
     },
 
     -- Hunter
-    [253] = { -- Beast Mastery
+    [253] = { -- Beast Mastery (Method 12.1, single target)
         specName = "Beast Mastery Hunter",
-        default = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-        heroTrees = {
-            ["Pack Leader"] = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-            ["Dark Ranger"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 2.5, VERS = 3.5 },
     },
-    [254] = { -- Marksmanship
+    [254] = { -- Marksmanship (Method 12.1)
         specName = "Marksmanship Hunter",
-        default = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
-        heroTrees = {
-            ["Dark Ranger"] = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
-            ["Sentinel"]    = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, MASTERY = 2, VERS = 3, HASTE = 4 },
     },
-    [255] = { -- Survival
+    [255] = { -- Survival (Method 12.1, single target)
         specName = "Survival Hunter",
-        default = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Pack Leader"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-            ["Sentinel"]    = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, CRIT = 2, HASTE = 2, VERS = 3 },
     },
 
     -- Rogue
-    [259] = { -- Assassination
+    [259] = { -- Assassination (Method 12.1)
         specName = "Assassination Rogue",
-        default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-        heroTrees = {
-            ["Deathstalker"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-            ["Fatebound"]    = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
     },
-    [260] = { -- Outlaw
+    [260] = { -- Outlaw (Method 12.1)
         specName = "Outlaw Rogue",
-        default = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
-        heroTrees = {
-            ["Fatebound"] = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
-            ["Trickster"] = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
-        },
+        default = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
     },
-    [261] = { -- Subtlety
+    [261] = { -- Subtlety (Method 12.1)
         specName = "Subtlety Rogue",
-        default = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Deathstalker"] = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
-            ["Trickster"]    = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
+            ["Trickster"]    = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Deathstalker"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
 
@@ -451,39 +371,27 @@ local SPEC_STAT_PRIORITIES = {
         specName = "Holy Priest",
         default = { CRIT = 1, MASTERY = 2, VERS = 3, HASTE = 4 },
     },
-    [258] = { -- Shadow
+    [258] = { -- Shadow (Method 12.1, single target)
         specName = "Shadow Priest",
-        default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Voidweaver"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-            ["Archon"]     = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+            ["Voidweaver"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Archon"]     = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         },
     },
 
     -- Druid
-    [102] = { -- Balance
+    [102] = { -- Balance (Method 12.1)
         specName = "Balance Druid",
-        default = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
-        heroTrees = {
-            ["Elune's Chosen"]      = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
-            ["Keeper of the Grove"] = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
-        },
+        default = { MASTERY = 1, CRIT = 2, HASTE = 2, VERS = 3 },
     },
-    [103] = { -- Feral
+    [103] = { -- Feral (Method 12.1: no fixed priority, sim your gear)
         specName = "Feral Druid",
-        default = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
-        heroTrees = {
-            ["Druid of the Claw"] = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
-            ["Wildstalker"]       = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
-        },
+        default = { CRIT = 1, HASTE = 1, MASTERY = 1, VERS = 1 },
     },
-    [104] = { -- Guardian
+    [104] = { -- Guardian (Method 12.1)
         specName = "Guardian Druid",
-        default = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-        heroTrees = {
-            ["Druid of the Claw"] = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-            ["Elune's Chosen"]    = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
-        },
+        default = { HASTE = 1, VERS = 2, CRIT = 2.5, MASTERY = 3.5 },
     },
     [105] = { -- Restoration (Method 12.1, raid)
         specName = "Restoration Druid",

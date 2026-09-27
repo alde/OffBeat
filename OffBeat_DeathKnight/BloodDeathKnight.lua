@@ -66,9 +66,10 @@ OffBeat:RegisterProfile({
         },
     },
 
-    statPriority = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+    -- Method 12.1: Deathbringer Crit = Vers = Mastery > Haste; San'layn Haste > Crit = Vers = Mastery
+    statPriority = { CRIT = 1, MASTERY = 1, VERS = 1, HASTE = 2 },
     heroStatPriorities = {
-        ["Deathbringer"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-        ["San'layn"] = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
+        ["Deathbringer"] = { CRIT = 1, MASTERY = 1, VERS = 1, HASTE = 2 },
+        ["San'layn"] = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 2 },
     },
 })

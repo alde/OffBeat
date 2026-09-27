@@ -65,10 +65,7 @@ OffBeat:RegisterProfile({
         },
     },
 
-    statPriority = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-    heroStatPriorities = {
-        ["Deathbringer"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        ["Rider of the Apocalypse"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-    },
+    -- Method 12.1 (same for both hero trees): Crit > Mastery >= Haste > Vers
+    statPriority = { CRIT = 1, MASTERY = 2, HASTE = 2.5, VERS = 3.5 },
 })
 

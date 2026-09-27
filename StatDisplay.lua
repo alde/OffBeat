@@ -191,33 +191,27 @@ local STATS = {
 
 
 -- Comprehensive Stat Priority Database by Spec ID and Hero Talent Tree
--- Sourced from Method, Icy Veins, and Archon guides for The War Within / retail
+-- Entries marked "Method 12.1" were checked against Method's 12.1 guides
+-- (Sep 2026); where Method splits raid / M+ or ST / AoE, the noted one is used.
+-- Unmarked entries date from The War Within and have not been re-verified.
 -- Values are rank maps (lower = higher priority); see NormalizePriority above.
 local SPEC_STAT_PRIORITIES = {
     -- Death Knight
-    [250] = { -- Blood
+    [250] = { -- Blood (Method 12.1)
         specName = "Blood Death Knight",
-        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+        default = { CRIT = 1, MASTERY = 1, VERS = 1, HASTE = 2 },
         heroTrees = {
-            ["Deathbringer"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-            ["San'layn"]     = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
+            ["Deathbringer"] = { CRIT = 1, MASTERY = 1, VERS = 1, HASTE = 2 },
+            ["San'layn"]     = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 2 },
         },
     },
-    [251] = { -- Frost
+    [251] = { -- Frost (Method 12.1)
         specName = "Frost Death Knight",
-        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Deathbringer"]            = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Rider of the Apocalypse"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        },
+        default = { CRIT = 1, MASTERY = 2, HASTE = 2.5, VERS = 3.5 },
     },
-    [252] = { -- Unholy
+    [252] = { -- Unholy (Method 12.1)
         specName = "Unholy Death Knight",
-        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Rider of the Apocalypse"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["San'layn"]                 = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, MASTERY = 2, HASTE = 2.5, VERS = 3.5 },
     },
 
     -- Demon Hunter
@@ -239,13 +233,9 @@ local SPEC_STAT_PRIORITIES = {
     },
 
     -- Paladin
-    [65] = { -- Holy
+    [65] = { -- Holy (Method 12.1)
         specName = "Holy Paladin",
-        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Herald of the Sun"] = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
-            ["Lightsmith"]        = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-        },
+        default = { MASTERY = 1, CRIT = 2, HASTE = 2, VERS = 3 },
     },
     [66] = { -- Protection
         specName = "Protection Paladin",
@@ -273,13 +263,9 @@ local SPEC_STAT_PRIORITIES = {
             ["Scalecommander"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
-    [1468] = { -- Preservation
+    [1468] = { -- Preservation (Method 12.1, raid)
         specName = "Preservation Evoker",
-        default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
-        heroTrees = {
-            ["Chronowarden"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Flameshaper"]  = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
-        },
+        default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 3 },
     },
     [1473] = { -- Augmentation
         specName = "Augmentation Evoker",
@@ -307,13 +293,9 @@ local SPEC_STAT_PRIORITIES = {
             ["Shado-Pan"]                 = { MASTERY = 1, CRIT = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
-    [270] = { -- Mistweaver
+    [270] = { -- Mistweaver (Method 12.1)
         specName = "Mistweaver Monk",
-        default = { HASTE = 1, CRIT = 1.5, VERS = 2.5, MASTERY = 3.5 },
-        heroTrees = {
-            ["Conduit of the Celestials"] = { HASTE = 1, CRIT = 1.5, VERS = 2.5, MASTERY = 3.5 },
-            ["Master of Harmony"]         = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
-        },
+        default = { HASTE = 1, CRIT = 2, VERS = 2, MASTERY = 3 },
     },
 
     -- Shaman
@@ -333,31 +315,19 @@ local SPEC_STAT_PRIORITIES = {
             ["Totemic"]      = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
-    [264] = { -- Restoration
+    [264] = { -- Restoration (Method 12.1, raid)
         specName = "Restoration Shaman",
-        default = { CRIT = 1, VERS = 2, HASTE = 2.5, MASTERY = 3.5 },
-        heroTrees = {
-            ["Totemic"] = { CRIT = 1, HASTE = 2, VERS = 2.5, MASTERY = 3.5 },
-            ["Farseer"] = { CRIT = 1, VERS = 2, MASTERY = 2.5, HASTE = 3.5 },
-        },
+        default = { CRIT = 1, HASTE = 2, VERS = 2, MASTERY = 3 },
     },
 
     -- Warlock
-    [258] = { -- Affliction
+    [265] = { -- Affliction (Method 12.1, single target)
         specName = "Affliction Warlock",
-        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-        heroTrees = {
-            ["Hellcaller"]     = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
-            ["Soul Harvester"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, HASTE = 2, MASTERY = 2, VERS = 3 },
     },
-    [259] = { -- Demonology
+    [266] = { -- Demonology (Method 12.1)
         specName = "Demonology Warlock",
-        default = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-        heroTrees = {
-            ["Diabolist"]      = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
-            ["Soul Harvester"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
-        },
+        default = { CRIT = 1, HASTE = 2, MASTERY = 2, VERS = 3 },
     },
     [267] = { -- Destruction
         specName = "Destruction Warlock",
@@ -447,7 +417,7 @@ local SPEC_STAT_PRIORITIES = {
     },
 
     -- Rogue
-    [259] = { -- Assassination (or 259)
+    [259] = { -- Assassination
         specName = "Assassination Rogue",
         default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         heroTrees = {
@@ -473,23 +443,15 @@ local SPEC_STAT_PRIORITIES = {
     },
 
     -- Priest
-    [256] = { -- Discipline
+    [256] = { -- Discipline (Method 12.1)
         specName = "Discipline Priest",
-        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Voidweaver"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-            ["Oracle"]     = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
-        },
+        default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
     },
-    [257] = { -- Holy
+    [257] = { -- Holy (Method 12.1, raid)
         specName = "Holy Priest",
-        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        heroTrees = {
-            ["Archon"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-            ["Oracle"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
-        },
+        default = { CRIT = 1, MASTERY = 2, VERS = 3, HASTE = 4 },
     },
-    [258] = { -- Shadow (shared ID key fallback)
+    [258] = { -- Shadow
         specName = "Shadow Priest",
         default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
@@ -523,13 +485,9 @@ local SPEC_STAT_PRIORITIES = {
             ["Elune's Chosen"]    = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
         },
     },
-    [105] = { -- Restoration
+    [105] = { -- Restoration (Method 12.1, raid)
         specName = "Restoration Druid",
-        default = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
-        heroTrees = {
-            ["Keeper of the Grove"] = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
-            ["Wildstalker"]         = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
-        },
+        default = { HASTE = 1, MASTERY = 1, CRIT = 2, VERS = 2.5 },
     },
 }
 

@@ -430,7 +430,14 @@ pageBuilders.stats = function(parent, y)
                 else sd:GetFrame():Hide() end
             end
         end); y = y - h
-    _, h = W:Toggle(parent, "Only in Combat", y,
+    _, h = W:Toggle(parent, "Attach to Character Panel", y,
+        function() return db.statDisplayAttachCharacter end,
+        function(v)
+            local sd = OffBeat:GetModule("StatDisplay", true)
+            if sd and sd:IsEnabled() then sd:SetAttachToCharacter(v)
+            else db.statDisplayAttachCharacter = v end
+        end); y = y - h
+    _, h = W:Toggle(parent, "Only in Combat (when detached)", y,
         function() return db.statDisplayCombatOnly end,
         function(v)
             db.statDisplayCombatOnly = v
@@ -673,6 +680,30 @@ pageBuilders.specConfig = function(parent, y)
                     ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil
                     OffBeat:GetModule("Rotation"):BuildLookups()
                 end); y = y - h
+        end
+
+        -- Racial cooldowns (only the ones this character knows)
+        local racials = OffBeat:GetKnownRacials()
+        if #racials > 0 then
+            _, h = W:Spacer(parent, y, 8); y = y - h
+            _, h = W:Toggle(parent, "Track Racial Cooldowns", y,
+                function()
+                    local v = ss.trackRacials
+                    if v == nil then return db.trackRacials end
+                    return v
+                end,
+                function(v)
+                    ss.trackRacials = v
+                    OffBeat:GetModule("Rotation"):BuildLookups()
+                end); y = y - h
+            for _, r in ipairs(racials) do
+                _, h = W:Toggle(parent, r.name .. " (racial)", y,
+                    function() return not ss.disabledIdleCooldowns[r.spellId] end,
+                    function(v)
+                        ss.disabledIdleCooldowns[r.spellId] = (not v) or nil
+                        OffBeat:GetModule("Rotation"):BuildLookups()
+                    end); y = y - h
+            end
         end
     end
 

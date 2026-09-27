@@ -39,10 +39,35 @@ local function SafeIsPlayerSpell(spellId)
     return ok and res and not IsSecret(res)
 end
 
+-- True when the panel should dock to (and only show with) the Character panel.
+local function IsAttached()
+    return OffBeat.db.profile.statDisplayAttachCharacter and _G.CharacterFrame ~= nil
+end
+
 local cachedStats = {}
 
 -- Stat Definitions
 local STAT_ORDER = { "CRIT", "HASTE", "MASTERY", "VERS" }
+
+local ICON_OK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
+local ICON_WARN = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:0|t"
+
+-- Order stats by where they appear in a priority string such as
+-- "Haste >= Mastery > Critical Strike > Versatility". Stats the string
+-- doesn't mention keep their default order at the end.
+local PRIO_PATTERNS = { CRIT = "Crit", HASTE = "Haste", MASTERY = "Mastery", VERS = "Vers" }
+
+local function GetPriorityOrder(prioStr)
+    local entries = {}
+    for i, key in ipairs(STAT_ORDER) do
+        local pos = prioStr and prioStr:find(PRIO_PATTERNS[key], 1, true)
+        entries[#entries + 1] = { key = key, pos = pos or (10000 + i) }
+    end
+    table.sort(entries, function(a, b) return a.pos < b.pos end)
+    local order = {}
+    for i, e in ipairs(entries) do order[i] = e.key end
+    return order
+end
 
 local STATS = {
     CRIT = {
@@ -595,11 +620,11 @@ local function FormatPriorityString(prioStr, drStats)
     local formatted = prioStr
 
     -- Highlight each stat with its theme color
-    formatted = formatted:gsub("Critical Strike", "|cffff7d0aCrit|r")
+    formatted = formatted:gsub("Critical Strike", "Crit")
+    formatted = formatted:gsub("Versatility", "Vers")
     formatted = formatted:gsub("Crit", "|cffff7d0aCrit|r")
     formatted = formatted:gsub("Haste", "|cffffd100Haste|r")
     formatted = formatted:gsub("Mastery", "|cffb366ffMastery|r")
-    formatted = formatted:gsub("Versatility", "|cff33ccf2Vers|r")
     formatted = formatted:gsub("Vers", "|cff33ccf2Vers|r")
 
     -- If a stat in the priority has DR, annotate it
@@ -635,6 +660,9 @@ function StatDisplay:OnEnable()
 
     -- Throttle updates to 0.3s during rapid events
     self.updateTimer = self:ScheduleRepeatingTimer("ThrottledRefresh", 0.5)
+
+    self:HookCharacterFrame()
+    self:ApplyAnchor()
 
     if OffBeat.db.profile.statDisplayShown then
         self:GetFrame():Show()
@@ -712,13 +740,64 @@ end
 
 function StatDisplay:OnLockChanged(_, locked)
     if self.unlockOverlay then
-        self.unlockOverlay:SetShown(not locked)
+        self.unlockOverlay:SetShown(not locked and not IsAttached())
     end
+end
+
+-- Character panel attachment
+-- When enabled, the panel docks to the right edge of the Character panel and is
+-- only visible while that panel is open, instead of floating on screen all the time.
+
+function StatDisplay:HookCharacterFrame()
+    if self.characterHooked or not _G.CharacterFrame then return end
+    self.characterHooked = true
+    local function onToggle()
+        if StatDisplay:IsEnabled() and IsAttached() then
+            StatDisplay:Refresh()
+        end
+    end
+    _G.CharacterFrame:HookScript("OnShow", onToggle)
+    _G.CharacterFrame:HookScript("OnHide", onToggle)
+end
+
+function StatDisplay:ApplyAnchor()
+    local f = self:GetFrame()
+    f:ClearAllPoints()
+    -- Docked panels can't be dragged; detached panels drag when unlocked.
+    if IsAttached() then f:RegisterForDrag() else f:RegisterForDrag("LeftButton") end
+    if IsAttached() then
+        f:SetFrameStrata(_G.CharacterFrame:GetFrameStrata())
+        f:SetFrameLevel(_G.CharacterFrame:GetFrameLevel() + 5)
+        f:SetPoint("TOPLEFT", _G.CharacterFrame, "TOPRIGHT", 4, 0)
+    else
+        f:SetFrameStrata("MEDIUM")
+        local pos = OffBeat.db.profile.statDisplayPosition
+        if pos then
+            f:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+        else
+            f:SetPoint("CENTER", UIParent, "CENTER", 260, 100)
+        end
+    end
+    if self.unlockOverlay then
+        self.unlockOverlay:SetShown(not OffBeat.db.profile.locked and not IsAttached())
+    end
+end
+
+function StatDisplay:SetAttachToCharacter(attached)
+    OffBeat.db.profile.statDisplayAttachCharacter = attached
+    self:HookCharacterFrame()
+    self:ApplyAnchor()
+    self:Refresh()
 end
 
 -- Toggle Command
 function StatDisplay:Toggle()
     local f = self:GetFrame()
+    if IsAttached() then
+        -- In attached mode the panel follows the Character panel; toggle that instead.
+        if _G.ToggleCharacter then ToggleCharacter("PaperDollFrame") end
+        return
+    end
     if f:IsShown() then
         f:Hide()
         OffBeat.db.profile.statDisplayShown = false
@@ -768,27 +847,10 @@ function StatDisplay:GetFrame()
     -- Hero tree badge
     local heroBadge = header:CreateFontString(nil, "OVERLAY")
     heroBadge:SetFont(OffBeat:GetFont(-1))
-    heroBadge:SetPoint("RIGHT", header, "RIGHT", -18, 0)
+    heroBadge:SetPoint("RIGHT", header, "RIGHT", 0, 0)
     heroBadge:SetTextColor(1.0, 0.82, 0.0, 0.9)
     f.heroBadge = heroBadge
 
-    -- Compact toggle button
-    local toggleBtn = CreateFrame("Button", nil, header)
-    toggleBtn:SetSize(14, 14)
-    toggleBtn:SetPoint("RIGHT", header, "RIGHT", 0, 0)
-    local toggleTex = toggleBtn:CreateFontString(nil, "OVERLAY")
-    toggleTex:SetFont(OffBeat:GetFont(-2))
-    toggleTex:SetPoint("CENTER")
-    toggleTex:SetText("▼")
-    toggleTex:SetTextColor(0.7, 0.7, 0.7)
-    toggleBtn.text = toggleTex
-    toggleBtn:SetScript("OnClick", function()
-        OffBeat.db.profile.statDisplayCompact = not OffBeat.db.profile.statDisplayCompact
-        StatDisplay:Refresh()
-    end)
-    toggleBtn:SetScript("OnEnter", function() toggleTex:SetTextColor(1, 1, 1) end)
-    toggleBtn:SetScript("OnLeave", function() toggleTex:SetTextColor(0.7, 0.7, 0.7) end)
-    f.toggleBtn = toggleBtn
 
     -- Priority string banner
     local prioBanner = f:CreateFontString(nil, "OVERLAY")
@@ -896,7 +958,12 @@ function StatDisplay:Refresh()
         return
     end
 
-    if db.statDisplayCombatOnly and not InCombatLockdown() then
+    if IsAttached() then
+        if not _G.CharacterFrame:IsShown() then
+            f:Hide()
+            return
+        end
+    elseif db.statDisplayCombatOnly and not InCombatLockdown() then
         f:Hide()
         return
     end
@@ -969,17 +1036,17 @@ function StatDisplay:Refresh()
     f.prioBanner:SetText(formattedPrio)
 
     local isCompact = db.statDisplayCompact
+    local order = GetPriorityOrder(prioStr)
 
     if isCompact then
         f:SetHeight(COMPACT_HEIGHT)
-        f.toggleBtn.text:SetText("▲")
         f.sep:Hide()
         f.footer:Hide()
         for _, row in ipairs(f.rows) do row:Hide() end
 
         -- Format Compact Line
         local parts = {}
-        for _, key in ipairs(STAT_ORDER) do
+        for _, key in ipairs(order) do
             local def = STATS[key]
             local d = statData[key]
             local drMarker = ""
@@ -992,14 +1059,20 @@ function StatDisplay:Refresh()
         f.compactLine:Show()
     else
         f:SetHeight(FULL_HEIGHT)
-        f.toggleBtn.text:SetText("▼")
         f.compactLine:Hide()
         f.sep:Show()
         f.footer:Show()
 
-        for i, row in ipairs(f.rows) do
+        -- Lay rows out in priority order (highest priority on top)
+        local rowByKey = {}
+        for _, r in ipairs(f.rows) do rowByKey[r.statKey] = r end
+        for i, key in ipairs(order) do
+            local row = rowByKey[key]
+            local offset = -((i - 1) * (ROW_HEIGHT + 2) + 4)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", f.sep, "BOTTOMLEFT", 0, offset)
+            row:SetPoint("TOPRIGHT", f.sep, "BOTTOMRIGHT", 0, offset)
             row:Show()
-            local key = row.statKey
             local def = STATS[key]
             local d = statData[key]
 
@@ -1038,9 +1111,9 @@ function StatDisplay:Refresh()
         -- Update Advisory Footer
         if db.statDisplayShowDR then
             if anyPenalty then
-                f.footer:SetText("|cffffaa00⚠️ DR active:|r " .. table.concat(penaltyDetails, ", "))
+                f.footer:SetText(ICON_WARN .. " |cffffaa00DR active:|r " .. table.concat(penaltyDetails, ", "))
             else
-                f.footer:SetText("|cff55ff55✓ Stats below 30% DR threshold (optimal returns)|r")
+                f.footer:SetText(ICON_OK .. " |cff55ff55Stats below 30% DR threshold (optimal returns)|r")
             end
         else
             f.footer:SetText("")
@@ -1048,6 +1121,6 @@ function StatDisplay:Refresh()
     end
 
     if self.unlockOverlay then
-        self.unlockOverlay:SetShown(not db.locked)
+        self.unlockOverlay:SetShown(not db.locked and not IsAttached())
     end
 end

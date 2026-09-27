@@ -57,7 +57,7 @@ function RotationDisplay:OnDisable()
     self:UnregisterAllEvents()
     if self.assistedFrame then self.assistedFrame:Hide() end
     self:HideKeyCdIcon()
-    self:HideWarning()
+    self:ClearIdleWarnings()
 end
 
 -- Main ability panel
@@ -252,7 +252,7 @@ function RotationDisplay:ApplyLock()
                 self.keyCdIcon:SetAlpha(0)
             end
         end
-        self:HideWarning()
+        self:ClearIdleWarnings()
     end
 end
 
@@ -277,7 +277,7 @@ end
 function RotationDisplay:PLAYER_REGEN_ENABLED()
     self:UpdatePanelVisibility()
     self:UpdateAssistedVisibility()
-    self:HideWarning()
+    self:ClearIdleWarnings()
     if OffBeat.db.profile.keyCdCombatOnly then
         self:SetKeyCdIconAlpha(0)
     end
@@ -470,6 +470,9 @@ end
 
 -- Text Warning frame
 
+local WARNING_BASE_HEIGHT = 28
+local WARNING_LINE_HEIGHT = 16
+
 local WARNING_COLORS = {
     info    = { text = { 0.2, 1.0, 0.4 },  border = { 0.2, 0.8, 0.4, 0.6 } },
     warning = { text = { 1.0, 0.8, 0.2 },  border = { 1.0, 0.7, 0.1, 0.6 } },
@@ -513,6 +516,7 @@ function RotationDisplay:ShowWarning(text, severity, duration, onUpdate)
     local wf = self:GetWarningFrame()
     local colors = WARNING_COLORS[severity] or WARNING_COLORS.warning
 
+    wf:SetHeight(WARNING_BASE_HEIGHT)
     wf.label:SetText(text)
     wf.label:SetTextColor(unpack(colors.text))
     wf:SetBackdropBorderColor(colors.border[1], colors.border[2], colors.border[3],
@@ -525,11 +529,18 @@ function RotationDisplay:ShowWarning(text, severity, duration, onUpdate)
     wf.ag:Play()
 
     if duration then
+        -- Transient warning: it temporarily covers the idle-cooldown list,
+        -- which is restored once this message times out.
+        local token = {}
+        self.transientToken = token
         C_Timer.After(duration, function()
-            if wf:IsShown() and wf.label:GetText() == text then
-                RotationDisplay:HideWarning()
-            end
+            if RotationDisplay.transientToken ~= token then return end
+            RotationDisplay.transientToken = nil
+            RotationDisplay:HideWarning()
+            RotationDisplay:RefreshIdleWarning()
         end)
+    else
+        self.transientToken = nil
     end
 end
 
@@ -566,6 +577,14 @@ function RotationDisplay:OnProcExpired(_, spellId, procName)
     self:ShowWarning((procName or "Proc") .. " expired!", "warning", 2)
 end
 
+-- Idle cooldown nag: several cooldowns can be idle at once (e.g. Dancing Rune
+-- Weapon and Vampiric Blood), so keep a list and show them all together.
+
+local function IsIdleSpellReady(spellId)
+    if OffBeat:IsSpellOnRealCooldown(spellId) then return false end
+    return C_Spell.IsSpellUsable(spellId) and true or false
+end
+
 function RotationDisplay:OnCooldownIdle(_, spellId, spellName)
     local specId = OffBeat.activeSpecId
     local ss = specId and OffBeat.db.profile.specSettings[specId]
@@ -574,15 +593,66 @@ function RotationDisplay:OnCooldownIdle(_, spellId, spellName)
     if not nag then return end
 
     local threshold = (ss and ss.idleCooldownThreshold) or OffBeat.db.profile.idleCooldownThreshold
-    local idleSince = GetTime() - threshold
+    self.idleCds = self.idleCds or {}
+    for _, entry in ipairs(self.idleCds) do
+        if entry.spellId == spellId then return end
+    end
+    table.insert(self.idleCds, {
+        spellId = spellId,
+        name = spellName or tostring(spellId),
+        since = GetTime() - threshold,
+    })
+    self:RefreshIdleWarning()
+end
 
-    self:ShowWarning(spellName .. " available", "warning", nil, function()
-        local elapsed = GetTime() - idleSince
-        local wf = RotationDisplay.warningFrame
-        wf.label:SetText(string.format("%s available for %ds", spellName, elapsed))
-        local info = C_Spell.GetSpellCooldown(spellId)
-        if info and info.isActive then
+function RotationDisplay:PruneIdleCooldowns()
+    local list = self.idleCds
+    if not list then return 0 end
+    for i = #list, 1, -1 do
+        if not IsIdleSpellReady(list[i].spellId) then
+            table.remove(list, i)
+        end
+    end
+    return #list
+end
+
+function RotationDisplay:UpdateIdleWarningText()
+    local wf = self.warningFrame
+    if not wf then return end
+    local now = GetTime()
+    local lines = {}
+    for _, entry in ipairs(self.idleCds) do
+        lines[#lines + 1] = string.format("%s available for %ds", entry.name, now - entry.since)
+    end
+    wf.label:SetText(table.concat(lines, "\n"))
+    wf:SetHeight(WARNING_BASE_HEIGHT + WARNING_LINE_HEIGHT * (#lines - 1))
+end
+
+function RotationDisplay:RefreshIdleWarning()
+    if self.transientToken then return end -- a timed warning is showing; we'll be called when it ends
+    if self:PruneIdleCooldowns() == 0 then
+        if self.showingIdle then
+            self.showingIdle = false
+            self:HideWarning()
+        end
+        return
+    end
+
+    self:ShowWarning("", "warning", nil, function()
+        if RotationDisplay:PruneIdleCooldowns() == 0 then
+            RotationDisplay.showingIdle = false
             RotationDisplay:HideWarning()
+        else
+            RotationDisplay:UpdateIdleWarningText()
         end
     end)
+    self.showingIdle = true
+    self:UpdateIdleWarningText()
+end
+
+function RotationDisplay:ClearIdleWarnings()
+    if self.idleCds then wipe(self.idleCds) end
+    self.showingIdle = false
+    self.transientToken = nil
+    self:HideWarning()
 end

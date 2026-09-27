@@ -44,6 +44,7 @@ function OffBeat:GetDefaults()
             -- Stat Priority panel (StatDisplay)
             statDisplayShown = true,
             statDisplayCombatOnly = false,
+            statDisplayAttachCharacter = true, -- show only with the Character panel, docked to its right edge
             statDisplayPosition = nil,
             statDisplayWidth = 250,
             statDisplayShowDR = true,
@@ -85,6 +86,7 @@ function OffBeat:GetDefaults()
             idleCooldownAlert = true,
             idleCooldownNag = true,
             idleCooldownThreshold = 5,
+            trackRacials = true, -- add offensive racials (Berserking, Blood Fury, ...) to idle tracking
             idleCooldownSound = "alarm1",
             idleCooldownSoundCustomId = "",
             procExpireAlert = true,

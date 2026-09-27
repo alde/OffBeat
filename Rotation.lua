@@ -11,6 +11,24 @@ local activeSpecId            -- cached for specSettings lookups
 local keyCd                   -- profile.keyCooldown or nil
 local keyCdResolvedId         -- resolved spell ID for key cooldown
 
+-- Is the spell's real cooldown running? The global cooldown (GCD) does not count:
+-- GetSpellCooldown reports GCD-bound spells (e.g. Dancing Rune Weapon) as active
+-- after every button press, which made them look "used" and reset idle timers.
+local GCD_SPELL_ID = 61304
+
+function OffBeat:IsSpellOnRealCooldown(spellId)
+    local info = C_Spell.GetSpellCooldown(spellId)
+    if not info or not info.isActive then return false end
+    if info.isOnGCD then return false end
+    local ok, onGcd = pcall(function()
+        local gcd = C_Spell.GetSpellCooldown(GCD_SPELL_ID)
+        return gcd and gcd.duration and gcd.duration > 0
+            and info.startTime == gcd.startTime and info.duration == gcd.duration
+    end)
+    if ok and onGcd then return false end
+    return true
+end
+
 local function ResolvePlayerSpell(spellId, name)
     if IsPlayerSpell(spellId) then return spellId end
     if FindSpellOverrideByID then
@@ -22,6 +40,35 @@ local function ResolvePlayerSpell(spellId, name)
         if info and info.spellID and IsPlayerSpell(info.spellID) then return info.spellID end
     end
     return spellId
+end
+
+-- Offensive racial cooldowns. Shared by every spec; entries the character
+-- doesn't know are skipped, so only your own race's racial is tracked.
+-- Utility racials (Arcane Torrent, War Stomp, ...) are intentionally left out.
+OffBeat.RACIAL_COOLDOWNS = {
+    { spellId = 26297,  name = "Berserking" },        -- Troll
+    { spellId = 20572,  name = "Blood Fury" },        -- Orc (attack power)
+    { spellId = 33702,  name = "Blood Fury" },        -- Orc (spell power)
+    { spellId = 33697,  name = "Blood Fury" },        -- Orc (hybrid)
+    { spellId = 274738, name = "Ancestral Call" },    -- Mag'har Orc
+    { spellId = 265221, name = "Fireblood" },         -- Dark Iron Dwarf
+    { spellId = 255647, name = "Light's Judgment" },  -- Lightforged Draenei
+    { spellId = 312411, name = "Bag of Tricks" },     -- Vulpera
+}
+
+--- Racials from RACIAL_COOLDOWNS the current character knows.
+function OffBeat:GetKnownRacials()
+    local known = {}
+    for _, r in ipairs(self.RACIAL_COOLDOWNS) do
+        if IsPlayerSpell(r.spellId) then
+            local info = C_Spell.GetSpellInfo(r.spellId)
+            known[#known + 1] = {
+                spellId = r.spellId,
+                name = (info and info.name) or r.name, -- localized name when available
+            }
+        end
+    end
+    return known
 end
 
 local MISTAKE_EVALUATORS = {
@@ -148,6 +195,15 @@ function Rotation:BuildLookups()
         end
     end
 
+    -- Racial cooldowns join the idle tracking for every spec (toggle per spec)
+    if GetSpecOr("trackRacials") then
+        for _, r in ipairs(OffBeat:GetKnownRacials()) do
+            if not (disabledIdle and disabledIdle[r.spellId]) and not idleCooldownSet[r.spellId] then
+                idleCooldownSet[r.spellId] = { name = r.name, racial = true }
+            end
+        end
+    end
+
     keyCd = profile.keyCooldown
     if keyCd then
         keyCdResolvedId = ResolvePlayerSpell(keyCd.spellId, keyCd.name)
@@ -240,11 +296,8 @@ function Rotation:CheckKeyCdReady()
     local spellId = keyCdResolvedId or keyCd.spellId
     if not IsPlayerSpell(spellId) then return end
 
-    local info = C_Spell.GetSpellCooldown(spellId)
-    if not info then return end
-
     local usable = C_Spell.IsSpellUsable(spellId)
-    local ready = not info.isActive and usable
+    local ready = usable and not OffBeat:IsSpellOnRealCooldown(spellId)
 
     -- Spells like Avenging Wrath report isActive=false during the buff
     -- and briefly after it expires. The aura check catches the buff window;
@@ -281,9 +334,8 @@ function Rotation:CheckIdleCooldowns()
 
     for spellId, info in pairs(idleCooldownSet) do
         if IsPlayerSpell(spellId) then
-            local cdInfo = C_Spell.GetSpellCooldown(spellId)
             local usable = C_Spell.IsSpellUsable(spellId)
-            local ready = cdInfo and not cdInfo.isActive and usable
+            local ready = usable and not OffBeat:IsSpellOnRealCooldown(spellId)
 
             if ready then
                 local st = self.idleState[spellId]

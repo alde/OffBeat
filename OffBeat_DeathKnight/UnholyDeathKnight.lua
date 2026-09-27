@@ -71,9 +71,9 @@ OffBeat:RegisterProfile({
         },
     },
 
-    statPriority = "Mastery > Haste > Critical Strike > Versatility",
+    statPriority = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
     heroStatPriorities = {
-        ["Rider of the Apocalypse"] = "Mastery > Haste > Critical Strike > Versatility",
-        ["San'layn"] = "Haste > Mastery > Critical Strike > Versatility",
+        ["Rider of the Apocalypse"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+        ["San'layn"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
     },
 })

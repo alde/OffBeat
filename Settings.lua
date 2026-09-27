@@ -471,7 +471,9 @@ pageBuilders.stats = function(parent, y)
     local sd = OffBeat:GetModule("StatDisplay", true)
     local prioStr, heroTree, specName = "", "None", "None"
     if sd then
-        prioStr, heroTree, specName = sd:GetRecommendedPriority()
+        local ranks
+        ranks, heroTree, specName = sd:GetRecommendedPriority()
+        prioStr = sd:FormatPriority(ranks) -- guide priority, before DR adjustment
     end
 
     local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")

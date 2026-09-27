@@ -66,9 +66,9 @@ OffBeat:RegisterProfile({
         },
     },
 
-    statPriority = "Haste > Critical Strike >= Mastery > Versatility",
+    statPriority = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
     heroStatPriorities = {
-        ["Deathbringer"] = "Haste > Critical Strike >= Mastery > Versatility",
-        ["San'layn"] = "Haste >= Mastery > Critical Strike > Versatility",
+        ["Deathbringer"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+        ["San'layn"] = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
     },
 })

@@ -48,25 +48,86 @@ local cachedStats = {}
 
 -- Stat Definitions
 local STAT_ORDER = { "CRIT", "HASTE", "MASTERY", "VERS" }
+local STATS_KEYS_UPPER = { CRIT = "CRIT", HASTE = "HASTE", MASTERY = "MASTERY", VERS = "VERS" }
 
 local ICON_OK = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
 local ICON_WARN = "|TInterface\\DialogFrame\\UI-Dialog-Icon-AlertNew:0|t"
 
--- Order stats by where they appear in a priority string such as
--- "Haste >= Mastery > Critical Strike > Versatility". Stats the string
--- doesn't mention keep their default order at the end.
-local PRIO_PATTERNS = { CRIT = "Crit", HASTE = "Haste", MASTERY = "Mastery", VERS = "Vers" }
+-- Stat priorities are rank maps: lower rank = higher priority.
+--   { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 }  -> Haste >= Mastery > Crit > Vers
+-- Equal ranks read as "=", a gap under 1 as ">=", a gap of 1 or more as ">".
+-- Legacy strings ("Haste >= Mastery > Critical Strike > Versatility") are still
+-- accepted and converted, so older exported profiles keep working.
+local DR_RANK_PER_10_PERCENT = 0.5 -- each 10% DR penalty drops a stat half a rank
 
-local function GetPriorityOrder(prioStr)
-    local entries = {}
-    for i, key in ipairs(STAT_ORDER) do
-        local pos = prioStr and prioStr:find(PRIO_PATTERNS[key], 1, true)
-        entries[#entries + 1] = { key = key, pos = pos or (10000 + i) }
+local STAT_NAME_ALIASES = {
+    ["critical strike"] = "CRIT", ["crit"] = "CRIT",
+    ["haste"] = "HASTE",
+    ["mastery"] = "MASTERY",
+    ["versatility"] = "VERS", ["vers"] = "VERS",
+}
+local RELATION_STEP = { [">"] = 1, [">="] = 0.5, ["="] = 0 }
+
+local function ParsePriorityString(str)
+    local ranks, rank, op = {}, 1, nil
+    local rest = str
+    while true do
+        local s, e, found = rest:find("%s*([>=]+)%s*")
+        local name = (s and rest:sub(1, s - 1) or rest):match("^%s*(.-)%s*$")
+        local key = STAT_NAME_ALIASES[name:lower()]
+        if not key or ranks[key] then return nil end
+        if op then
+            if not RELATION_STEP[op] then return nil end
+            rank = rank + RELATION_STEP[op]
+        end
+        ranks[key] = rank
+        if not s then break end
+        op, rest = found, rest:sub(e + 1)
     end
-    table.sort(entries, function(a, b) return a.pos < b.pos end)
+    return ranks
+end
+
+--- Normalise a priority (rank map or legacy string) into a rank map, or nil if invalid.
+local function NormalizePriority(value)
+    if type(value) == "string" then
+        local ranks = ParsePriorityString(value)
+        if not ranks and OffBeat.Debug then OffBeat:Debug("Invalid stat priority:", value) end
+        return ranks
+    elseif type(value) == "table" then
+        local ranks = {}
+        for k, v in pairs(value) do
+            local key = type(k) == "string" and (STATS_KEYS_UPPER[k:upper()] or STAT_NAME_ALIASES[k:lower()])
+            if key and type(v) == "number" then ranks[key] = v end
+        end
+        return next(ranks) and ranks or nil
+    end
+    return nil
+end
+
+--- Stat keys sorted by rank (ties keep the default Crit/Haste/Mastery/Vers order).
+--- Stats missing from the map go last.
+local function OrderByRank(ranks)
     local order = {}
-    for i, e in ipairs(entries) do order[i] = e.key end
+    for i, key in ipairs(STAT_ORDER) do order[i] = key end
+    local index = {}
+    for i, key in ipairs(STAT_ORDER) do index[key] = i end
+    table.sort(order, function(a, b)
+        local ra, rb = ranks[a] or math.huge, ranks[b] or math.huge
+        if ra ~= rb then return ra < rb end
+        return index[a] < index[b]
+    end)
     return order
+end
+
+--- Copy of `ranks` with stats past diminishing returns pushed down.
+local function ApplyDRToRanks(ranks, statData)
+    local adjusted = {}
+    for key, rank in pairs(ranks) do
+        local d = statData and statData[key]
+        local penalty = d and d.penalty or 0
+        adjusted[key] = rank + (penalty / 10) * DR_RANK_PER_10_PERCENT
+    end
+    return adjusted
 end
 
 local STATS = {
@@ -131,342 +192,343 @@ local STATS = {
 
 -- Comprehensive Stat Priority Database by Spec ID and Hero Talent Tree
 -- Sourced from Method, Icy Veins, and Archon guides for The War Within / retail
+-- Values are rank maps (lower = higher priority); see NormalizePriority above.
 local SPEC_STAT_PRIORITIES = {
     -- Death Knight
     [250] = { -- Blood
         specName = "Blood Death Knight",
-        default = "Haste > Critical Strike >= Mastery > Versatility",
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Deathbringer"] = "Haste > Critical Strike >= Mastery > Versatility",
-            ["San'layn"]     = "Haste >= Mastery > Critical Strike > Versatility",
+            ["Deathbringer"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+            ["San'layn"]     = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
         },
     },
     [251] = { -- Frost
         specName = "Frost Death Knight",
-        default = "Critical Strike >= Mastery > Haste > Versatility",
+        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Deathbringer"]            = "Mastery > Haste > Critical Strike > Versatility",
-            ["Rider of the Apocalypse"] = "Critical Strike >= Mastery > Haste > Versatility",
+            ["Deathbringer"]            = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Rider of the Apocalypse"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
     [252] = { -- Unholy
         specName = "Unholy Death Knight",
-        default = "Mastery > Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Rider of the Apocalypse"] = "Mastery > Haste > Critical Strike > Versatility",
-            ["San'layn"]                 = "Haste > Mastery > Critical Strike > Versatility",
+            ["Rider of the Apocalypse"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["San'layn"]                 = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
 
     -- Demon Hunter
     [577] = { -- Havoc
         specName = "Havoc Demon Hunter",
-        default = "Critical Strike > Mastery > Haste > Versatility",
+        default = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
         heroTrees = {
-            ["Aldrachi Reaver"] = "Critical Strike > Mastery > Haste > Versatility",
-            ["Fel-Scarred"]     = "Critical Strike > Mastery > Versatility > Haste",
+            ["Aldrachi Reaver"] = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
+            ["Fel-Scarred"]     = { CRIT = 1, MASTERY = 2, VERS = 3, HASTE = 4 },
         },
     },
     [581] = { -- Vengeance
         specName = "Vengeance Demon Hunter",
-        default = "Haste > Critical Strike >= Versatility > Mastery",
+        default = { HASTE = 1, CRIT = 2, VERS = 2.5, MASTERY = 3.5 },
         heroTrees = {
-            ["Aldrachi Reaver"] = "Haste > Critical Strike >= Versatility > Mastery",
-            ["Fel-Scarred"]     = "Haste > Versatility >= Critical Strike > Mastery",
+            ["Aldrachi Reaver"] = { HASTE = 1, CRIT = 2, VERS = 2.5, MASTERY = 3.5 },
+            ["Fel-Scarred"]     = { HASTE = 1, VERS = 2, CRIT = 2.5, MASTERY = 3.5 },
         },
     },
 
     -- Paladin
     [65] = { -- Holy
         specName = "Holy Paladin",
-        default = "Haste > Critical Strike >= Mastery > Versatility",
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Herald of the Sun"] = "Critical Strike > Haste > Mastery > Versatility",
-            ["Lightsmith"]        = "Haste > Critical Strike > Mastery > Versatility",
+            ["Herald of the Sun"] = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
+            ["Lightsmith"]        = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
         },
     },
     [66] = { -- Protection
         specName = "Protection Paladin",
-        default = "Haste > Mastery >= Versatility > Critical Strike",
+        default = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
         heroTrees = {
-            ["Templar"]    = "Haste > Versatility > Mastery > Critical Strike",
-            ["Lightsmith"] = "Haste > Mastery > Versatility > Critical Strike",
+            ["Templar"]    = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
+            ["Lightsmith"] = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
         },
     },
     [70] = { -- Retribution
         specName = "Retribution Paladin",
-        default = "Mastery >= Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 1.5, CRIT = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Herald of the Sun"] = "Mastery > Haste > Critical Strike > Versatility",
-            ["Templar"]           = "Haste > Mastery >= Critical Strike > Versatility",
+            ["Herald of the Sun"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Templar"]           = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
         },
     },
 
     -- Evoker
     [1467] = { -- Devastation
         specName = "Devastation Evoker",
-        default = "Critical Strike >= Mastery > Haste > Versatility",
+        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Flameshaper"]    = "Mastery > Critical Strike > Haste > Versatility",
-            ["Scalecommander"] = "Critical Strike >= Mastery > Haste > Versatility",
+            ["Flameshaper"]    = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
+            ["Scalecommander"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
     [1468] = { -- Preservation
         specName = "Preservation Evoker",
-        default = "Mastery > Critical Strike > Haste > Versatility",
+        default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         heroTrees = {
-            ["Chronowarden"] = "Mastery > Haste > Critical Strike > Versatility",
-            ["Flameshaper"]  = "Mastery > Critical Strike > Versatility > Haste",
+            ["Chronowarden"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Flameshaper"]  = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
         },
     },
     [1473] = { -- Augmentation
         specName = "Augmentation Evoker",
-        default = "Mastery > Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Chronowarden"]   = "Mastery > Haste > Critical Strike > Versatility",
-            ["Scalecommander"] = "Mastery > Critical Strike > Haste > Versatility",
+            ["Chronowarden"]   = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Scalecommander"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         },
     },
 
     -- Monk
     [268] = { -- Brewmaster
         specName = "Brewmaster Monk",
-        default = "Versatility >= Critical Strike > Mastery > Haste",
+        default = { VERS = 1, CRIT = 1.5, MASTERY = 2.5, HASTE = 3.5 },
         heroTrees = {
-            ["Master of Harmony"] = "Versatility >= Critical Strike > Mastery > Haste",
-            ["Shado-Pan"]         = "Critical Strike >= Versatility > Mastery > Haste",
+            ["Master of Harmony"] = { VERS = 1, CRIT = 1.5, MASTERY = 2.5, HASTE = 3.5 },
+            ["Shado-Pan"]         = { CRIT = 1, VERS = 1.5, MASTERY = 2.5, HASTE = 3.5 },
         },
     },
     [269] = { -- Windwalker
         specName = "Windwalker Monk",
-        default = "Mastery >= Critical Strike > Versatility > Haste",
+        default = { MASTERY = 1, CRIT = 1.5, VERS = 2.5, HASTE = 3.5 },
         heroTrees = {
-            ["Conduit of the Celestials"] = "Mastery >= Critical Strike > Versatility > Haste",
-            ["Shado-Pan"]                 = "Mastery >= Critical Strike > Haste > Versatility",
+            ["Conduit of the Celestials"] = { MASTERY = 1, CRIT = 1.5, VERS = 2.5, HASTE = 3.5 },
+            ["Shado-Pan"]                 = { MASTERY = 1, CRIT = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
     [270] = { -- Mistweaver
         specName = "Mistweaver Monk",
-        default = "Haste >= Critical Strike > Versatility > Mastery",
+        default = { HASTE = 1, CRIT = 1.5, VERS = 2.5, MASTERY = 3.5 },
         heroTrees = {
-            ["Conduit of the Celestials"] = "Haste >= Critical Strike > Versatility > Mastery",
-            ["Master of Harmony"]         = "Haste >= Mastery > Critical Strike > Versatility",
+            ["Conduit of the Celestials"] = { HASTE = 1, CRIT = 1.5, VERS = 2.5, MASTERY = 3.5 },
+            ["Master of Harmony"]         = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
         },
     },
 
     -- Shaman
     [262] = { -- Elemental
         specName = "Elemental Shaman",
-        default = "Mastery >= Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 1.5, CRIT = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Stormbringer"] = "Haste >= Mastery > Critical Strike > Versatility",
-            ["Farseer"]      = "Mastery > Haste > Critical Strike > Versatility",
+            ["Stormbringer"] = { HASTE = 1, MASTERY = 1.5, CRIT = 2.5, VERS = 3.5 },
+            ["Farseer"]      = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         },
     },
     [263] = { -- Enhancement
         specName = "Enhancement Shaman",
-        default = "Mastery > Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Stormbringer"] = "Mastery > Haste > Critical Strike > Versatility",
-            ["Totemic"]      = "Haste > Mastery > Critical Strike > Versatility",
+            ["Stormbringer"] = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Totemic"]      = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
     [264] = { -- Restoration
         specName = "Restoration Shaman",
-        default = "Critical Strike > Versatility >= Haste > Mastery",
+        default = { CRIT = 1, VERS = 2, HASTE = 2.5, MASTERY = 3.5 },
         heroTrees = {
-            ["Totemic"] = "Critical Strike > Haste >= Versatility > Mastery",
-            ["Farseer"] = "Critical Strike > Versatility >= Mastery > Haste",
+            ["Totemic"] = { CRIT = 1, HASTE = 2, VERS = 2.5, MASTERY = 3.5 },
+            ["Farseer"] = { CRIT = 1, VERS = 2, MASTERY = 2.5, HASTE = 3.5 },
         },
     },
 
     -- Warlock
     [258] = { -- Affliction
         specName = "Affliction Warlock",
-        default = "Mastery > Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Hellcaller"]     = "Mastery > Haste > Critical Strike > Versatility",
-            ["Soul Harvester"] = "Haste > Mastery > Critical Strike > Versatility",
+            ["Hellcaller"]     = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Soul Harvester"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
     [259] = { -- Demonology
         specName = "Demonology Warlock",
-        default = "Haste > Critical Strike > Mastery > Versatility",
+        default = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
         heroTrees = {
-            ["Diabolist"]      = "Haste > Critical Strike > Mastery > Versatility",
-            ["Soul Harvester"] = "Haste > Mastery > Critical Strike > Versatility",
+            ["Diabolist"]      = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
+            ["Soul Harvester"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
     [267] = { -- Destruction
         specName = "Destruction Warlock",
-        default = "Haste > Mastery >= Critical Strike > Versatility",
+        default = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Diabolist"]  = "Haste > Critical Strike >= Mastery > Versatility",
-            ["Hellcaller"] = "Haste > Mastery >= Critical Strike > Versatility",
+            ["Diabolist"]  = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+            ["Hellcaller"] = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
         },
     },
 
     -- Mage
     [62] = { -- Arcane
         specName = "Arcane Mage",
-        default = "Haste > Mastery > Versatility > Critical Strike",
+        default = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
         heroTrees = {
-            ["Spellslinger"] = "Haste > Mastery > Critical Strike > Versatility",
-            ["Sunfury"]      = "Haste > Mastery > Versatility > Critical Strike",
+            ["Spellslinger"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+            ["Sunfury"]      = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
         },
     },
     [63] = { -- Fire
         specName = "Fire Mage",
-        default = "Haste > Mastery > Versatility > Critical Strike",
+        default = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
         heroTrees = {
-            ["Frostfire"] = "Haste > Mastery > Versatility > Critical Strike",
-            ["Sunfury"]   = "Haste > Mastery > Versatility > Critical Strike",
+            ["Frostfire"] = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
+            ["Sunfury"]   = { HASTE = 1, MASTERY = 2, VERS = 3, CRIT = 4 },
         },
     },
     [64] = { -- Frost
         specName = "Frost Mage",
-        default = "Mastery > Haste > Critical Strike > Versatility",
+        default = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Frostfire"]    = "Mastery > Haste > Critical Strike > Versatility",
-            ["Spellslinger"] = "Mastery > Critical Strike > Haste > Versatility",
+            ["Frostfire"]    = { MASTERY = 1, HASTE = 2, CRIT = 3, VERS = 4 },
+            ["Spellslinger"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         },
     },
 
     -- Warrior
     [71] = { -- Arms
         specName = "Arms Warrior",
-        default = "Critical Strike > Haste > Mastery > Versatility",
+        default = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
         heroTrees = {
-            ["Colossus"] = "Critical Strike > Haste > Mastery > Versatility",
-            ["Slayer"]   = "Haste > Critical Strike > Mastery > Versatility",
+            ["Colossus"] = { CRIT = 1, HASTE = 2, MASTERY = 3, VERS = 4 },
+            ["Slayer"]   = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
         },
     },
     [72] = { -- Fury
         specName = "Fury Warrior",
-        default = "Haste > Mastery > Critical Strike > Versatility",
+        default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Mountain Thane"] = "Haste > Mastery > Critical Strike > Versatility",
-            ["Slayer"]         = "Haste > Mastery > Critical Strike > Versatility",
+            ["Mountain Thane"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+            ["Slayer"]         = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
     [73] = { -- Protection
         specName = "Protection Warrior",
-        default = "Haste > Versatility > Mastery > Critical Strike",
+        default = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
         heroTrees = {
-            ["Colossus"]       = "Haste > Versatility > Mastery > Critical Strike",
-            ["Mountain Thane"] = "Haste > Critical Strike > Versatility > Mastery",
+            ["Colossus"]       = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
+            ["Mountain Thane"] = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
         },
     },
 
     -- Hunter
     [253] = { -- Beast Mastery
         specName = "Beast Mastery Hunter",
-        default = "Haste > Critical Strike > Mastery > Versatility",
+        default = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
         heroTrees = {
-            ["Pack Leader"] = "Haste > Critical Strike > Mastery > Versatility",
-            ["Dark Ranger"] = "Haste > Mastery > Critical Strike > Versatility",
+            ["Pack Leader"] = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
+            ["Dark Ranger"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
     [254] = { -- Marksmanship
         specName = "Marksmanship Hunter",
-        default = "Critical Strike > Mastery > Haste > Versatility",
+        default = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
         heroTrees = {
-            ["Dark Ranger"] = "Critical Strike > Mastery > Haste > Versatility",
-            ["Sentinel"]    = "Critical Strike > Mastery > Haste > Versatility",
+            ["Dark Ranger"] = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
+            ["Sentinel"]    = { CRIT = 1, MASTERY = 2, HASTE = 3, VERS = 4 },
         },
     },
     [255] = { -- Survival
         specName = "Survival Hunter",
-        default = "Haste > Mastery >= Critical Strike > Versatility",
+        default = { HASTE = 1, MASTERY = 2, CRIT = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Pack Leader"] = "Haste > Mastery > Critical Strike > Versatility",
-            ["Sentinel"]    = "Haste > Critical Strike > Mastery > Versatility",
+            ["Pack Leader"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+            ["Sentinel"]    = { HASTE = 1, CRIT = 2, MASTERY = 3, VERS = 4 },
         },
     },
 
     -- Rogue
     [259] = { -- Assassination (or 259)
         specName = "Assassination Rogue",
-        default = "Mastery > Critical Strike > Haste > Versatility",
+        default = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         heroTrees = {
-            ["Deathstalker"] = "Mastery > Critical Strike > Haste > Versatility",
-            ["Fatebound"]    = "Mastery > Critical Strike > Haste > Versatility",
+            ["Deathstalker"] = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
+            ["Fatebound"]    = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
         },
     },
     [260] = { -- Outlaw
         specName = "Outlaw Rogue",
-        default = "Versatility >= Haste > Critical Strike > Mastery",
+        default = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
         heroTrees = {
-            ["Fatebound"] = "Versatility >= Haste > Critical Strike > Mastery",
-            ["Trickster"] = "Versatility >= Haste > Critical Strike > Mastery",
+            ["Fatebound"] = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
+            ["Trickster"] = { VERS = 1, HASTE = 1.5, CRIT = 2.5, MASTERY = 3.5 },
         },
     },
     [261] = { -- Subtlety
         specName = "Subtlety Rogue",
-        default = "Mastery > Versatility > Critical Strike > Haste",
+        default = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
         heroTrees = {
-            ["Deathstalker"] = "Mastery > Versatility > Critical Strike > Haste",
-            ["Trickster"]    = "Mastery > Versatility > Critical Strike > Haste",
+            ["Deathstalker"] = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
+            ["Trickster"]    = { MASTERY = 1, VERS = 2, CRIT = 3, HASTE = 4 },
         },
     },
 
     -- Priest
     [256] = { -- Discipline
         specName = "Discipline Priest",
-        default = "Haste > Critical Strike >= Mastery > Versatility",
+        default = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Voidweaver"] = "Haste > Critical Strike >= Mastery > Versatility",
-            ["Oracle"]     = "Haste > Critical Strike >= Mastery > Versatility",
+            ["Voidweaver"] = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
+            ["Oracle"]     = { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 },
         },
     },
     [257] = { -- Holy
         specName = "Holy Priest",
-        default = "Critical Strike >= Mastery > Haste > Versatility",
+        default = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         heroTrees = {
-            ["Archon"] = "Critical Strike >= Mastery > Haste > Versatility",
-            ["Oracle"] = "Critical Strike >= Mastery > Haste > Versatility",
+            ["Archon"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
+            ["Oracle"] = { CRIT = 1, MASTERY = 1.5, HASTE = 2.5, VERS = 3.5 },
         },
     },
     [258] = { -- Shadow (shared ID key fallback)
         specName = "Shadow Priest",
-        default = "Haste > Mastery > Critical Strike > Versatility",
+        default = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         heroTrees = {
-            ["Voidweaver"] = "Haste > Mastery > Critical Strike > Versatility",
-            ["Archon"]     = "Haste > Mastery > Critical Strike > Versatility",
+            ["Voidweaver"] = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
+            ["Archon"]     = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 4 },
         },
     },
 
     -- Druid
     [102] = { -- Balance
         specName = "Balance Druid",
-        default = "Mastery > Haste > Versatility > Critical Strike",
+        default = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
         heroTrees = {
-            ["Elune's Chosen"]      = "Mastery > Haste > Versatility > Critical Strike",
-            ["Keeper of the Grove"] = "Mastery > Haste > Versatility > Critical Strike",
+            ["Elune's Chosen"]      = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
+            ["Keeper of the Grove"] = { MASTERY = 1, HASTE = 2, VERS = 3, CRIT = 4 },
         },
     },
     [103] = { -- Feral
         specName = "Feral Druid",
-        default = "Mastery > Critical Strike > Versatility > Haste",
+        default = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
         heroTrees = {
-            ["Druid of the Claw"] = "Mastery > Critical Strike > Versatility > Haste",
-            ["Wildstalker"]       = "Mastery > Critical Strike > Versatility > Haste",
+            ["Druid of the Claw"] = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
+            ["Wildstalker"]       = { MASTERY = 1, CRIT = 2, VERS = 3, HASTE = 4 },
         },
     },
     [104] = { -- Guardian
         specName = "Guardian Druid",
-        default = "Haste > Versatility > Mastery > Critical Strike",
+        default = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
         heroTrees = {
-            ["Druid of the Claw"] = "Haste > Versatility > Mastery > Critical Strike",
-            ["Elune's Chosen"]    = "Haste > Versatility > Mastery > Critical Strike",
+            ["Druid of the Claw"] = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
+            ["Elune's Chosen"]    = { HASTE = 1, VERS = 2, MASTERY = 3, CRIT = 4 },
         },
     },
     [105] = { -- Restoration
         specName = "Restoration Druid",
-        default = "Haste > Mastery >= Versatility > Critical Strike",
+        default = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
         heroTrees = {
-            ["Keeper of the Grove"] = "Haste > Mastery >= Versatility > Critical Strike",
-            ["Wildstalker"]         = "Haste > Mastery >= Versatility > Critical Strike",
+            ["Keeper of the Grove"] = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
+            ["Wildstalker"]         = { HASTE = 1, MASTERY = 2, VERS = 2.5, CRIT = 3.5 },
         },
     },
 }
@@ -589,21 +651,19 @@ function StatDisplay:GetRecommendedPriority()
     -- 1. Check active profile overrides first
     local profile = OffBeat.activeProfile
     if profile then
-        if heroTree and profile.heroStatPriorities and profile.heroStatPriorities[heroTree] then
-            return profile.heroStatPriorities[heroTree], heroTree, profile.meta.name
-        end
-        if profile.statPriority then
-            return profile.statPriority, heroTree, profile.meta.name
-        end
+        local hero = heroTree and profile.heroStatPriorities
+            and NormalizePriority(profile.heroStatPriorities[heroTree])
+        if hero then return hero, heroTree, profile.meta.name end
+        local base = NormalizePriority(profile.statPriority)
+        if base then return base, heroTree, profile.meta.name end
     end
 
     -- 2. Check built-in database
     if specId and SPEC_STAT_PRIORITIES[specId] then
         local entry = SPEC_STAT_PRIORITIES[specId]
-        if heroTree and entry.heroTrees and entry.heroTrees[heroTree] then
-            return entry.heroTrees[heroTree], heroTree, entry.specName
-        end
-        return entry.default, heroTree, entry.specName
+        local hero = heroTree and entry.heroTrees and NormalizePriority(entry.heroTrees[heroTree])
+        if hero then return hero, heroTree, entry.specName end
+        return NormalizePriority(entry.default), heroTree, entry.specName
     end
 
     -- 3. Generic fallback
@@ -611,36 +671,36 @@ function StatDisplay:GetRecommendedPriority()
     if specIndex then
         _, specName = GetSpecializationInfo(specIndex)
     end
-    return "Haste > Critical Strike >= Mastery > Versatility", heroTree, specName or "Unknown Spec"
+    return { HASTE = 1, CRIT = 2, MASTERY = 2.5, VERS = 3.5 }, heroTree, specName or "Unknown Spec"
 end
 
--- Format priority string with stat-specific colors
-local function FormatPriorityString(prioStr, drStats)
-    if not prioStr then return "" end
-    local formatted = prioStr
-
-    -- Highlight each stat with its theme color
-    formatted = formatted:gsub("Critical Strike", "Crit")
-    formatted = formatted:gsub("Versatility", "Vers")
-    formatted = formatted:gsub("Crit", "|cffff7d0aCrit|r")
-    formatted = formatted:gsub("Haste", "|cffffd100Haste|r")
-    formatted = formatted:gsub("Mastery", "|cffb366ffMastery|r")
-    formatted = formatted:gsub("Vers", "|cff33ccf2Vers|r")
-
-    -- If a stat in the priority has DR, annotate it
-    if drStats then
-        for statKey, drInfo in pairs(drStats) do
-            local penalty = SafeNumber(drInfo.penalty, 0)
-            if penalty > 0 then
-                local shortName = STATS[statKey].short
-                -- Match colored token
-                formatted = formatted:gsub("(|cff%x+" .. shortName .. "|r)", "%1|cffff8800*|r")
-            end
-        end
+--- Render a rank map as "Haste >= Mastery > Crit > Vers" with stat colours.
+--- Stats with a DR penalty in `statData` get an orange asterisk.
+local function FormatPriority(ranks, statData)
+    if not ranks then return "" end
+    local order = {}
+    for _, key in ipairs(OrderByRank(ranks)) do
+        if ranks[key] then order[#order + 1] = key end -- unlisted stats aren't shown
     end
+    local parts = {}
+    for i, key in ipairs(order) do
+        local def = STATS[key]
+        if i > 1 then
+            local gap = ranks[key] - ranks[order[i - 1]]
+            parts[#parts + 1] = gap <= 0 and " = " or (gap < 1 and " >= " or " > ")
+        end
+        local token = string.format("|cff%s%s|r", def.hex, def.short)
+        local d = statData and statData[key]
+        if d and SafeNumber(d.penalty, 0) > 0 then
+            token = token .. "|cffff8800*|r"
+        end
+        parts[#parts + 1] = token
+    end
+    return table.concat(parts)
+end
 
-
-    return formatted
+function StatDisplay:FormatPriority(ranks, statData)
+    return FormatPriority(ranks, statData)
 end
 
 -- Module Lifecycle
@@ -980,7 +1040,7 @@ function StatDisplay:Refresh()
     f:SetBackdropBorderColor(0.3, 0.3, 0.3, 0.8)
 
     -- Retrieve priority & hero tree info
-    local prioStr, heroTree, specName = self:GetRecommendedPriority()
+    local baseRanks, heroTree, specName = self:GetRecommendedPriority()
     f.specLabel:SetText(specName or "Death Knight")
     f.specLabel:SetTextColor(classR, classG, classB)
 
@@ -1031,12 +1091,13 @@ function StatDisplay:Refresh()
         }
     end
 
-    -- Format Banner with DR hints
-    local formattedPrio = FormatPriorityString(prioStr, statData)
-    f.prioBanner:SetText(formattedPrio)
+    -- Effective priority: stats past diminishing returns drop down the order,
+    -- so the banner and rows show what to aim for right now.
+    local ranks = ApplyDRToRanks(baseRanks, statData)
+    f.prioBanner:SetText(FormatPriority(ranks, statData))
 
     local isCompact = db.statDisplayCompact
-    local order = GetPriorityOrder(prioStr)
+    local order = OrderByRank(ranks)
 
     if isCompact then
         f:SetHeight(COMPACT_HEIGHT)

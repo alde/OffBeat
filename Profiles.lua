@@ -99,14 +99,44 @@ function OffBeat:ValidateRotationSpells(spells)
     return true
 end
 
+local function ValidateCondition(c, where)
+    if type(c) ~= "table" then return false, where .. " must be a table" end
+    if c.aura then
+        if type(c.aura) ~= "number" then return false, where .. ".aura must be a spell ID" end
+        if c.minStacks ~= nil and type(c.minStacks) ~= "number" then return false, where .. ".minStacks must be a number" end
+        if c.maxStacks ~= nil and type(c.maxStacks) ~= "number" then return false, where .. ".maxStacks must be a number" end
+    elseif c.power then
+        if type(c.power) ~= "string" and type(c.power) ~= "number" then
+            return false, where .. ".power must be a power type name or number"
+        end
+        if c.min == nil and c.max == nil then return false, where .. " needs min and/or max" end
+    else
+        return false, where .. " must have aura or power"
+    end
+    return true
+end
+
 function OffBeat:ValidateMistakes(mistakes)
     if type(mistakes) ~= "table" then
         return false, "mistakes must be a table"
     end
-    local validTypes = { repeat_cast = true, proc_waste = true }
     for i, mistake in ipairs(mistakes) do
-        if not validTypes[mistake.type] then
-            return false, "mistakes[" .. i .. "].type must be repeat_cast or proc_waste"
+        local where = "mistakes[" .. i .. "]"
+        local t = mistake.type
+        if t == "bad_cast" then
+            if type(mistake.spells) ~= "table" or #mistake.spells == 0 then
+                return false, where .. ".spells must be a non-empty list"
+            end
+            local when = mistake.when
+            if type(when) ~= "table" then return false, where .. ".when is required" end
+            if when.aura or when.power then when = { when } end
+            if #when == 0 then return false, where .. ".when needs at least one condition" end
+            for j, c in ipairs(when) do
+                local ok, err = ValidateCondition(c, where .. ".when[" .. j .. "]")
+                if not ok then return false, err end
+            end
+        elseif t ~= "repeat_cast" then
+            return false, where .. ".type must be repeat_cast or bad_cast"
         end
     end
     return true

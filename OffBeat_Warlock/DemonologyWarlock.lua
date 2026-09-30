@@ -51,6 +51,25 @@ OffBeat:RegisterProfile({
         { spellId = 1276467, name = "Grimoire: Fel Ravager" },
     },
 
+    -- Method: "Hand of Gul'dan on 3+ Soul Shards" and "don't overcap Demonic
+    -- Core procs" (cap 4). Shards are read when the button is pressed.
+    mistakes = {
+        {
+            type = "bad_cast",
+            name = "Weak Hand of Gul'dan",
+            description = "Hand of Gul'dan with fewer than 3 Soul Shards",
+            spells = { 105174 },
+            when = { power = "SoulShards", max = 2 },
+        },
+        {
+            type = "bad_cast",
+            name = "Demonic Core Overcap",
+            description = "Shadow Bolt at 4 Demonic Core, spend one on Demonbolt first",
+            spells = { 686 },
+            when = { aura = 264173, minStacks = 4 },
+        },
+    },
+
     -- Demonic Core dropping without a Demonbolt is a wasted instant cast.
     procTracking = {
         {

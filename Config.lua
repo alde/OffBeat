@@ -66,10 +66,10 @@ function OffBeat:GetDefaults()
             assistedKeybindShown = true,
             assistedKeybindSize = 12,
             assistedPosition = nil,
+
             -- Key Layout page
             keyLayoutView = "both",          -- both | st | aoe
             keyLayoutShowUntalented = false,
-
 
             -- Alerts
             soundEnabled = true,

@@ -27,11 +27,11 @@ OffBeat:RegisterProfile({
 
     mistakes = {
         {
-            type = "proc_waste",
+            type = "bad_cast",
             name = "KM Waste",
             description = "Frost Strike or Glacial Advance while Killing Machine is active",
-            procAura = 51124,
-            wasteSpells = { 49143, 194913 },
+            spells = { 49143, 194913 },
+            when = { aura = 51124 },
         },
     },
 

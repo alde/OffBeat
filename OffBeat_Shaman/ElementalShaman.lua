@@ -27,11 +27,11 @@ OffBeat:RegisterProfile({
 
     mistakes = {
         {
-            type = "proc_waste",
+            type = "bad_cast",
             name = "MotE Waste",
             description = "Lava Burst while Master of the Elements is active overwrites the buff",
-            procAura = 16166,
-            wasteSpells = { 51505 },
+            spells = { 51505 },
+            when = { aura = 16166 },
         },
     },
 

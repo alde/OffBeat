@@ -4,7 +4,9 @@ local Rotation = OffBeat:NewModule("Rotation", "AceEvent-3.0")
 -- Built on enable from activeProfile
 local rotationSpellSet = {}   -- spellId -> true
 local idleCooldownSet = {}    -- spellId -> { name }
-local procWasteRules = {}     -- array of { procAura, wasteSpells={id->true}, name }
+local badCastRules = {}       -- array of { spells={id->true}, conds={...}, name }
+local pendingCasts = {}       -- castGUID -> mistake name (or false), judged at UNIT_SPELLCAST_SENT
+local pendingCount = 0
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
 local activeSpecId            -- cached for specSettings lookups
@@ -71,15 +73,110 @@ function OffBeat:GetKnownRacials()
     return known
 end
 
-local MISTAKE_EVALUATORS = {
-    repeat_cast = function(spellId, state)
-        return spellId == state.lastSpellId
-    end,
-    proc_waste = function(spellId, state, rule)
+-- Mistakes
+--
+-- Two rule types:
+--   repeat_cast  same spell twice in a row
+--   bad_cast     one of `spells` cast while every condition in `when` holds
+--
+-- Conditions (a single table, or a list of them that must all hold):
+--   { aura = id, [minStacks = n], [maxStacks = n], [absent = true] }
+--   { power = "SoulShards" | Enum.PowerType value, [min = n], [max = n] }
+-- A value that can't be read (secret, missing) never matches, so unreadable
+-- state can only hide a mistake, never invent one.
+
+local function IsSecret(val)
+    if val == nil or not _G.issecretvalue then return false end
+    local ok, secret = pcall(_G.issecretvalue, val)
+    return ok and secret
+end
+
+local function ReadNumber(val)
+    if val == nil or IsSecret(val) then return nil end
+    local ok, num = pcall(tonumber, val)
+    if ok and num and not IsSecret(num) then return num end
+    return nil
+end
+
+local function InRange(v, min, max)
+    if min and v < min then return false end
+    if max and v > max then return false end
+    return true
+end
+
+local CONDITION_CHECKS = {
+    aura = function(c)
         local auras = OffBeat:GetModule("Auras", true)
-        return auras and auras:IsActive(rule.procAura) and rule.wasteSpells[spellId]
+        if not auras then return false end
+        local active = auras:IsActive(c.aura)
+        if c.absent then return not active end
+        if not active then return false end
+        if c.minStacks or c.maxStacks then
+            local rec = auras:GetAura(c.aura)
+            local stacks = rec and ReadNumber(rec.stacks)
+            if not stacks or stacks == 0 then return false end -- 0 = unreadable
+            return InRange(stacks, c.minStacks, c.maxStacks)
+        end
+        return true
+    end,
+    power = function(c)
+        local ok, v = pcall(UnitPower, "player", c.powerType)
+        v = ok and ReadNumber(v)
+        if not v then return false end
+        return InRange(v, c.min, c.max)
     end,
 }
+
+local function ConditionKind(c)
+    if c.aura then return "aura" end
+    if c.power then return "power" end
+end
+
+local function NormalizeCondition(c)
+    local kind = ConditionKind(c)
+    if kind == "power" then
+        local pt = c.power
+        if type(pt) == "string" then pt = Enum and Enum.PowerType and Enum.PowerType[pt] end
+        if type(pt) ~= "number" then return nil end
+        return { kind = kind, powerType = pt, min = c.min, max = c.max }
+    elseif kind == "aura" then
+        return { kind = kind, aura = c.aura, minStacks = c.minStacks,
+                 maxStacks = c.maxStacks, absent = c.absent }
+    end
+end
+
+local function BuildBadCastRule(rule)
+    local spells, conds = {}, {}
+    for _, id in ipairs(rule.spells) do spells[id] = true end
+
+    local when = rule.when
+    if when and (when.aura or when.power) then when = { when } end
+    for _, c in ipairs(when or {}) do
+        local n = NormalizeCondition(c)
+        if not n then return nil end -- unknown power type etc: drop the whole rule
+        conds[#conds + 1] = n
+    end
+    if #conds == 0 then return nil end
+
+    return {
+        spells = spells,
+        conds = conds,
+        name = rule.name or "Mistake",
+    }
+end
+
+local function MatchBadCast(spellId)
+    for _, rule in ipairs(badCastRules) do
+        if rule.spells[spellId] then
+            local all = true
+            for _, c in ipairs(rule.conds) do
+                if not CONDITION_CHECKS[c.kind](c) then all = false; break end
+            end
+            if all then return rule.name end
+        end
+    end
+    return nil
+end
 
 local function NewCombatStats()
     return {
@@ -105,6 +202,7 @@ end
 function Rotation:OnEnable()
     self:BuildLookups()
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    self:RegisterEvent("UNIT_SPELLCAST_SENT")
     self:RegisterEvent("PLAYER_REGEN_DISABLED")
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
     self:RegisterEvent("CHALLENGE_MODE_START")
@@ -149,7 +247,9 @@ end
 function Rotation:BuildLookups()
     wipe(rotationSpellSet)
     wipe(idleCooldownSet)
-    wipe(procWasteRules)
+    wipe(badCastRules)
+    wipe(pendingCasts)
+    pendingCount = 0
     hasRepeatCastMistake = false
     keyCd = nil
     keyCdResolvedId = nil
@@ -172,16 +272,13 @@ function Rotation:BuildLookups()
             if rule.type == "repeat_cast" then
                 hasRepeatCastMistake = true
                 repeatCastName = rule.name or "Mistake"
-            elseif rule.type == "proc_waste" then
-                local wasteSet = {}
-                if rule.wasteSpells then
-                    for _, id in ipairs(rule.wasteSpells) do wasteSet[id] = true end
+            elseif rule.type == "bad_cast" then
+                local built = BuildBadCastRule(rule)
+                if built then
+                    badCastRules[#badCastRules + 1] = built
+                else
+                    OffBeat:Debug("Skipping mistake rule (bad conditions):", rule.name)
                 end
-                procWasteRules[#procWasteRules + 1] = {
-                    procAura = rule.procAura,
-                    wasteSpells = wasteSet,
-                    name = rule.name or "Proc Waste",
-                }
             end
         end
     end
@@ -213,18 +310,31 @@ end
 
 -- Cast tracking
 
-function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, _, spellId)
+-- Judge bad_cast conditions when the button is pressed: by the time a cast
+-- succeeds its cost is paid (Hand of Gul'dan at 3 shards reads as 0) and
+-- procs it consumes are gone. Cancelled casts never reach SUCCEEDED, so the
+-- verdict is only recorded if the cast goes through.
+function Rotation:UNIT_SPELLCAST_SENT(_, unit, _, castGUID, spellId)
+    if unit ~= "player" or #badCastRules == 0 then return end
+    if not castGUID or IsSecret(castGUID) or IsSecret(spellId) then return end
+    if not rotationSpellSet[spellId] then return end
+    if pendingCount > 20 then wipe(pendingCasts); pendingCount = 0 end
+    pendingCasts[castGUID] = MatchBadCast(spellId) or false
+    pendingCount = pendingCount + 1
+end
+
+function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
     if unit ~= "player" then return end
     if rotationSpellSet[spellId] then
-        self:RecordAbility(spellId)
+        self:RecordAbility(spellId, castGUID)
     end
 end
 
-function Rotation:RecordAbility(spellId)
+function Rotation:RecordAbility(spellId, castGUID)
     local state = OffBeat.state
     local maxHistory = OffBeat.db.profile.historyCount
 
-    local mistakeName = self:EvaluateMistakes(spellId, state)
+    local mistakeName = self:EvaluateMistakes(spellId, state, castGUID)
 
     if mistakeName then
         if GetSpecOr("soundEnabled") then
@@ -266,17 +376,22 @@ function Rotation:RecordAbility(spellId)
     self:SendMessage("OFFBEAT_HISTORY_UPDATED")
 end
 
-function Rotation:EvaluateMistakes(spellId, state)
-    if hasRepeatCastMistake then
-        if MISTAKE_EVALUATORS.repeat_cast(spellId, state) then
-            return repeatCastName
-        end
+function Rotation:EvaluateMistakes(spellId, state, castGUID)
+    if hasRepeatCastMistake and spellId == state.lastSpellId then
+        return repeatCastName
     end
 
-    for _, rule in ipairs(procWasteRules) do
-        if MISTAKE_EVALUATORS.proc_waste(spellId, state, rule) then
-            return rule.name
+    if #badCastRules > 0 then
+        local pending
+        if castGUID and not IsSecret(castGUID) then
+            pending = pendingCasts[castGUID]
+            if pending ~= nil then
+                pendingCasts[castGUID] = nil
+                pendingCount = pendingCount - 1
+            end
         end
+        if pending ~= nil then return pending or nil end
+        return MatchBadCast(spellId) -- no SENT snapshot: judge on current state
     end
 
     return nil
@@ -462,7 +577,7 @@ end
 function Rotation:PrintCombatReport(stats, label)
     if not OffBeat.db.profile.combatReport then return end
 
-    local hasMistakeRules = hasRepeatCastMistake or #procWasteRules > 0
+    local hasMistakeRules = hasRepeatCastMistake or #badCastRules > 0
     local hasProcs = stats.procsGained and stats.procsGained > 0
 
     if not hasMistakeRules and not hasProcs then return end

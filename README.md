@@ -90,6 +90,7 @@ OffBeat:RegisterProfile({
     keyCooldown = { spellId = 99999, name = "Big CD", duration = 20 },
     idleCooldowns = { { spellId = 55555, name = "Cooldown" } },
     procTracking = { { procAura = 99999, consumeSpell = 11111, window = 0.5, name = "Proc" } },
+
     -- Key Layout page: tier per context, 1 = core, 2 = regular, 3 = cooldown, nil = unused
     keyLayout = { { spellId = 11111, st = 1, aoe = 2, note = "Filler", alt = { 11112 } } },
 })
@@ -108,7 +109,16 @@ Currently filled in for all three Warlock specs.
 | Type | Rule | Example |
 |------|------|---------|
 | `repeat_cast` | Same spell cast twice in a row | Windwalker mastery break |
-| `proc_waste` | Wrong spell while a proc is active | Frost Strike during Killing Machine |
+| `bad_cast` | One of `spells` cast while every condition in `when` holds | Frost Strike during Killing Machine, Hand of Gul'dan under 3 shards |
+
+`when` is one condition or a list of them (all must hold). Two kinds:
+
+```lua
+{ aura = 264173, minStacks = 4 }              -- aura up, optional stack range; absent = true for "not up"
+{ power = "SoulShards", max = 2 }             -- Enum.PowerType name or number, min and/or max
+```
+
+Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one.
 
 ## License
 

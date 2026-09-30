@@ -28,11 +28,11 @@ OffBeat:RegisterProfile({
 
     mistakes = {
         {
-            type = "proc_waste",
+            type = "bad_cast",
             name = "Hot Hand Waste",
             description = "Non-Lava Lash melee while Hot Hand is active",
-            procAura = 201900,
-            wasteSpells = { 17364, 115356 },
+            spells = { 17364, 115356 },
+            when = { aura = 201900 },
         },
     },
 

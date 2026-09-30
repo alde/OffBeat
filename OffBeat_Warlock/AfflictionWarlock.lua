@@ -40,4 +40,21 @@ OffBeat:RegisterProfile({
         { spellId = 442726,  name = "Malevolence" },
         { spellId = 1257052, name = "Dark Harvest" },
     },
+
+    -- Key Layout page. st / aoe tier: 1 = core (best keys), 2 = regular,
+    -- 3 = cooldown, nil = unused. Rows you don't have talented are hidden.
+    keyLayout = {
+        { spellId = 316099,  st = 1,          note = "Main shard spender" },
+        { spellId = 27243,            aoe = 1, note = "AoE shard spender, spam when stacked" },
+        { spellId = 686,     st = 1, aoe = 2, note = "Filler" },
+        { spellId = 198590,  st = 1, aoe = 2, note = "Channeled filler with execute" },
+        { spellId = 980,     st = 2, aoe = 1, note = "AoE: keep it on 4-6 targets for shards" },
+        { spellId = 445465, alt = { 445468 }, st = 2, aoe = 2, note = "Hellcaller: replaces Corruption" },
+        { spellId = 172,     st = 2, aoe = 2, note = "Keep it up" },
+        { spellId = 48181,   st = 2, aoe = 2, note = "Precast, keep it on the main target" },
+        { spellId = 1261149, st = 2,          note = "Inside Darkglare, if specced" },
+        { spellId = 205180,  st = 3, aoe = 3, note = "Main cooldown, dump shards during it" },
+        { spellId = 442726,  st = 3, aoe = 3, note = "Hellcaller" },
+        { spellId = 1257052, st = 3, aoe = 3, note = "Soul Harvester: cast at 0-1 shards" },
+    },
 })

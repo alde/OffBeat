@@ -30,7 +30,7 @@ A profile can use both at once.
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
-| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs |
+| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 
 ## Stat priority
@@ -90,10 +90,18 @@ OffBeat:RegisterProfile({
     keyCooldown = { spellId = 99999, name = "Big CD", duration = 20 },
     idleCooldowns = { { spellId = 55555, name = "Cooldown" } },
     procTracking = { { procAura = 99999, consumeSpell = 11111, window = 0.5, name = "Proc" } },
+    -- Key Layout page: tier per context, 1 = core, 2 = regular, 3 = cooldown, nil = unused
+    keyLayout = { { spellId = 11111, st = 1, aoe = 2, note = "Filler", alt = { 11112 } } },
 })
 ```
 
 Profiles can be exported as `!OB1!` strings from the settings panel and shared in chat or on the web.
+
+## Key Layout
+
+Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`). It lists the guide's rotation spells grouped by how often you press them (core, regular, cooldown), marks whether each is used in single target, AoE or both, and shows your current keybind so you can see what's on a bad key: red means a core or regular spell is unbound, amber means a core spell sits behind a modifier. Spells you haven't talented are hidden by default, and hero-tree replacements (Immolate -> Wither) collapse into one row. `alt` lists fallback IDs for spells that have changed ID.
+
+Currently filled in for all three Warlock specs.
 
 ## Mistake types
 

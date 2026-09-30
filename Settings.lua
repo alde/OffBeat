@@ -25,6 +25,7 @@ local CATEGORIES = {
     { key = "alerts",     label = "Alerts" },
     { key = "appearance", label = "Appearance" },
     { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
+    { key = "keyLayout",  label = "Key Layout",  requires = "keyLayout" },
     { key = "profiles",   label = "Profiles" },
 }
 
@@ -606,6 +607,144 @@ pageBuilders.specConfig = function(parent, y)
                     end); y = y - h
             end
         end
+    end
+
+    return y
+end
+
+-- Key Layout: which spells deserve your best keys, from profile.keyLayout.
+-- Each entry carries a tier per context (st / aoe): 1 = core, 2 = regular,
+-- 3 = cooldown, nil = not used there.
+
+local KEY_TIERS = {
+    { tier = 1, label = "CORE - YOUR BEST KEYS",
+      hint = "Pressed every few GCDs. Put these on the keys your fingers rest on." },
+    { tier = 2, label = "REGULAR - EASY REACH",
+      hint = "Used every cycle or on procs. Unmodified keys close to home." },
+    { tier = 3, label = "COOLDOWNS - MODIFIERS ARE FINE",
+      hint = "Once every minute or two. Shift/Ctrl binds or a farther key." },
+}
+
+local function ResolveLayoutSpell(entry)
+    local ids = { entry.spellId }
+    if entry.alt then
+        for _, id in ipairs(entry.alt) do ids[#ids + 1] = id end
+    end
+    -- Check the override first: a base spell replaced by a talent (Immolate ->
+    -- Wither) is still "known", but the replacement is what sits on your bar.
+    for _, id in ipairs(ids) do
+        local current, known = id, IsPlayerSpell(id)
+        if FindSpellOverrideByID then
+            local override = FindSpellOverrideByID(id)
+            if override and override ~= id then
+                current = override
+                known = known or IsPlayerSpell(override)
+            end
+        end
+        if known then return current, true end
+    end
+    return entry.spellId, false
+end
+
+-- Resolve, dedupe by spell name (hero-tree replacements like Immolate -> Wither
+-- collapse into one row), merge tiers, keep the profile's order.
+local function BuildLayoutRows(layout)
+    local rows, byName = {}, {}
+    for _, entry in ipairs(layout) do
+        local id, known = ResolveLayoutSpell(entry)
+        local info = C_Spell.GetSpellInfo(id)
+        local name = (info and info.name) or entry.name or ("Spell " .. id)
+        local existing = byName[name]
+        if existing then
+            if known and not existing.known then
+                existing.known, existing.spellId, existing.icon = true, id, info and info.iconID
+            end
+            if entry.st and (not existing.st or entry.st < existing.st) then existing.st = entry.st end
+            if entry.aoe and (not existing.aoe or entry.aoe < existing.aoe) then existing.aoe = entry.aoe end
+        else
+            local row = {
+                spellId = id, name = name, icon = info and info.iconID,
+                note = entry.note, st = entry.st, aoe = entry.aoe, known = known,
+            }
+            rows[#rows + 1] = row
+            byName[name] = row
+        end
+    end
+    return rows
+end
+
+local function RowTier(row, view)
+    if view == "st" then return row.st end
+    if view == "aoe" then return row.aoe end
+    if row.st and row.aoe then return math.min(row.st, row.aoe) end
+    return row.st or row.aoe
+end
+
+pageBuilders.keyLayout = function(parent, y)
+    local W = OffBeat.Widgets
+    local db = OffBeat.db.profile
+    local profile = OffBeat.activeProfile
+    if not profile or not profile.keyLayout then return y end
+    local _, h
+
+    if db.keyLayoutView == nil then db.keyLayoutView = "both" end
+    local view = db.keyLayoutView
+    local showUnknown = db.keyLayoutShowUntalented
+
+    _, h = W:SectionHeader(parent, "KEY LAYOUT - " .. string.upper(profile.meta.name), y); y = y - h
+    _, h = W:Paragraph(parent,
+        "Rotation spells from the guide, grouped by how often you press them. "
+        .. "ST / AoE badges show where each spell is used: bright = core, dim = regular, grey = cooldown. "
+        .. "Your current keybind is on the right; amber means a core spell sits behind a modifier.", y); y = y - h
+    _, h = W:Dropdown(parent, "View", y,
+        { both = "Single Target + AoE", st = "Single Target", aoe = "AoE" },
+        function() return db.keyLayoutView end,
+        function(v) db.keyLayoutView = v; SelectCategory("keyLayout") end,
+        { "both", "st", "aoe" }); y = y - h
+
+    OffBeat:InvalidateKeybindCache() -- binds may have changed since the cache was built
+    local rows = BuildLayoutRows(profile.keyLayout)
+    local unknownCount = 0
+    for _, row in ipairs(rows) do
+        if not row.known and RowTier(row, view) then unknownCount = unknownCount + 1 end
+    end
+
+    _, h = W:Toggle(parent, "Show Untalented (" .. unknownCount .. ")", y,
+        function() return db.keyLayoutShowUntalented end,
+        function(v) db.keyLayoutShowUntalented = v; SelectCategory("keyLayout") end); y = y - h
+
+    for _, t in ipairs(KEY_TIERS) do
+        local list = {}
+        for _, row in ipairs(rows) do
+            if RowTier(row, view) == t.tier and (row.known or showUnknown) then
+                list[#list + 1] = row
+            end
+        end
+        -- talented first, guide order otherwise preserved
+        local ordered = {}
+        for _, r in ipairs(list) do if r.known then ordered[#ordered + 1] = r end end
+        for _, r in ipairs(list) do if not r.known then ordered[#ordered + 1] = r end end
+
+        if #ordered > 0 then
+            _, h = W:SectionHeader(parent, t.label, y); y = y - h
+            _, h = W:Paragraph(parent, t.hint, y); y = y - h
+            for _, row in ipairs(ordered) do
+                local key = row.known and OffBeat:GetKeybindForSpell(row.spellId) or nil
+                local warn
+                if row.known and not key and t.tier <= 2 then
+                    warn = "unbound"
+                elseif key and t.tier == 1 and key:match("^[scam]%-") then
+                    warn = "modifier"
+                end
+                row.key, row.keyWarn = key, warn
+                _, h = W:SpellRow(parent, y, row); y = y - h
+            end
+        end
+    end
+
+    if profile.meta.source then
+        _, h = W:Spacer(parent, y, 6); y = y - h
+        _, h = W:Paragraph(parent, "Source: " .. profile.meta.source, y); y = y - h
     end
 
     return y

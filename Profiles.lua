@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities",
+    "statPriority", "heroStatPriorities", "keyLayout",
 }
 
 
@@ -64,6 +64,11 @@ function OffBeat:ValidateProfile(profile)
         if not ok then return false, err end
     end
 
+    if profile.keyLayout then
+        local ok, err = self:ValidateKeyLayout(profile.keyLayout)
+        if not ok then return false, err end
+    end
+
     return true
 end
 
@@ -102,6 +107,29 @@ function OffBeat:ValidateMistakes(mistakes)
     for i, mistake in ipairs(mistakes) do
         if not validTypes[mistake.type] then
             return false, "mistakes[" .. i .. "].type must be repeat_cast or proc_waste"
+        end
+    end
+    return true
+end
+
+function OffBeat:ValidateKeyLayout(layout)
+    if type(layout) ~= "table" then
+        return false, "keyLayout must be a table"
+    end
+    local function validTier(t) return t == nil or t == 1 or t == 2 or t == 3 end
+    for i, entry in ipairs(layout) do
+        local where = "keyLayout[" .. i .. "]"
+        if type(entry.spellId) ~= "number" then
+            return false, where .. ".spellId must be a number"
+        end
+        if not validTier(entry.st) or not validTier(entry.aoe) then
+            return false, where .. ".st / .aoe must be 1, 2, 3 or nil"
+        end
+        if entry.st == nil and entry.aoe == nil then
+            return false, where .. " needs an st or aoe tier"
+        end
+        if entry.alt ~= nil and type(entry.alt) ~= "table" then
+            return false, where .. ".alt must be a list of spell IDs"
         end
     end
     return true

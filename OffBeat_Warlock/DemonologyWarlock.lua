@@ -49,4 +49,19 @@ OffBeat:RegisterProfile({
             name = "Demonic Core",
         },
     },
+
+    -- Key Layout page (Method 12.1, updated 27 Sep 2026).
+    -- st / aoe tier: 1 = core (best keys), 2 = regular, 3 = cooldown, nil = unused.
+    keyLayout = {
+        { spellId = 686,     st = 1, aoe = 1, note = "Filler, builds Soul Shards" },
+        { spellId = 105174,  st = 1, aoe = 1, note = "Spend at 3+ Soul Shards" },
+        { spellId = 264178,  st = 1, aoe = 1, note = "Demonic Core procs. AoE: spread Doom" },
+        { spellId = 196277,  st = 2, aoe = 1, note = "At 6+ Imps" },
+        { spellId = 104316,  st = 2, aoe = 2, note = "On cooldown unless lining up Tyrant" },
+        { spellId = 264130,  st = 2, aoe = 2, note = "Precast ~5s before the pull" },
+        { spellId = 265187,  st = 3, aoe = 3, note = "Main cooldown, go in at 5 shards" },
+        { spellId = 18540,   st = 3, aoe = 3, note = "Opener, before Grimoire" },
+        { spellId = 1288945, st = 3, aoe = 3, note = "Grimoire choice node" },
+        { spellId = 1276467, st = 3, aoe = 3, note = "Grimoire choice node" },
+    },
 })

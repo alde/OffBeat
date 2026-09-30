@@ -466,6 +466,144 @@ function W:Spacer(parent, y, height)
     return f, height
 end
 
+-- Spell row (Key Layout page): icon, name + note, ST/AoE tier badges, keybind
+
+local TIER_BADGE = {
+    [1] = { bg = { ACCENT[1], ACCENT[2], ACCENT[3], 0.85 }, fg = { 1, 1, 1, 1 } },
+    [2] = { bg = { ACCENT[1], ACCENT[2], ACCENT[3], 0.30 }, fg = { 1, 1, 1, 0.85 } },
+    [3] = { bg = { 1, 1, 1, 0.10 },                         fg = { 1, 1, 1, 0.60 } },
+}
+
+local function TierBadge(parent, text, tier)
+    local b = CreateFrame("Frame", nil, parent)
+    b:SetSize(text == "AoE" and 34 or 28, 16)
+    local bg = b:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    local fs = b:CreateFontString(nil, "OVERLAY")
+    fs:SetFont(FONT, 9, "")
+    fs:SetPoint("CENTER")
+    fs:SetText(text)
+    local style = TIER_BADGE[tier]
+    if style then
+        bg:SetColorTexture(unpack(style.bg))
+        fs:SetTextColor(unpack(style.fg))
+    else
+        bg:SetColorTexture(0, 0, 0, 0)
+        fs:SetTextColor(1, 1, 1, 0.12)
+    end
+    return b
+end
+
+-- info = { spellId, name, icon, note, st, aoe, known, key, keyWarn }
+-- keyWarn: nil | "unbound" | "modifier"
+function W:SpellRow(parent, y, info)
+    local ROW = 36
+    local f = MakeRow(parent, y, ROW)
+    f:EnableMouse(true)
+    local dim = info.known and 1 or 0.35
+
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(24, 24)
+    icon:SetPoint("LEFT", f, "LEFT", LABEL_PAD, 0)
+    icon:SetTexture(info.icon or 134400)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    icon:SetDesaturated(not info.known)
+    icon:SetAlpha(dim)
+
+    local keyBox = CreateFrame("Frame", nil, f)
+    keyBox:SetSize(52, 20)
+    keyBox:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
+    local keyBg = keyBox:CreateTexture(nil, "BACKGROUND")
+    keyBg:SetAllPoints()
+    keyBg:SetColorTexture(0.08, 0.10, 0.14, 0.9)
+    local keyText = keyBox:CreateFontString(nil, "OVERLAY")
+    keyText:SetFont(FONT, 10, "OUTLINE")
+    keyText:SetPoint("CENTER")
+    if not info.known then
+        keyText:SetText("")
+    elseif info.key then
+        keyText:SetText(info.key)
+        if info.keyWarn == "modifier" then
+            keyText:SetTextColor(1, 0.75, 0.2)
+        else
+            keyText:SetTextColor(1, 1, 1, 0.9)
+        end
+    else
+        keyText:SetText("unbound")
+        keyText:SetTextColor(1, 0.35, 0.35, info.keyWarn == "unbound" and 1 or 0.5)
+    end
+
+    local aoe = TierBadge(f, "AoE", info.aoe)
+    aoe:SetPoint("RIGHT", keyBox, "LEFT", -8, 0)
+    aoe:SetAlpha(dim)
+    local st = TierBadge(f, "ST", info.st)
+    st:SetPoint("RIGHT", aoe, "LEFT", -4, 0)
+    st:SetAlpha(dim)
+
+    local name = f:CreateFontString(nil, "OVERLAY")
+    name:SetFont(FONT, FONT_SIZE, "")
+    name:SetJustifyH("LEFT")
+    name:SetWordWrap(false)
+    name:SetMaxLines(1)
+    name:SetTextColor(1, 1, 1, 0.9 * dim)
+    name:SetText(info.name or ("Spell " .. info.spellId))
+
+    local note = f:CreateFontString(nil, "OVERLAY")
+    note:SetFont(FONT, 9, "")
+    note:SetJustifyH("LEFT")
+    note:SetWordWrap(false)
+    note:SetMaxLines(1)
+    note:SetTextColor(1, 1, 1, 0.45 * dim)
+    local noteText = info.note or ""
+    if not info.known then
+        noteText = (noteText ~= "" and (noteText .. " - ") or "") .. "not talented"
+    end
+    note:SetText(noteText)
+
+    if noteText ~= "" then
+        name:SetPoint("TOPLEFT", icon, "TOPRIGHT", 8, 0)
+        note:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", 8, 1)
+    else
+        name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+    end
+    name:SetPoint("RIGHT", st, "LEFT", -8, 0)
+    note:SetPoint("RIGHT", st, "LEFT", -8, 0)
+
+    f:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetSpellByID(info.spellId)
+        if info.note then
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine(info.note, ACCENT[1], ACCENT[2], ACCENT[3], true)
+        end
+        GameTooltip:Show()
+    end)
+    f:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    return f, ROW
+end
+
+-- Wrapped paragraph of dim text
+
+function W:Paragraph(parent, text, y)
+    local f = CreateFrame("Frame", nil, parent)
+    local w = parent:GetWidth()
+    f:SetWidth(w)
+    f:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+    local fs = f:CreateFontString(nil, "OVERLAY")
+    fs:SetFont(FONT, 10, "")
+    fs:SetPoint("TOPLEFT", f, "TOPLEFT", LABEL_PAD, -6)
+    fs:SetWidth(w - LABEL_PAD * 2)
+    fs:SetJustifyH("LEFT")
+    fs:SetWordWrap(true)
+    fs:SetSpacing(2)
+    fs:SetTextColor(1, 1, 1, 0.55)
+    fs:SetText(text)
+    local h = math.ceil(fs:GetStringHeight()) + 12
+    f:SetHeight(h)
+    return f, h
+end
+
 -- Reset row counter (used when switching pages)
 
 function W:ResetRowCounters()

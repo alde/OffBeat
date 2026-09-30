@@ -67,4 +67,19 @@ OffBeat:RegisterProfile({
 
     -- Method 12.1 (same for both hero trees): Haste > Crit = Mastery >> Vers
     statPriority = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 3 },
+
+    -- Key Layout page. st / aoe tier: 1 = core (best keys), 2 = regular,
+    -- 3 = cooldown, nil = unused. Rows you don't have talented are hidden.
+    keyLayout = {
+        { spellId = 29722,  st = 1, aoe = 1, note = "Filler" },
+        { spellId = 116858, st = 1, aoe = 1, note = "Main shard spender, spends Demonic Art" },
+        { spellId = 17962,  st = 1, aoe = 1, note = "Don't sit at 2 charges, grants Backdraft" },
+        { spellId = 445465, alt = { 445468 }, st = 2, aoe = 2, note = "Hellcaller: never let it drop" },
+        { spellId = 348,    st = 2, aoe = 2, note = "Diabolist: keep it up" },
+        { spellId = 265321, alt = { 6353 }, st = 2, aoe = 2, note = "Cast with Backdraft" },
+        { spellId = 17877,  st = 2, aoe = 2, note = "Fiendish Cruelty, movement, shard cap" },
+        { spellId = 5740,   aoe = 2, note = "Hellcaller AoE spender. Diabolist: 8+ targets" },
+        { spellId = 1122,   st = 3, aoe = 3, note = "Main cooldown" },
+        { spellId = 442726, st = 3, aoe = 3, note = "Hellcaller: on cooldown, don't hold it" },
+    },
 })

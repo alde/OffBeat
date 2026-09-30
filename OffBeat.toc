@@ -7,7 +7,7 @@
 ## SavedVariablesPerCharacter: OffBeatDB
 ## Category: Combat
 ## Dependencies
-## OptionalDeps: Ace3, Masque
+## OptionalDeps: Ace3, Masque, Statisfaction
 
 ## Libs
 Libs\LibStub\LibStub.lua
@@ -42,8 +42,8 @@ Rotation.lua
 RotationDisplay.lua
 RotationTimeline.lua
 
-## Stat Display
-StatDisplay.lua
+## Statisfaction (stat priority) integration
+StatisfactionBridge.lua
 
 ## Settings
 Widgets.lua

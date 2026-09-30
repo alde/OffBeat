@@ -22,7 +22,6 @@ local CATEGORIES = {
     { key = "general",    label = "General" },
     { key = "buffPanel",  label = "Buff Panel",   requires = "trackedBuffs" },
     { key = "rotation",   label = "Rotation",     requires = "rotationSpells" },
-    { key = "stats",      label = "Stat Priority" },
     { key = "alerts",     label = "Alerts" },
     { key = "appearance", label = "Appearance" },
     { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
@@ -410,106 +409,6 @@ pageBuilders.rotation = function(parent, y)
     _, h = W:Toggle(parent, "Auto-show Timeline", y,
         function() return db.timelineAutoShow end,
         function(v) db.timelineAutoShow = v end); y = y - h
-
-    return y
-end
-
-pageBuilders.stats = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local _, h
-
-    _, h = W:SectionHeader(parent, "STAT PRIORITY DISPLAY", y); y = y - h
-    _, h = W:Toggle(parent, "Show Display", y,
-        function() return db.statDisplayShown end,
-        function(v)
-            db.statDisplayShown = v
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then
-                if v then sd:GetFrame():Show(); sd:Refresh()
-                else sd:GetFrame():Hide() end
-            end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Attach to Character Panel", y,
-        function() return db.statDisplayAttachCharacter end,
-        function(v)
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then sd:SetAttachToCharacter(v)
-            else db.statDisplayAttachCharacter = v end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Only in Combat (when detached)", y,
-        function() return db.statDisplayCombatOnly end,
-        function(v)
-            db.statDisplayCombatOnly = v
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then sd:Refresh() end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Compact HUD Mode", y,
-        function() return db.statDisplayCompact end,
-        function(v)
-            db.statDisplayCompact = v
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then sd:Refresh() end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Show Diminishing Returns (DR)", y,
-        function() return db.statDisplayShowDR end,
-        function(v)
-            db.statDisplayShowDR = v
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then sd:Refresh() end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Show Rating Values", y,
-        function() return db.statDisplayShowValues end,
-        function(v)
-            db.statDisplayShowValues = v
-            local sd = OffBeat:GetModule("StatDisplay", true)
-            if sd and sd:IsEnabled() then sd:Refresh() end
-        end); y = y - h
-
-    _, h = W:SectionHeader(parent, "ACTIVE SPEC & HERO TREE", y); y = y - h
-
-    local sd = OffBeat:GetModule("StatDisplay", true)
-    local prioStr, heroTree, specName = "", "None", "None"
-    if sd then
-        local ranks
-        ranks, heroTree, specName = sd:GetRecommendedPriority()
-        prioStr = sd:FormatPriority(ranks) -- guide priority, before DR adjustment
-    end
-
-    local card = CreateFrame("Frame", nil, parent, "BackdropTemplate")
-    card:SetSize(parent:GetWidth() - 32, 84)
-    card:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    card:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 },
-    })
-    card:SetBackdropColor(0.08, 0.10, 0.14, 0.8)
-    card:SetBackdropBorderColor(1, 1, 1, 0.12)
-
-    local specText = card:CreateFontString(nil, "OVERLAY")
-    specText:SetFont(FONT, 11, "")
-    specText:SetPoint("TOPLEFT", card, "TOPLEFT", 10, -8)
-    specText:SetText(string.format("|cff%02x%02x%02xSpec:|r %s", ACCENT[1]*255, ACCENT[2]*255, ACCENT[3]*255, specName or "Unknown"))
-
-    local heroText = card:CreateFontString(nil, "OVERLAY")
-    heroText:SetFont(FONT, 11, "")
-    heroText:SetPoint("TOPLEFT", specText, "BOTTOMLEFT", 0, -4)
-    heroText:SetText(string.format("|cff%02x%02x%02xHero Tree:|r %s", ACCENT[1]*255, ACCENT[2]*255, ACCENT[3]*255, heroTree or "None (default)"))
-
-    local prioText = card:CreateFontString(nil, "OVERLAY")
-    prioText:SetFont(FONT, 11, "")
-    prioText:SetPoint("TOPLEFT", heroText, "BOTTOMLEFT", 0, -4)
-    prioText:SetText(string.format("|cff%02x%02x%02xPriority:|r %s", ACCENT[1]*255, ACCENT[2]*255, ACCENT[3]*255, prioStr or "None"))
-
-    local drRule = card:CreateFontString(nil, "OVERLAY")
-    drRule:SetFont(FONT, 9, "")
-    drRule:SetPoint("TOPLEFT", prioText, "BOTTOMLEFT", 0, -5)
-    drRule:SetTextColor(1, 1, 1, 0.45)
-    drRule:SetText("DR Brackets: 30% (-10%) | 39% (-20%) | 47% (-30%) | 54% (-40%) | 66% (-50%)")
-
-    y = y - 92
 
     return y
 end

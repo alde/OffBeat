@@ -40,7 +40,7 @@ do
     end
 end
 
-local ALWAYS_ON_MODULES = { "Core", "Encounters", "StatDisplay" }
+local ALWAYS_ON_MODULES = { "Core", "Encounters" }
 
 -- Debug logging (deduped)
 
@@ -230,8 +230,6 @@ function OffBeat:OnSlashCommand(input)
         self:ToggleTimeline()
     elseif cmd == "lock" then
         self:ToggleLock()
-    elseif cmd == "stats" or cmd == "stat" then
-        self:ToggleStatDisplay()
     elseif cmd == "reset" then
         self:ResetEncounterData()
         self:Print("Encounter data reset.")
@@ -251,7 +249,6 @@ function OffBeat:OnSlashCommand(input)
         self:Print("OffBeat v" .. self.VERSION)
         self:Print("  /ob              — Open settings")
         self:Print("  /ob show         — Toggle display")
-        self:Print("  /ob stats        — Toggle stat priority display")
         self:Print("  /ob timeline     — Toggle timeline")
         self:Print("  /ob lock         — Lock/unlock frames")
         self:Print("  /ob reset        — Reset encounter data")
@@ -316,7 +313,6 @@ end
 function OffBeat:ToggleDisplay() end
 function OffBeat:OpenConfig() end
 function OffBeat:ToggleTimeline() end
-function OffBeat:ToggleStatDisplay() end
 function OffBeat:ResetEncounterData() end
 function OffBeat:InjectTestData() end
 

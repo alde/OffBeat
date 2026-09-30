@@ -33,17 +33,9 @@ A profile can use both at once.
 | OffBeat_Warlock | Demonology | Rotation & Pet Spenders |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 
-## Stat Priority & Diminishing Returns
+## Stat priority
 
-OffBeat includes a movable display showing recommended stat priority tailored to your current specialization and active **Hero Talent Tree**. It also monitors secondary stat diminishing returns (DR) in real time:
-- **0% – 30% rating bonus**: 100% efficiency (optimal returns)
-- **30% – 39%**: 10% penalty
-- **39% – 47%**: 20% penalty
-- **47% – 54%**: 30% penalty
-- **54% – 66%**: 40% penalty
-- **>66%**: 50% penalty
-
-The display flags penalized stats in real time and provides re-allocation advice when your top secondary stats exceed optimal thresholds.
+The stat priority panel has moved to its own addon, **[Statisfaction](https://github.com/alde/statisfaction)**. OffBeat profiles can still set `statPriority` / `heroStatPriorities`; when Statisfaction is installed it uses them over its built-in table.
 
 ## Installation
 
@@ -63,7 +55,6 @@ cd Interface/AddOns/OffBeat
 |---------|--------|
 | `/ob` | Open settings |
 | `/ob show` | Toggle display panel |
-| `/ob stats` | Toggle stat priority display |
 | `/ob timeline` | Toggle timeline |
 | `/ob lock` | Lock/unlock frames |
 | `/ob profile <name>` | Switch profile |

@@ -30,7 +30,7 @@ A profile can use both at once.
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
-| OffBeat_Warlock | Demonology | Rotation & Pet Spenders |
+| OffBeat_Warlock | Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 
 ## Stat priority

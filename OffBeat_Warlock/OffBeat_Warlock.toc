@@ -6,3 +6,4 @@
 ## Dependencies: OffBeat
 
 DemonologyWarlock.lua
+DestructionWarlock.lua

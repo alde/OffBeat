@@ -52,6 +52,7 @@ move-folders:
   OffBeat/OffBeat_Shaman: OffBeat_Shaman
   OffBeat/OffBeat_DemonHunter: OffBeat_DemonHunter
   OffBeat/OffBeat_Warlock: OffBeat_Warlock
+  OffBeat/OffBeat_Priest: OffBeat_Priest
 
 ignore:
   - download_deps.sh

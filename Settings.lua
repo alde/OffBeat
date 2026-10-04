@@ -614,7 +614,10 @@ end
 
 -- Key Layout: which spells deserve your best keys, from profile.keyLayout.
 -- Each entry carries a tier per context (st / aoe): 1 = core, 2 = regular,
--- 3 = cooldown, nil = not used there.
+-- 3 = cooldown, nil = not used there. profile.keyLayoutLabels renames the two
+-- contexts (healers: Single / Group).
+
+local DEFAULT_LAYOUT_LABELS = { st = "ST", aoe = "AoE", stLong = "Single Target", aoeLong = "AoE" }
 
 local KEY_TIERS = {
     { tier = 1, label = "CORE - YOUR BEST KEYS",
@@ -690,14 +693,15 @@ pageBuilders.keyLayout = function(parent, y)
     if db.keyLayoutView == nil then db.keyLayoutView = "both" end
     local view = db.keyLayoutView
     local showUnknown = db.keyLayoutShowUntalented
+    local labels = profile.keyLayoutLabels or DEFAULT_LAYOUT_LABELS
 
     _, h = W:SectionHeader(parent, "KEY LAYOUT - " .. string.upper(profile.meta.name), y); y = y - h
     _, h = W:Paragraph(parent,
         "Rotation spells from the guide, grouped by how often you press them. "
-        .. "ST / AoE badges show where each spell is used: bright = core, dim = regular, grey = cooldown. "
+        .. labels.st .. " / " .. labels.aoe .. " badges show where each spell is used: bright = core, dim = regular, grey = cooldown. "
         .. "Your current keybind is on the right; amber means a core spell sits behind a modifier.", y); y = y - h
     _, h = W:Dropdown(parent, "View", y,
-        { both = "Single Target + AoE", st = "Single Target", aoe = "AoE" },
+        { both = labels.stLong .. " + " .. labels.aoeLong, st = labels.stLong, aoe = labels.aoeLong },
         function() return db.keyLayoutView end,
         function(v) db.keyLayoutView = v; SelectCategory("keyLayout") end,
         { "both", "st", "aoe" }); y = y - h
@@ -737,7 +741,7 @@ pageBuilders.keyLayout = function(parent, y)
                     warn = "modifier"
                 end
                 row.key, row.keyWarn = key, warn
-                _, h = W:SpellRow(parent, y, row); y = y - h
+                _, h = W:SpellRow(parent, y, row, labels); y = y - h
             end
         end
     end

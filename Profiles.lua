@@ -69,6 +69,27 @@ function OffBeat:ValidateProfile(profile)
         if not ok then return false, err end
     end
 
+    if profile.keyLayoutLabels ~= nil then
+        local l = profile.keyLayoutLabels
+        if type(l) ~= "table" then return false, "keyLayoutLabels must be a table" end
+        for _, k in ipairs({ "st", "aoe", "stLong", "aoeLong" }) do
+            if type(l[k]) ~= "string" then
+                return false, "keyLayoutLabels." .. k .. " must be a string"
+            end
+        end
+    end
+
+    if profile.procTracking then
+        for i, pt in ipairs(profile.procTracking) do
+            if type(pt.procAura) ~= "number" then
+                return false, "procTracking[" .. i .. "].procAura must be a spell ID"
+            end
+            if type(pt.consumeSpells) ~= "table" or #pt.consumeSpells == 0 then
+                return false, "procTracking[" .. i .. "].consumeSpells must be a non-empty list"
+            end
+        end
+    end
+
     return true
 end
 

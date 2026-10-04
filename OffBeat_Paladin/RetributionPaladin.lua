@@ -43,7 +43,7 @@ OffBeat:RegisterProfile({
     },
 
     procTracking = {
-        { procAura = 267344, consumeSpell = 184575, window = 0.5, name = "Art of War" },
-        { procAura = 326733, consumeSpell = 53385,  window = 0.5, name = "Empyrean Power" },
+        { procAura = 267344, consumeSpells = { 184575 }, window = 0.5, name = "Art of War" },
+        { procAura = 326733, consumeSpells = { 53385 },  window = 0.5, name = "Empyrean Power" },
     },
 })

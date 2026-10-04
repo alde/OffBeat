@@ -60,7 +60,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 77756,
-            consumeSpell = 51505,
+            consumeSpells = { 51505 },
             window = 0.5,
             name = "Lava Surge",
         },

@@ -24,14 +24,15 @@ A profile can use both at once.
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
-| OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge) |
-| OffBeat_DeathKnight | Frost Death Knight | Rotation (KM waste, Rime) |
-| OffBeat_DeathKnight | Unholy Death Knight | Rotation (Apocalypse, Sudden Doom) |
+| OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout |
+| OffBeat_DeathKnight | Frost Death Knight | Rotation (KM waste, Rime), Key Layout |
+| OffBeat_DeathKnight | Unholy Death Knight | Rotation (Dark Transformation, Sudden Doom), Key Layout |
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
 | OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
+| OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns |
 
 ## Stat priority
 
@@ -89,10 +90,11 @@ OffBeat:RegisterProfile({
     trackedAuras = { { spellId = 99999, name = "Proc", baseDuration = 15 } },
     keyCooldown = { spellId = 99999, name = "Big CD", duration = 20 },
     idleCooldowns = { { spellId = 55555, name = "Cooldown" } },
-    procTracking = { { procAura = 99999, consumeSpell = 11111, window = 0.5, name = "Proc" } },
+    procTracking = { { procAura = 99999, consumeSpells = { 11111 }, window = 0.5, name = "Proc" } },
 
     -- Key Layout page: tier per context, 1 = core, 2 = regular, 3 = cooldown, nil = unused
     keyLayout = { { spellId = 11111, st = 1, aoe = 2, note = "Filler", alt = { 11112 } } },
+    keyLayoutLabels = { st = "ST", aoe = "AoE", stLong = "Single Target", aoeLong = "AoE" }, -- optional
 })
 ```
 
@@ -102,7 +104,9 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 
 Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`). It lists the guide's rotation spells grouped by how often you press them (core, regular, cooldown), marks whether each is used in single target, AoE or both, and shows your current keybind so you can see what's on a bad key: red means a core or regular spell is unbound, amber means a core spell sits behind a modifier. Spells you haven't talented are hidden by default, and hero-tree replacements (Immolate -> Wither) collapse into one row. `alt` lists fallback IDs for spells that have changed ID.
 
-Currently filled in for all three Warlock specs.
+`keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
+
+Currently filled in for all Warlock and Death Knight specs, and Discipline and Holy Priest.
 
 ## Mistake types
 

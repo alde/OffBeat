@@ -52,7 +52,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 1270444,
-            consumeSpell = 187827,
+            consumeSpells = { 187827 },
             window = 0.5,
             name = "Untethered Rage",
         },

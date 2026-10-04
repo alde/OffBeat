@@ -50,7 +50,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 1238488,
-            consumeSpell = 1226019,
+            consumeSpells = { 1226019 },
             window = 0.5,
             name = "Moment of Craving",
         },

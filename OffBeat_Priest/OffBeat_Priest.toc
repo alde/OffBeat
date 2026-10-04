@@ -1,0 +1,9 @@
+## Interface: 120100
+## Title: OffBeat - Priest
+## Version: 1.0.0
+## Notes: Priest spec profiles for OffBeat
+## Author: Rickard Dybeck
+## Dependencies: OffBeat
+
+DisciplinePriest.lua
+HolyPriest.lua

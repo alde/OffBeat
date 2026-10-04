@@ -59,10 +59,10 @@ OffBeat:RegisterProfile({
     -- Each proc is flagged as wasted if it drops without its consumer being cast.
     -- Backdraft is left out: Soul Fire, Incinerate and Chaos Bolt all consume it.
     procTracking = {
-        { procAura = 1245633, consumeSpell = 17877,  window = 0.5, name = "Fiendish Cruelty" },
-        { procAura = 428524,  consumeSpell = 116858, window = 0.5, name = "Demonic Art: Overlord" },
-        { procAura = 432794,  consumeSpell = 116858, window = 0.5, name = "Demonic Art: Mother of Chaos" },
-        { procAura = 432795,  consumeSpell = 116858, window = 0.5, name = "Demonic Art: Pit Lord" },
+        { procAura = 1245633, consumeSpells = { 17877 },  window = 0.5, name = "Fiendish Cruelty" },
+        { procAura = 428524,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Overlord" },
+        { procAura = 432794,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Mother of Chaos" },
+        { procAura = 432795,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Pit Lord" },
     },
 
     -- Method 12.1 (same for both hero trees): Haste > Crit = Mastery >> Vers

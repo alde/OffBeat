@@ -56,7 +56,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 347462,
-            consumeSpell = 195072,
+            consumeSpells = { 195072 },
             window = 0.5,
             name = "Unbound Chaos",
         },

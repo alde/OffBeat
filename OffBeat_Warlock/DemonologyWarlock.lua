@@ -74,7 +74,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 264173,
-            consumeSpell = 264178,
+            consumeSpells = { 264178 },
             window = 0.5,
             name = "Demonic Core",
         },

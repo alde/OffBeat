@@ -476,13 +476,13 @@ local TIER_BADGE = {
 
 local function TierBadge(parent, text, tier)
     local b = CreateFrame("Frame", nil, parent)
-    b:SetSize(text == "AoE" and 34 or 28, 16)
     local bg = b:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     local fs = b:CreateFontString(nil, "OVERLAY")
     fs:SetFont(FONT, 9, "")
     fs:SetPoint("CENTER")
     fs:SetText(text)
+    b:SetSize(math.max(28, math.ceil(fs:GetStringWidth()) + 12), 16)
     local style = TIER_BADGE[tier]
     if style then
         bg:SetColorTexture(unpack(style.bg))
@@ -495,8 +495,9 @@ local function TierBadge(parent, text, tier)
 end
 
 -- info = { spellId, name, icon, note, st, aoe, known, key, keyWarn }
+-- labels = { st = "ST", aoe = "AoE" } (badge text, per profile)
 -- keyWarn: nil | "unbound" | "modifier"
-function W:SpellRow(parent, y, info)
+function W:SpellRow(parent, y, info, labels)
     local ROW = 36
     local f = MakeRow(parent, y, ROW)
     f:EnableMouse(true)
@@ -533,10 +534,10 @@ function W:SpellRow(parent, y, info)
         keyText:SetTextColor(1, 0.35, 0.35, info.keyWarn == "unbound" and 1 or 0.5)
     end
 
-    local aoe = TierBadge(f, "AoE", info.aoe)
+    local aoe = TierBadge(f, labels.aoe, info.aoe)
     aoe:SetPoint("RIGHT", keyBox, "LEFT", -8, 0)
     aoe:SetAlpha(dim)
-    local st = TierBadge(f, "ST", info.st)
+    local st = TierBadge(f, labels.st, info.st)
     st:SetPoint("RIGHT", aoe, "LEFT", -4, 0)
     st:SetAlpha(dim)
 

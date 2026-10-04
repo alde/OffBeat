@@ -60,7 +60,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 201900,
-            consumeSpell = 60103,
+            consumeSpells = { 60103 },
             window = 0.5,
             name = "Hot Hand",
         },

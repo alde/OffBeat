@@ -495,10 +495,11 @@ function Rotation:OnAuraLost(_, spellId)
             local window = pt.window or 0.5
             local consumed = false
             for _, entry in ipairs(OffBeat.state.history) do
-                if entry.spellId == pt.consumeSpell and (GetTime() - entry.time) <= window then
-                    consumed = true
-                    break
+                if (GetTime() - entry.time) > window then break end -- history is newest first
+                for _, id in ipairs(pt.consumeSpells) do
+                    if entry.spellId == id then consumed = true; break end
                 end
+                if consumed then break end
             end
             if not consumed then
                 if GetSpecOr("procExpireAlert") then

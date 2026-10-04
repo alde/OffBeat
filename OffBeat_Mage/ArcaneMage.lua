@@ -45,7 +45,7 @@ OffBeat:RegisterProfile({
     procTracking = {
         {
             procAura = 79684,
-            consumeSpell = 5143,
+            consumeSpells = { 5143 },
             window = 0.5,
             name = "Clearcasting",
         },

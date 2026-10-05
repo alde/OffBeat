@@ -113,13 +113,14 @@ Currently filled in for all Warlock and Death Knight specs, and Discipline and H
 | Type | Rule | Example |
 |------|------|---------|
 | `repeat_cast` | Same spell cast twice in a row | Windwalker mastery break |
-| `bad_cast` | One of `spells` cast while every condition in `when` holds | Frost Strike during Killing Machine, Hand of Gul'dan under 3 shards |
+| `bad_cast` | One of `spells` cast while every condition in `when` holds | Frost Strike at 2 Killing Machine, Heart Strike at 75+ Runic Power |
 
-`when` is one condition or a list of them (all must hold). Two kinds:
+`when` is one condition or a list of them (all must hold). Three kinds:
 
 ```lua
 { aura = 264173, minStacks = 4 }              -- aura up, optional stack range; absent = true for "not up"
-{ power = "SoulShards", max = 2 }             -- Enum.PowerType name or number, min and/or max
+{ power = "RunicPower", min = 75 }            -- Enum.PowerType name or number, min and/or max
+{ combat = true }                             -- in or out of combat
 ```
 
 Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one.

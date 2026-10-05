@@ -38,6 +38,7 @@ Warnings.lua
 
 ## Rotation Tracker
 Auras.lua
+Conditions.lua
 Rotation.lua
 RotationDisplay.lua
 RotationTimeline.lua

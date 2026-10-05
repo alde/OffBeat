@@ -21,7 +21,7 @@ OffBeat:RegisterProfile({
         { spellId = 104316 },  -- Call Dreadstalkers
         { spellId = 265187 },  -- Summon Demonic Tyrant
         { spellId = 18540 },   -- Summon Doomguard
-        { spellId = 1288945 }, -- Grimoire: Imp Lord (choice node)
+        { spellId = 1276452 }, -- Grimoire: Imp Lord (choice node)
         { spellId = 1276467 }, -- Grimoire: Fel Ravager (choice node)
         { spellId = 196277 },  -- Implosion
         { spellId = 264130 },  -- Power Siphon (talent)
@@ -47,19 +47,20 @@ OffBeat:RegisterProfile({
         { spellId = 104316,  name = "Call Dreadstalkers" },
         { spellId = 264130,  name = "Power Siphon" },
         { spellId = 18540,   name = "Summon Doomguard" },
-        { spellId = 1288945, name = "Grimoire: Imp Lord" },
+        { spellId = 1276452, name = "Grimoire: Imp Lord" },
         { spellId = 1276467, name = "Grimoire: Fel Ravager" },
     },
 
-    -- Method: "Hand of Gul'dan on 3+ Soul Shards" and "don't overcap Demonic
-    -- Core procs" (cap 4). Shards are read when the button is pressed.
+    -- Method: "don't overcap Demonic Core procs" (cap 4), and Demonbolt is
+    -- only ever used instant off a Demonic Core (a hardcast precast before
+    -- the pull is fine).
     mistakes = {
         {
             type = "bad_cast",
-            name = "Weak Hand of Gul'dan",
-            description = "Hand of Gul'dan with fewer than 3 Soul Shards",
-            spells = { 105174 },
-            when = { power = "SoulShards", max = 2 },
+            name = "Hardcast Demonbolt",
+            description = "Demonbolt in combat without Demonic Core",
+            spells = { 264178 },
+            when = { { aura = 264173, absent = true }, { combat = true } },
         },
         {
             type = "bad_cast",
@@ -87,14 +88,14 @@ OffBeat:RegisterProfile({
     -- st / aoe tier: 1 = core (best keys), 2 = regular, 3 = cooldown, nil = unused.
     keyLayout = {
         { spellId = 686,     st = 1, aoe = 1, note = "Filler, builds Soul Shards" },
-        { spellId = 105174,  st = 1, aoe = 1, note = "Spend at 3+ Soul Shards" },
+        { spellId = 105174,  st = 1, aoe = 1, note = "Costs 3 Soul Shards, summons 3 Wild Imps" },
         { spellId = 264178,  st = 1, aoe = 1, note = "Demonic Core procs. AoE: spread Doom" },
         { spellId = 196277,  st = 2, aoe = 1, note = "At 6+ Imps" },
         { spellId = 104316,  st = 2, aoe = 2, note = "On cooldown unless lining up Tyrant" },
         { spellId = 264130,  st = 2, aoe = 2, note = "Precast ~5s before the pull" },
         { spellId = 265187,  st = 3, aoe = 3, note = "Main cooldown, go in at 5 shards" },
         { spellId = 18540,   st = 3, aoe = 3, note = "Opener, before Grimoire" },
-        { spellId = 1288945, st = 3, aoe = 3, note = "Grimoire choice node" },
+        { spellId = 1276452, st = 3, aoe = 3, note = "Grimoire choice node" },
         { spellId = 1276467, st = 3, aoe = 3, note = "Grimoire choice node" },
     },
 })

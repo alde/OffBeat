@@ -120,6 +120,10 @@ function OffBeat:ValidateRotationSpells(spells)
     return true
 end
 
+local function IsCondition(c)
+    return c.aura ~= nil or c.power ~= nil or c.combat ~= nil
+end
+
 local function ValidateCondition(c, where)
     if type(c) ~= "table" then return false, where .. " must be a table" end
     if c.aura then
@@ -131,8 +135,10 @@ local function ValidateCondition(c, where)
             return false, where .. ".power must be a power type name or number"
         end
         if c.min == nil and c.max == nil then return false, where .. " needs min and/or max" end
+    elseif c.combat ~= nil then
+        if type(c.combat) ~= "boolean" then return false, where .. ".combat must be true or false" end
     else
-        return false, where .. " must have aura or power"
+        return false, where .. " must have aura, power or combat"
     end
     return true
 end
@@ -150,7 +156,7 @@ function OffBeat:ValidateMistakes(mistakes)
             end
             local when = mistake.when
             if type(when) ~= "table" then return false, where .. ".when is required" end
-            if when.aura or when.power then when = { when } end
+            if IsCondition(when) then when = { when } end
             if #when == 0 then return false, where .. ".when needs at least one condition" end
             for j, c in ipairs(when) do
                 local ok, err = ValidateCondition(c, where .. ".when[" .. j .. "]")

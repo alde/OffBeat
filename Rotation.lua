@@ -79,85 +79,15 @@ end
 --   repeat_cast  same spell twice in a row
 --   bad_cast     one of `spells` cast while every condition in `when` holds
 --
--- Conditions (a single table, or a list of them that must all hold):
---   { aura = id, [minStacks = n], [maxStacks = n], [absent = true] }
---   { power = "SoulShards" | Enum.PowerType value, [min = n], [max = n] }
--- A value that can't be read (secret, missing) never matches, so unreadable
--- state can only hide a mistake, never invent one.
+-- Conditions are documented and implemented in Conditions.lua.
 
-local function IsSecret(val)
-    if val == nil or not _G.issecretvalue then return false end
-    local ok, secret = pcall(_G.issecretvalue, val)
-    return ok and secret
-end
-
-local function ReadNumber(val)
-    if val == nil or IsSecret(val) then return nil end
-    local ok, num = pcall(tonumber, val)
-    if ok and num and not IsSecret(num) then return num end
-    return nil
-end
-
-local function InRange(v, min, max)
-    if min and v < min then return false end
-    if max and v > max then return false end
-    return true
-end
-
-local CONDITION_CHECKS = {
-    aura = function(c)
-        local auras = OffBeat:GetModule("Auras", true)
-        if not auras then return false end
-        local active = auras:IsActive(c.aura)
-        if c.absent then return not active end
-        if not active then return false end
-        if c.minStacks or c.maxStacks then
-            local rec = auras:GetAura(c.aura)
-            local stacks = rec and ReadNumber(rec.stacks)
-            if not stacks or stacks == 0 then return false end -- 0 = unreadable
-            return InRange(stacks, c.minStacks, c.maxStacks)
-        end
-        return true
-    end,
-    power = function(c)
-        local ok, v = pcall(UnitPower, "player", c.powerType)
-        v = ok and ReadNumber(v)
-        if not v then return false end
-        return InRange(v, c.min, c.max)
-    end,
-}
-
-local function ConditionKind(c)
-    if c.aura then return "aura" end
-    if c.power then return "power" end
-end
-
-local function NormalizeCondition(c)
-    local kind = ConditionKind(c)
-    if kind == "power" then
-        local pt = c.power
-        if type(pt) == "string" then pt = Enum and Enum.PowerType and Enum.PowerType[pt] end
-        if type(pt) ~= "number" then return nil end
-        return { kind = kind, powerType = pt, min = c.min, max = c.max }
-    elseif kind == "aura" then
-        return { kind = kind, aura = c.aura, minStacks = c.minStacks,
-                 maxStacks = c.maxStacks, absent = c.absent }
-    end
-end
+local IsSecret = OffBeat.Conditions.IsSecret
 
 local function BuildBadCastRule(rule)
-    local spells, conds = {}, {}
+    local spells = {}
     for _, id in ipairs(rule.spells) do spells[id] = true end
-
-    local when = rule.when
-    if when and (when.aura or when.power) then when = { when } end
-    for _, c in ipairs(when or {}) do
-        local n = NormalizeCondition(c)
-        if not n then return nil end -- unknown power type etc: drop the whole rule
-        conds[#conds + 1] = n
-    end
-    if #conds == 0 then return nil end
-
+    local conds = OffBeat.Conditions.Normalize(rule.when)
+    if not conds then return nil end -- unknown power type etc: drop the whole rule
     return {
         spells = spells,
         conds = conds,
@@ -168,11 +98,7 @@ end
 local function MatchBadCast(spellId)
     for _, rule in ipairs(badCastRules) do
         if rule.spells[spellId] then
-            local all = true
-            for _, c in ipairs(rule.conds) do
-                if not CONDITION_CHECKS[c.kind](c) then all = false; break end
-            end
-            if all then return rule.name end
+            if OffBeat.Conditions.Check(rule.conds) then return rule.name end
         end
     end
     return nil
@@ -311,7 +237,7 @@ end
 -- Cast tracking
 
 -- Judge bad_cast conditions when the button is pressed: by the time a cast
--- succeeds its cost is paid (Hand of Gul'dan at 3 shards reads as 0) and
+-- succeeds its cost is paid (Death Strike at 80 RP reads as 35) and
 -- procs it consumes are gone. Cancelled casts never reach SUCCEEDED, so the
 -- verdict is only recorded if the cast goes through.
 function Rotation:UNIT_SPELLCAST_SENT(_, unit, _, castGUID, spellId)

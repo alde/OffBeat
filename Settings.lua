@@ -549,6 +549,38 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.procExpireSound = v end); y = y - h
     end
 
+    -- Cooldown windows (coaching)
+    if profile.windows and #profile.windows > 0 then
+        local win = OffBeat:GetModule("Windows", true)
+        _, h = W:SectionHeader(parent, "COOLDOWN WINDOWS (TRAINING)", y); y = y - h
+        _, h = W:Toggle(parent, "Training Mode (this session)", y,
+            function() return OffBeat.training end,
+            function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
+        _, h = W:Toggle(parent, "Live Counter", y,
+            function()
+                local v = ss.windowLive
+                if v == nil then return db.windowLive end
+                return v
+            end,
+            function(v) ss.windowLive = v end); y = y - h
+        _, h = W:Toggle(parent, "Chat Scorecard", y,
+            function()
+                local v = ss.windowChat
+                if v == nil then return db.windowChat end
+                return v
+            end,
+            function(v) ss.windowChat = v end); y = y - h
+        if win then
+            for _, w in ipairs(profile.windows) do
+                for _, g in ipairs(w.goals or {}) do
+                    _, h = W:Slider(parent, w.name .. ": " .. g.name .. " goal", y, 1, 20, 1,
+                        function() return win:GetGoalMin(w, g) end,
+                        function(v) win:SetGoalMin(w, g, v) end); y = y - h
+                end
+            end
+        end
+    end
+
     -- Idle Cooldowns
     if profile.idleCooldowns and #profile.idleCooldowns > 0 then
         _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h

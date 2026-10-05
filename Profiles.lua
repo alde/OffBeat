@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows",
 }
 
 
@@ -66,6 +66,11 @@ function OffBeat:ValidateProfile(profile)
 
     if profile.keyLayout then
         local ok, err = self:ValidateKeyLayout(profile.keyLayout)
+        if not ok then return false, err end
+    end
+
+    if profile.windows then
+        local ok, err = self:ValidateWindows(profile.windows)
         if not ok then return false, err end
     end
 
@@ -139,6 +144,45 @@ local function ValidateCondition(c, where)
         if type(c.combat) ~= "boolean" then return false, where .. ".combat must be true or false" end
     else
         return false, where .. " must have aura, power or combat"
+    end
+    return true
+end
+
+local function ValidateWhen(when, where)
+    if type(when) ~= "table" then return false, where .. " is required" end
+    if IsCondition(when) then when = { when } end
+    if #when == 0 then return false, where .. " needs at least one condition" end
+    for j, c in ipairs(when) do
+        local ok, err = ValidateCondition(c, where .. "[" .. j .. "]")
+        if not ok then return false, err end
+    end
+    return true
+end
+
+function OffBeat:ValidateWindows(windows)
+    if type(windows) ~= "table" then return false, "windows must be a table" end
+    for i, w in ipairs(windows) do
+        local where = "windows[" .. i .. "]"
+        if type(w.name) ~= "string" then return false, where .. ".name must be a string" end
+        if type(w.trigger) ~= "number" then return false, where .. ".trigger must be a spell ID" end
+        if type(w.duration) ~= "number" or w.duration <= 0 then
+            return false, where .. ".duration must be a positive number"
+        end
+        if (w.goals == nil or #w.goals == 0) and (w.setup == nil or #w.setup == 0) then
+            return false, where .. " needs goals and/or setup checks"
+        end
+        for j, g in ipairs(w.goals or {}) do
+            local gw = where .. ".goals[" .. j .. "]"
+            if type(g.name) ~= "string" then return false, gw .. ".name must be a string" end
+            if type(g.spells) ~= "table" or #g.spells == 0 then return false, gw .. ".spells must be a non-empty list" end
+            if type(g.min) ~= "number" then return false, gw .. ".min must be a number" end
+        end
+        for j, s in ipairs(w.setup or {}) do
+            local sw = where .. ".setup[" .. j .. "]"
+            if type(s.name) ~= "string" then return false, sw .. ".name must be a string" end
+            local ok, err = ValidateWhen(s.when, sw .. ".when")
+            if not ok then return false, err end
+        end
     end
     return true
 end

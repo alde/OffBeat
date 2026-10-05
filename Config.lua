@@ -71,6 +71,11 @@ function OffBeat:GetDefaults()
             keyLayoutView = "both",          -- both | st | aoe
             keyLayoutShowUntalented = false,
 
+            -- Cooldown window coaching (Windows)
+            windowLive = true,   -- live counter during the window
+            windowChat = true,   -- scorecard in chat when it closes
+            windowPosition = nil,
+
             -- Alerts
             soundEnabled = true,
             mistakeSound = "raid_warning",

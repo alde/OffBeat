@@ -25,6 +25,7 @@ local FEATURE_MODULES = {
     castWarnings   = { "Warnings" },
     trackedAuras   = { "Auras" },
     rotationSpells = { "Rotation", "RotationDisplay", "RotationTimeline" },
+    windows        = { "Windows" },
 }
 
 local ALL_FEATURE_MODULE_NAMES = {}
@@ -218,6 +219,21 @@ end
 
 -- Slash commands
 
+-- Training mode: cooldown window coaching (Windows). Off by default and never
+-- saved, so a reload or relog always turns it back off before a raid.
+OffBeat.training = false
+
+function OffBeat:ToggleTraining()
+    local profile = self.activeProfile
+    if not self.training and not (profile and profile.windows) then
+        self:Print("No training windows for this spec.")
+        return
+    end
+    self.training = not self.training
+    self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or reload)." or "off."))
+    self:SendMessage("OFFBEAT_TRAINING_CHANGED", self.training)
+end
+
 function OffBeat:OnSlashCommand(input)
     local cmd = self:GetArgs(input, 1)
     cmd = cmd and cmd:lower() or ""
@@ -238,6 +254,8 @@ function OffBeat:OnSlashCommand(input)
         self:Print("Debug " .. (self.db.profile.debug and "enabled" or "disabled") .. ".")
     elseif cmd == "test" then
         self:InjectTestData()
+    elseif cmd == "training" or cmd == "train" then
+        self:ToggleTraining()
     elseif cmd == "profile" then
         local _, name = self:GetArgs(input, 2)
         if name then
@@ -255,6 +273,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob profile      — List/switch profiles")
         self:Print("  /ob debug        — Toggle debug logging")
         self:Print("  /ob test         — Inject test data")
+        self:Print("  /ob training     — Toggle cooldown window coaching (this session)")
     end
 
 end

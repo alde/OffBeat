@@ -40,6 +40,7 @@ Warnings.lua
 Auras.lua
 Conditions.lua
 Rotation.lua
+Windows.lua
 RotationDisplay.lua
 RotationTimeline.lua
 

@@ -60,6 +60,7 @@ cd Interface/AddOns/OffBeat
 | `/ob lock` | Lock/unlock frames |
 | `/ob profile <name>` | Switch profile |
 | `/ob test` | Inject test data |
+| `/ob training` | Toggle cooldown window coaching for this session |
 
 
 ## Creating a profile
@@ -107,6 +108,22 @@ Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`
 `keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
 
 Currently filled in for all Warlock and Death Knight specs, and Discipline and Holy Priest.
+
+## Cooldown windows
+
+Training only, off by default: `/ob training` (or the toggle on the Spec page) turns it on until you turn it off or reload, so it's never left running in a raid.
+
+A profile can coach a cooldown window: casting `trigger` opens it for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); `goals` count casts inside the window.
+
+```lua
+windows = { {
+    name = "Tyrant", trigger = 265187, duration = 25,
+    setup = { { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } } },
+    goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 7 } },
+} }
+```
+
+During the window a live counter shows progress (movable when frames are unlocked); when it closes a scorecard prints to chat, and combat end prints a summary per window. Goals can be adjusted per spec on the Spec page, so you can start low and raise them as you improve.
 
 ## Mistake types
 

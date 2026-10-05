@@ -71,6 +71,24 @@ OffBeat:RegisterProfile({
         },
     },
 
+    -- Coaching: Tyrant opens Dominion of Argus' window, and the guides say to
+    -- pool shards for it and fit as many Hand of Gul'dans in as you can
+    -- (Kalamazi: "maximize Hand of Gul'dan casts within the 25-second window").
+    -- A top heroic Ula'tek parse averaged 8.4 per window (6-12); goal 7.
+    windows = {
+        {
+            name = "Tyrant",
+            trigger = 265187,
+            duration = 25,
+            setup = {
+                { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } },
+            },
+            goals = {
+                { name = "Hand of Gul'dan", spells = { 105174 }, min = 7 },
+            },
+        },
+    },
+
     -- Demonic Core dropping without a Demonbolt is a wasted instant cast.
     procTracking = {
         {

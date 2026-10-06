@@ -6,9 +6,16 @@ local OffBeat = _G.OffBeat
 --   { aura = id, [minStacks = n], [maxStacks = n], [absent = true] }
 --   { power = "SoulShards" | Enum.PowerType value, [min = n], [max = n] }
 --   { combat = true | false }
+--   { hardcast = true | false }   the cast had a cast bar (not instant)
 --
 -- A value that can't be read (secret, missing) never matches, so unreadable
--- state can only hide a result, never invent one.
+-- state can only hide a result, never invent one. That includes "aura not
+-- up" (absent = true): while the game hides auras it never matches, since a
+-- hidden aura would otherwise look like a missing one.
+--
+-- hardcast is only known once the cast has started, so it is "deferred":
+-- callers judge the other conditions when the button is pressed and the
+-- deferred ones when the cast completes (see Check's `only`).
 
 local C = {}
 OffBeat.Conditions = C
@@ -34,10 +41,17 @@ local function InRange(v, min, max)
     return true
 end
 
+local function AurasHidden()
+    if not (C_Secrets and C_Secrets.ShouldAurasBeSecret) then return false end
+    local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
+    return ok and secret and true or false
+end
+
 local CHECKS = {
     aura = function(c)
         local auras = OffBeat:GetModule("Auras", true)
         if not auras then return false end
+        if c.absent and AurasHidden() then return false end
         local active = auras:IsActive(c.aura)
         if c.absent then return not active end
         if not active then return false end
@@ -60,6 +74,10 @@ local CHECKS = {
         if not ok or IsSecret(v) then return false end
         return (v and true or false) == c.combat
     end,
+    hardcast = function(c, ctx)
+        if not ctx or ctx.hardcast == nil then return false end -- unknown
+        return ctx.hardcast == c.hardcast
+    end,
 }
 
 function C.Kind(c)
@@ -67,6 +85,7 @@ function C.Kind(c)
     if c.aura then return "aura" end
     if c.power then return "power" end
     if c.combat ~= nil then return "combat" end
+    if c.hardcast ~= nil then return "hardcast" end
 end
 
 local function NormalizeOne(c)
@@ -81,6 +100,8 @@ local function NormalizeOne(c)
                  maxStacks = c.maxStacks, absent = c.absent }
     elseif kind == "combat" then
         return { kind = kind, combat = c.combat }
+    elseif kind == "hardcast" then
+        return { kind = kind, hardcast = c.hardcast, deferred = true }
     end
 end
 
@@ -99,10 +120,16 @@ function C.Normalize(when)
     return out
 end
 
---- True when every condition in a normalized list holds right now.
-function C.Check(list)
+--- True when every condition in a normalized list holds.
+--- ctx: facts about the cast ({ hardcast = bool }), or nil.
+--- only: nil = all conditions, "immediate" = skip deferred ones (judged at
+--- the button press), "deferred" = only deferred ones (at cast completion).
+function C.Check(list, ctx, only)
     for _, c in ipairs(list) do
-        if not CHECKS[c.kind](c) then return false end
+        local include = only == nil
+            or (only == "immediate" and not c.deferred)
+            or (only == "deferred" and c.deferred)
+        if include and not CHECKS[c.kind](c, ctx) then return false end
     end
     return true
 end

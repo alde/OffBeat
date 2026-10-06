@@ -53,14 +53,15 @@ OffBeat:RegisterProfile({
 
     -- Method: "don't overcap Demonic Core procs" (cap 4), and Demonbolt is
     -- only ever used instant off a Demonic Core (a hardcast precast before
-    -- the pull is fine).
+    -- the pull is fine). Hardcasts are told apart by the cast bar, not the
+    -- Demonic Core buff, which the game can hide from addons in combat.
     mistakes = {
         {
             type = "bad_cast",
             name = "Hardcast Demonbolt",
-            description = "Demonbolt in combat without Demonic Core",
+            description = "Demonbolt with a cast time in combat (no Demonic Core)",
             spells = { 264178 },
-            when = { { aura = 264173, absent = true }, { combat = true } },
+            when = { { hardcast = true }, { combat = true } },
         },
         {
             type = "bad_cast",

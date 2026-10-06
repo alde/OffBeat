@@ -132,15 +132,16 @@ During the window a live counter shows progress (movable when frames are unlocke
 | `repeat_cast` | Same spell cast twice in a row | Windwalker mastery break |
 | `bad_cast` | One of `spells` cast while every condition in `when` holds | Frost Strike at 2 Killing Machine, Heart Strike at 75+ Runic Power |
 
-`when` is one condition or a list of them (all must hold). Three kinds:
+`when` is one condition or a list of them (all must hold). Four kinds:
 
 ```lua
 { aura = 264173, minStacks = 4 }              -- aura up, optional stack range; absent = true for "not up"
 { power = "RunicPower", min = 75 }            -- Enum.PowerType name or number, min and/or max
 { combat = true }                             -- in or out of combat
+{ hardcast = true }                           -- the cast had a cast bar (not instant)
 ```
 
-Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one.
+Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one; that includes "aura not up" while the game hides auras. Prefer `hardcast` over "proc aura absent" for instant-on-proc spells: it doesn't depend on reading auras.
 
 ## License
 

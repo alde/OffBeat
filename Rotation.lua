@@ -5,7 +5,9 @@ local Rotation = OffBeat:NewModule("Rotation", "AceEvent-3.0")
 local rotationSpellSet = {}   -- spellId -> true
 local idleCooldownSet = {}    -- spellId -> { name }
 local badCastRules = {}       -- array of { spells={id->true}, conds={...}, name }
-local pendingCasts = {}       -- castGUID -> mistake name (or false), judged at UNIT_SPELLCAST_SENT
+local pendingCasts = {}       -- castGUID -> candidate rules, judged at UNIT_SPELLCAST_SENT
+local castBars = {}           -- castGUID -> true when the cast showed a cast bar
+local castBarCount = 0
 local pendingCount = 0
 local hasRepeatCastMistake = false
 local repeatCastName = "Mistake"
@@ -95,11 +97,21 @@ local function BuildBadCastRule(rule)
     }
 end
 
-local function MatchBadCast(spellId)
+-- Rules for this spell whose press-time conditions hold.
+local function CandidateRules(spellId)
+    local out = {}
     for _, rule in ipairs(badCastRules) do
-        if rule.spells[spellId] then
-            if OffBeat.Conditions.Check(rule.conds) then return rule.name end
+        if rule.spells[spellId] and OffBeat.Conditions.Check(rule.conds, nil, "immediate") then
+            out[#out + 1] = rule
         end
+    end
+    return out
+end
+
+-- First candidate whose completion-time conditions (hardcast) also hold.
+local function FirstMatch(candidates, ctx)
+    for _, rule in ipairs(candidates) do
+        if OffBeat.Conditions.Check(rule.conds, ctx, "deferred") then return rule.name end
     end
     return nil
 end
@@ -129,6 +141,8 @@ function Rotation:OnEnable()
     self:BuildLookups()
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     self:RegisterEvent("UNIT_SPELLCAST_SENT")
+    self:RegisterEvent("UNIT_SPELLCAST_START", "OnCastBar")
+    self:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START", "OnCastBar")
     self:RegisterEvent("PLAYER_REGEN_DISABLED")
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
     self:RegisterEvent("CHALLENGE_MODE_START")
@@ -175,6 +189,8 @@ function Rotation:BuildLookups()
     wipe(idleCooldownSet)
     wipe(badCastRules)
     wipe(pendingCasts)
+    wipe(castBars)
+    castBarCount = 0
     pendingCount = 0
     hasRepeatCastMistake = false
     keyCd = nil
@@ -245,8 +261,18 @@ function Rotation:UNIT_SPELLCAST_SENT(_, unit, _, castGUID, spellId)
     if not castGUID or IsSecret(castGUID) or IsSecret(spellId) then return end
     if not rotationSpellSet[spellId] then return end
     if pendingCount > 20 then wipe(pendingCasts); pendingCount = 0 end
-    pendingCasts[castGUID] = MatchBadCast(spellId) or false
+    pendingCasts[castGUID] = CandidateRules(spellId)
     pendingCount = pendingCount + 1
+end
+
+-- Instant casts never start a cast bar, so this is how a hardcast is told
+-- apart without reading any aura.
+function Rotation:OnCastBar(_, unit, castGUID)
+    if unit ~= "player" or #badCastRules == 0 then return end
+    if not castGUID or IsSecret(castGUID) then return end
+    if castBarCount > 20 then wipe(castBars); castBarCount = 0 end
+    castBars[castGUID] = true
+    castBarCount = castBarCount + 1
 end
 
 function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
@@ -308,16 +334,21 @@ function Rotation:EvaluateMistakes(spellId, state, castGUID)
     end
 
     if #badCastRules > 0 then
-        local pending
+        local pending, ctx
         if castGUID and not IsSecret(castGUID) then
             pending = pendingCasts[castGUID]
             if pending ~= nil then
                 pendingCasts[castGUID] = nil
                 pendingCount = pendingCount - 1
             end
+            ctx = { hardcast = castBars[castGUID] or false }
+            if castBars[castGUID] then
+                castBars[castGUID] = nil
+                castBarCount = castBarCount - 1
+            end
         end
-        if pending ~= nil then return pending or nil end
-        return MatchBadCast(spellId) -- no SENT snapshot: judge on current state
+        -- no SENT snapshot: judge the press-time conditions on current state
+        return FirstMatch(pending or CandidateRules(spellId), ctx)
     end
 
     return nil

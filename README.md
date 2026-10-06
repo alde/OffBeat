@@ -16,7 +16,11 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Rotation tracking** (e.g. Windwalker Monk, Frost DK, Ret Paladin): ability history strip, mistake detection, key cooldown alerts, proc tracking, cast log with export.
 
-A profile can use both at once.
+**Key Layout**: a settings page that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
+
+**Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
+
+A profile can use any combination.
 
 ## Included profiles
 
@@ -30,7 +34,7 @@ A profile can use both at once.
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
-| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout |
+| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout; Training (Demonology) |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 | OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns |
 
@@ -97,6 +101,12 @@ OffBeat:RegisterProfile({
     -- Key Layout page: tier per context, 1 = core, 2 = regular, 3 = cooldown, nil = unused
     keyLayout = { { spellId = 11111, st = 1, aoe = 2, note = "Filler", alt = { 11112 } } },
     keyLayoutLabels = { st = "ST", aoe = "AoE", stLong = "Single Target", aoeLong = "AoE" }, -- optional
+
+    -- Training (see below)
+    windows = { { name = "Big CD", trigger = 99999, duration = 20,
+                  goals = { { name = "Spender", spells = { 22222 }, min = 6 } } } },
+    benchmarks = { source = "top parses", rates = {
+        { name = "Spender", spells = { 22222 }, low = 10, median = 11, high = 12 } } },
 })
 ```
 
@@ -110,21 +120,47 @@ Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`
 
 Currently filled in for all Warlock and Death Knight specs, and Discipline and Holy Priest.
 
-## Cooldown windows
+## Training
 
-Training only, off by default: `/ob training` (or the toggle on the Spec page) turns it on until you turn it off or reload, so it's never left running in a raid.
+Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off, reload or relog, so it can't follow you into a raid by accident.
 
-A profile can coach a cooldown window: casting `trigger` opens it for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); `goals` count casts inside the window.
+How to use it:
+
+1. Turn it on and fight a target dummy (or a boss).
+2. When you press the window's cooldown, OffBeat checks your setup (for Demonology: 5 Soul Shards pooled) and a counter shows the casts that matter inside the window against a goal.
+3. Each window ends with a scorecard in chat; each fight ends with a summary and your casts per minute against the profile's benchmarks.
+4. Turn training off and a **report panel** sums up the session: one bar per window against its goal, and one bar per benchmark spell over the top players' middle half. `/ob report` reopens the last report.
+
+Goals can be adjusted per spec on the Training page, so you can start with one you can reach and raise it as you improve.
+
+### Windows
+
+Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); `goals` count casts inside the window. `note` is shown on the Training page.
 
 ```lua
 windows = { {
     name = "Tyrant", trigger = 265187, duration = 25,
+    note = "Pool shards and cores, then spend everything on Hand of Gul'dan.",
     setup = { { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } } },
-    goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 7 } },
+    goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 8 } },
 } }
 ```
 
-During the window a live counter shows progress (movable when frames are unlocked); when it closes a scorecard prints to chat, and combat end prints a summary per window. Goals can be adjusted per spec on the Training page, so you can start low and raise them as you improve. When you turn training off, a report window sums up the session: every window's results plus your casts per minute against the profile's `benchmarks`; `/ob report` reopens it.
+### Benchmarks
+
+Casts per minute taken from top parses: `median` plus `low` / `high` for the middle half. `all = true` counts every `rotationSpells` cast. A fight reaches a benchmark when your rate is at least `low`.
+
+```lua
+benchmarks = {
+    source = "top 100 heroic Ula'tek",
+    rates = {
+        { name = "Rotation casts",  all = true,           low = 40.5, median = 41.5, high = 42.7 },
+        { name = "Hand of Gul'dan", spells = { 105174 },  low = 12.7, median = 13.1, high = 13.6 },
+    },
+}
+```
+
+Demonology's goals and benchmarks come from the top 93 heroic Ula'tek Demonology parses on Warcraft Logs (October 2026). They are boss-specific: on other fights treat the casts-per-minute comparison as a rough guide.
 
 ## Mistake types
 

@@ -26,6 +26,8 @@ OffBeat:RegisterProfile({
         { spellId = 196277 },  -- Implosion
         { spellId = 264130 },  -- Power Siphon (talent)
         { spellId = 460551 },  -- Doom (talent, applied via Demonbolt)
+        { spellId = 434635 },  -- Ruination (Diabolist)
+        { spellId = 434506 },  -- Infernal Bolt (Diabolist)
     },
 
     trackedAuras = {
@@ -43,10 +45,10 @@ OffBeat:RegisterProfile({
 
     -- Method: Dreadstalkers go on cooldown unless you're lining them up for
     -- Tyrant (Reign of Tyranny); disable its idle nag under Spec if that's noisy.
+    -- Summon Doomguard and Power Siphon are left out: none of the top 93
+    -- heroic Ula'tek parses (5 Oct 2026) cast either.
     idleCooldowns = {
         { spellId = 104316,  name = "Call Dreadstalkers" },
-        { spellId = 264130,  name = "Power Siphon" },
-        { spellId = 18540,   name = "Summon Doomguard" },
         { spellId = 1276452, name = "Grimoire: Imp Lord" },
         { spellId = 1276467, name = "Grimoire: Fel Ravager" },
     },
@@ -75,18 +77,38 @@ OffBeat:RegisterProfile({
     -- Coaching: Tyrant opens Dominion of Argus' window, and the guides say to
     -- pool shards for it and fit as many Hand of Gul'dans in as you can
     -- (Kalamazi: "maximize Hand of Gul'dan casts within the 25-second window").
-    -- A top heroic Ula'tek parse averaged 8.4 per window (6-12); goal 7.
+    -- Across the top 93 heroic Ula'tek parses the median window holds 8
+    -- Hand of Gul'dans and 90% hold 6 or more.
     windows = {
         {
             name = "Tyrant",
             trigger = 265187,
             duration = 25,
+            note = "Pool shards and Demonic Cores before Tyrant, then spend everything on "
+                .. "Hand of Gul'dan inside the 25s Dominion of Argus window. Top 100 median: "
+                .. "8 per window, 90% get 6+.",
             setup = {
                 { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } },
             },
             goals = {
-                { name = "Hand of Gul'dan", spells = { 105174 }, min = 7 },
+                { name = "Hand of Gul'dan", spells = { 105174 }, min = 8 },
             },
+        },
+    },
+
+    -- Per-minute rates of the top 93 heroic Ula'tek parses (Warcraft Logs,
+    -- 5 Oct 2026): low/high are the middle half, scored at combat end in
+    -- training mode.
+    benchmarks = {
+        source = "top 100 heroic Ula'tek",
+        rates = {
+            { name = "Rotation casts",       all = true,                  low = 40.5, median = 41.5, high = 42.7 },
+            { name = "Hand of Gul'dan",      spells = { 105174 },         low = 12.7, median = 13.1, high = 13.6 },
+            { name = "Demonbolt",            spells = { 264178 },         low = 9.2,  median = 9.7,  high = 10.0 },
+            { name = "Shadow/Infernal Bolt", spells = { 686, 434506 },    low = 9.3,  median = 10.0, high = 10.6 },
+            { name = "Call Dreadstalkers",   spells = { 104316 },         low = 2.7,  median = 2.8,  high = 2.8 },
+            { name = "Implosion",            spells = { 196277 },         low = 2.9,  median = 3.2,  high = 3.3 },
+            { name = "Ruination",            spells = { 434635 },         low = 1.4,  median = 1.5,  high = 1.5 },
         },
     },
 
@@ -111,9 +133,9 @@ OffBeat:RegisterProfile({
         { spellId = 264178,  st = 1, aoe = 1, note = "Demonic Core procs. AoE: spread Doom" },
         { spellId = 196277,  st = 2, aoe = 1, note = "At 6+ Imps" },
         { spellId = 104316,  st = 2, aoe = 2, note = "On cooldown unless lining up Tyrant" },
-        { spellId = 264130,  st = 2, aoe = 2, note = "Precast ~5s before the pull" },
+        { spellId = 264130,  st = 2, aoe = 2, note = "Top parses don't take it" },
         { spellId = 265187,  st = 3, aoe = 3, note = "Main cooldown, go in at 5 shards" },
-        { spellId = 18540,   st = 3, aoe = 3, note = "Opener, before Grimoire" },
+        { spellId = 18540,   st = 3, aoe = 3, note = "Top parses don't take it" },
         { spellId = 1276452, st = 3, aoe = 3, note = "Grimoire choice node" },
         { spellId = 1276467, st = 3, aoe = 3, note = "Grimoire choice node" },
     },

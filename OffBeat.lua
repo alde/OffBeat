@@ -26,6 +26,7 @@ local FEATURE_MODULES = {
     trackedAuras   = { "Auras" },
     rotationSpells = { "Rotation", "RotationDisplay", "RotationTimeline" },
     windows        = { "Windows" },
+    benchmarks     = { "Windows" },
 }
 
 local ALL_FEATURE_MODULE_NAMES = {}
@@ -225,12 +226,12 @@ OffBeat.training = false
 
 function OffBeat:ToggleTraining()
     local profile = self.activeProfile
-    if not self.training and not (profile and profile.windows) then
+    if not self.training and not (profile and (profile.windows or profile.benchmarks)) then
         self:Print("No training windows for this spec.")
         return
     end
     self.training = not self.training
-    self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or reload)." or "off."))
+    self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or reload)." or "off. Report below; /ob report shows it again."))
     self:SendMessage("OFFBEAT_TRAINING_CHANGED", self.training)
 end
 
@@ -256,6 +257,10 @@ function OffBeat:OnSlashCommand(input)
         self:InjectTestData()
     elseif cmd == "training" or cmd == "train" then
         self:ToggleTraining()
+    elseif cmd == "report" then
+        local win = self:GetModule("Windows", true)
+        if win and win:IsEnabled() then win:ShowLastReport()
+        else self:Print("No training report for this spec.") end
     elseif cmd == "profile" then
         local _, name = self:GetArgs(input, 2)
         if name then
@@ -274,6 +279,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob debug        — Toggle debug logging")
         self:Print("  /ob test         — Inject test data")
         self:Print("  /ob training     — Toggle cooldown window coaching (this session)")
+        self:Print("  /ob report       — Show the last training report")
     end
 
 end

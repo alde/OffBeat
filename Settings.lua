@@ -26,6 +26,7 @@ local CATEGORIES = {
     { key = "appearance", label = "Appearance" },
     { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
     { key = "keyLayout",  label = "Key Layout",  requires = "keyLayout" },
+    { key = "training",   label = "Training",    requires = "windows" },
     { key = "profiles",   label = "Profiles" },
 }
 
@@ -549,38 +550,6 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.procExpireSound = v end); y = y - h
     end
 
-    -- Cooldown windows (coaching)
-    if profile.windows and #profile.windows > 0 then
-        local win = OffBeat:GetModule("Windows", true)
-        _, h = W:SectionHeader(parent, "COOLDOWN WINDOWS (TRAINING)", y); y = y - h
-        _, h = W:Toggle(parent, "Training Mode (this session)", y,
-            function() return OffBeat.training end,
-            function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
-        _, h = W:Toggle(parent, "Live Counter", y,
-            function()
-                local v = ss.windowLive
-                if v == nil then return db.windowLive end
-                return v
-            end,
-            function(v) ss.windowLive = v end); y = y - h
-        _, h = W:Toggle(parent, "Chat Scorecard", y,
-            function()
-                local v = ss.windowChat
-                if v == nil then return db.windowChat end
-                return v
-            end,
-            function(v) ss.windowChat = v end); y = y - h
-        if win then
-            for _, w in ipairs(profile.windows) do
-                for _, g in ipairs(w.goals or {}) do
-                    _, h = W:Slider(parent, w.name .. ": " .. g.name .. " goal", y, 1, 20, 1,
-                        function() return win:GetGoalMin(w, g) end,
-                        function(v) win:SetGoalMin(w, g, v) end); y = y - h
-                end
-            end
-        end
-    end
-
     -- Idle Cooldowns
     if profile.idleCooldowns and #profile.idleCooldowns > 0 then
         _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h
@@ -781,6 +750,85 @@ pageBuilders.keyLayout = function(parent, y)
     if profile.meta.source then
         _, h = W:Spacer(parent, y, 6); y = y - h
         _, h = W:Paragraph(parent, "Source: " .. profile.meta.source, y); y = y - h
+    end
+
+    return y
+end
+
+-- Training: cooldown window coaching (Windows.lua). Off by default; turned on
+-- per session with /ob training or the toggle below.
+
+pageBuilders.training = function(parent, y)
+    local W = OffBeat.Widgets
+    local profile = OffBeat.activeProfile
+    if not profile or not profile.windows then return y end
+    local db = OffBeat.db.profile
+    local ss = GetSpecSettings(profile.meta.specId)
+    local win = OffBeat:GetModule("Windows", true)
+    local _, h
+
+    _, h = W:SectionHeader(parent, "WHAT TRAINING DOES", y); y = y - h
+    _, h = W:Paragraph(parent,
+        "Training coaches your big cooldown windows. When you press the cooldown, OffBeat "
+        .. "checks your setup (for example, Soul Shards pooled) and then counts the casts "
+        .. "that matter inside the window against a goal taken from top parses.", y); y = y - h
+    _, h = W:Paragraph(parent,
+        "During the window a counter shows your progress. When it ends you get a scorecard "
+        .. "in chat, and after combat a summary: how many windows hit the goal, your average "
+        .. "and your best. Practise on a target dummy, start with a goal you can reach, and "
+        .. "raise it as you improve. After each fight it also compares your casts per minute "
+        .. "with top parses, and when you turn training off a report sums up the whole "
+        .. "session (reopen it with /ob report).", y); y = y - h
+    _, h = W:Paragraph(parent,
+        "Training is off by default and is never saved: it switches off on reload or relog, "
+        .. "so it can't follow you into a raid. Turn it on here or with /ob training.", y); y = y - h
+
+    _, h = W:SectionHeader(parent, "TRAINING MODE", y); y = y - h
+    _, h = W:Toggle(parent, "Training Mode (this session)", y,
+        function() return OffBeat.training end,
+        function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
+    _, h = W:Toggle(parent, "Live Counter", y,
+        function()
+            local v = ss.windowLive
+            if v == nil then return db.windowLive end
+            return v
+        end,
+        function(v) ss.windowLive = v end); y = y - h
+    _, h = W:Toggle(parent, "Chat Scorecard", y,
+        function()
+            local v = ss.windowChat
+            if v == nil then return db.windowChat end
+            return v
+        end,
+        function(v) ss.windowChat = v end); y = y - h
+
+    for _, w in ipairs(profile.windows) do
+        _, h = W:SectionHeader(parent, string.upper(w.name) .. " WINDOW (" .. w.duration .. "s)", y); y = y - h
+        if w.note then
+            _, h = W:Paragraph(parent, w.note, y); y = y - h
+        end
+        for _, st in ipairs(w.setup or {}) do
+            _, h = W:Paragraph(parent, "Setup check when you press it: " .. st.name, y); y = y - h
+        end
+        if win then
+            for _, g in ipairs(w.goals or {}) do
+                _, h = W:Slider(parent, g.name .. " goal", y, 1, 20, 1,
+                    function() return win:GetGoalMin(w, g) end,
+                    function(v) win:SetGoalMin(w, g, v) end); y = y - h
+            end
+        end
+    end
+
+    local bm = profile.benchmarks
+    if bm then
+        _, h = W:SectionHeader(parent, "TOP-PARSE BENCHMARKS (CASTS PER MINUTE)", y); y = y - h
+        local lines = {}
+        for _, r in ipairs(bm.rates) do
+            lines[#lines + 1] = string.format("%s: %.1f  (middle half %.1f-%.1f)", r.name, r.median, r.low, r.high)
+        end
+        _, h = W:Paragraph(parent, "From " .. (bm.source or "top parses") .. ". Checked after each "
+            .. "fight in training mode; a tick means you reached the middle half.\n\n"
+            .. table.concat(lines, "\n"), y); y = y - h
     end
 
     return y

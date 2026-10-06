@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks",
 }
 
 
@@ -72,6 +72,23 @@ function OffBeat:ValidateProfile(profile)
     if profile.windows then
         local ok, err = self:ValidateWindows(profile.windows)
         if not ok then return false, err end
+    end
+
+    if profile.benchmarks then
+        local bm = profile.benchmarks
+        if type(bm) ~= "table" or type(bm.rates) ~= "table" or #bm.rates == 0 then
+            return false, "benchmarks.rates must be a non-empty list"
+        end
+        for i, r in ipairs(bm.rates) do
+            local where = "benchmarks.rates[" .. i .. "]"
+            if type(r.name) ~= "string" then return false, where .. ".name must be a string" end
+            if not r.all and (type(r.spells) ~= "table" or #r.spells == 0) then
+                return false, where .. " needs spells or all = true"
+            end
+            for _, k in ipairs({ "low", "median", "high" }) do
+                if type(r[k]) ~= "number" then return false, where .. "." .. k .. " must be a number" end
+            end
+        end
     end
 
     if profile.keyLayoutLabels ~= nil then
@@ -167,6 +184,7 @@ function OffBeat:ValidateWindows(windows)
         local where = "windows[" .. i .. "]"
         if type(w.name) ~= "string" then return false, where .. ".name must be a string" end
         if type(w.trigger) ~= "number" then return false, where .. ".trigger must be a spell ID" end
+        if w.note ~= nil and type(w.note) ~= "string" then return false, where .. ".note must be a string" end
         if type(w.duration) ~= "number" or w.duration <= 0 then
             return false, where .. ".duration must be a positive number"
         end

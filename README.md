@@ -61,6 +61,7 @@ cd Interface/AddOns/OffBeat
 | `/ob profile <name>` | Switch profile |
 | `/ob test` | Inject test data |
 | `/ob training` | Toggle cooldown window coaching for this session |
+| `/ob report` | Show the last training report |
 
 
 ## Creating a profile
@@ -123,7 +124,7 @@ windows = { {
 } }
 ```
 
-During the window a live counter shows progress (movable when frames are unlocked); when it closes a scorecard prints to chat, and combat end prints a summary per window. Goals can be adjusted per spec on the Spec page, so you can start low and raise them as you improve.
+During the window a live counter shows progress (movable when frames are unlocked); when it closes a scorecard prints to chat, and combat end prints a summary per window. Goals can be adjusted per spec on the Training page, so you can start low and raise them as you improve. When you turn training off, a report window sums up the session: every window's results plus your casts per minute against the profile's `benchmarks`; `/ob report` reopens it.
 
 ## Mistake types
 

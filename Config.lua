@@ -75,6 +75,8 @@ function OffBeat:GetDefaults()
             windowLive = true,   -- live counter during the window
             windowChat = true,   -- scorecard in chat when it closes
             windowPosition = nil,
+            lastTrainingReport = nil, -- shown again by /ob report
+            trainingReportPosition = nil,
 
             -- Alerts
             soundEnabled = true,

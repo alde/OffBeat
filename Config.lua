@@ -76,6 +76,7 @@ function OffBeat:GetDefaults()
             windowChat = true,   -- scorecard in chat when it closes
             windowPosition = nil,
             lastTrainingReport = nil, -- shown again by /ob report
+            trainingCombatLog = true, -- turn on combat logging while training
             trainingReportPosition = nil,
 
             -- Alerts

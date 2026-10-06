@@ -787,6 +787,9 @@ pageBuilders.training = function(parent, y)
     _, h = W:Toggle(parent, "Training Mode (this session)", y,
         function() return OffBeat.training end,
         function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
+    _, h = W:Toggle(parent, "Log Combat While Training", y,
+        function() return db.trainingCombatLog end,
+        function(v) db.trainingCombatLog = v end); y = y - h
     _, h = W:Toggle(parent, "Live Counter", y,
         function()
             local v = ss.windowLive

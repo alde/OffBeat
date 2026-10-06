@@ -232,7 +232,46 @@ function OffBeat:ToggleTraining()
     end
     self.training = not self.training
     self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or reload)." or "off. Report below; /ob report shows it again."))
+    if self.training then self:StartTrainingLog() else self:StopTrainingLog() end
     self:SendMessage("OFFBEAT_TRAINING_CHANGED", self.training)
+end
+
+-- Combat logging while training, so a session can be uploaded to Warcraft
+-- Logs and compared afterwards. Only a log training started is stopped
+-- again; one you (or an uploader app) started keeps running.
+local function IsLogging()
+    if not LoggingCombat then return nil end
+    local ok, on = pcall(LoggingCombat)
+    if not ok then return nil end
+    return on and true or false
+end
+
+function OffBeat:StartTrainingLog()
+    self.trainingStartedLog = false
+    if not self.db.profile.trainingCombatLog then return end
+    local on = IsLogging()
+    if on == nil then return end
+    if not on then
+        local ok = pcall(LoggingCombat, true)
+        if ok and IsLogging() then
+            self.trainingStartedLog = true
+            self:Print("Combat logging on for this training session (Logs/WoWCombatLog).")
+        else
+            self:Print("Couldn't turn on combat logging; type /combatlog to log this session.")
+        end
+    end
+    local adv = C_CVar and C_CVar.GetCVar and C_CVar.GetCVar("advancedCombatLogging")
+    if adv ~= nil and adv ~= "1" then
+        self:Print("Advanced Combat Logging is off. Warcraft Logs needs it: Options > Network > Advanced Combat Logging.")
+    end
+end
+
+function OffBeat:StopTrainingLog()
+    if not self.trainingStartedLog then return end
+    self.trainingStartedLog = false
+    if pcall(LoggingCombat, false) then
+        self:Print("Combat logging off. Upload Logs/WoWCombatLog to Warcraft Logs to compare the session.")
+    end
 end
 
 function OffBeat:OnSlashCommand(input)

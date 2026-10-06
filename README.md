@@ -133,6 +133,8 @@ How to use it:
 
 Goals can be adjusted per spec on the Training page, so you can start with one you can reach and raise it as you improve.
 
+Training also turns on combat logging for the session (setting on the Training page), so it can be uploaded to Warcraft Logs and compared afterwards. It only turns off a log it started itself, and warns if Advanced Combat Logging is off, which Warcraft Logs needs.
+
 ### Windows
 
 Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); `goals` count casts inside the window. `note` is shown on the Training page.

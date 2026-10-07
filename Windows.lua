@@ -342,8 +342,8 @@ local function fmtTime(minutes)
     return string.format("%dm %02ds", math.floor(minutes), math.floor((minutes % 1) * 60))
 end
 
--- A session's report: per boss, a page for all its pulls together, then a
--- page per pull when there was more than one. nil when nothing counted.
+-- A session's report: one page per pull, in boss order. nil when nothing
+-- counted.
 function Windows:BuildReport(s)
     local total, groups, byKey = 0, {}, {}
     for _, f in ipairs(s and s.fights or {}) do
@@ -368,18 +368,16 @@ function Windows:BuildReport(s)
         local n = #g.fights
         report.fights = report.fights + n
         local word = g.encounterId and "pull" or "fight"
-        local all = 0
-        for _, f in ipairs(g.fights) do all = all + f.minutes end
-        report.lastBossPage = #report.pages + 1 -- mid-session, /ob report opens on the latest boss
-        report.pages[#report.pages + 1] = self:BuildPage(g.name, g.encounterId, g.fights,
-            n == 1 and string.format("1 %s, %s", word, fmtTime(all))
-                or string.format("all %d %ss, %s", n, word, fmtTime(all)))
-        if n > 1 then
-            for i, f in ipairs(g.fights) do
-                local outcome = f.kill == true and "kill  ·  " or (f.kill == false and "wipe  ·  " or "")
-                report.pages[#report.pages + 1] = self:BuildPage(g.name, g.encounterId, { f },
-                    string.format("%s %d of %d  ·  %s%s", word, i, n, outcome, fmtTime(f.minutes)))
-            end
+        for i, f in ipairs(g.fights) do
+            local outcome = f.kill == true and "kill" or (f.kill == false and "wipe" or nil)
+            local parts = {}
+            if n > 1 then parts[#parts + 1] = string.format("%s %d of %d", word, i, n) end
+            if outcome then parts[#parts + 1] = outcome end
+            parts[#parts + 1] = fmtTime(f.minutes)
+            local page = self:BuildPage(g.name, g.encounterId, { f }, table.concat(parts, "  ·  "))
+            page.menuText = string.format("%s  ·  %s %d%s  ·  %s", g.name, word, i,
+                outcome and ("  ·  " .. outcome) or "", fmtTime(f.minutes))
+            report.pages[#report.pages + 1] = page
         end
     end
     return report
@@ -593,12 +591,26 @@ function Windows:GetReportFrame()
         return b
     end
     f.nextButton = navButton(">", close, -10, function() Windows:ShowReport(f.report, f.page + 1) end)
-    local pageText = f:CreateFontString(nil, "OVERLAY")
+    -- "3 / 9 v": click for a list of every pull to jump to
+    local pick = CreateFrame("Button", nil, f)
+    pick:SetSize(60, 18)
+    pick:SetPoint("RIGHT", f.nextButton, "LEFT", -2, 0)
+    local pageText = pick:CreateFontString(nil, "OVERLAY")
     pageText:SetFont(OffBeat:GetFont(0))
-    pageText:SetPoint("RIGHT", f.nextButton, "LEFT", -2, 0)
-    pageText:SetTextColor(0.6, 0.6, 0.6)
-    f.pageText = pageText
-    f.prevButton = navButton("<", pageText, -2, function() Windows:ShowReport(f.report, f.page - 1) end)
+    pageText:SetPoint("CENTER")
+    pageText:SetTextColor(unpack(NAV_NORMAL))
+    pick:SetScript("OnEnter", function() pageText:SetTextColor(unpack(NAV_HOVER)) end)
+    pick:SetScript("OnLeave", function() pageText:SetTextColor(unpack(NAV_NORMAL)) end)
+    pick:SetScript("OnClick", function(self)
+        MenuUtil.CreateContextMenu(self, function(_, root)
+            for i, pg in ipairs(f.report.pages) do
+                root:CreateRadio(pg.menuText, function() return f.page == i end,
+                    function() Windows:ShowReport(f.report, i) end)
+            end
+        end)
+    end)
+    f.pageText, f.pagePicker = pageText, pick
+    f.prevButton = navButton("<", pick, -2, function() Windows:ShowReport(f.report, f.page - 1) end)
 
     f.content = CreateFrame("Frame", nil, f)
     f.content:SetPoint("TOPLEFT", R_PAD, -(R_PAD + 34))
@@ -657,8 +669,8 @@ function Windows:ShowReport(report, page)
 
     f.title:SetFont(OffBeat:GetFont(2))
     f.closeButton.label:SetFont(OffBeat:GetFont(1))
-    f.title:SetText(string.format("OffBeat — Training report%s (%d fight%s, %s)",
-        report.soFar and " so far" or "", report.fights, report.fights == 1 and "" or "s", fmtTime(report.minutes)))
+    -- (the pull picker on the right has the session's pulls; keep this short)
+    f.title:SetText(report.soFar and "OffBeat — Training so far" or "OffBeat — Training report")
     for _, b in ipairs({ f.prevButton, f.nextButton }) do
         b.label:SetFont(OffBeat:GetFont(1))
         b:SetShown(nPages > 1)
@@ -668,7 +680,8 @@ function Windows:ShowReport(report, page)
     f.nextButton:SetEnabled(page < nPages)
     f.nextButton.label:SetAlpha(page < nPages and 1 or 0.3)
     f.pageText:SetFont(OffBeat:GetFont(0))
-    f.pageText:SetText(nPages > 1 and string.format("%d / %d", page, nPages) or "")
+    f.pageText:SetText(string.format("%d / %d  v", page, nPages))
+    f.pagePicker:SetShown(nPages > 1)
 
     do
         local grp = report.pages[page]
@@ -762,7 +775,7 @@ function Windows:ShowLastReport()
             return
         end
         live.soFar = true
-        self:ShowReport(live, live.lastBossPage)
+        self:ShowReport(live, #live.pages) -- the latest pull
         return
     end
     local report = OffBeat.db.profile.lastTrainingReport

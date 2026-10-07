@@ -131,7 +131,7 @@ function OffBeat:ValidateRotationSpells(spells)
 end
 
 local function IsCondition(c)
-    return c.aura ~= nil or c.power ~= nil or c.combat ~= nil or c.hardcast ~= nil
+    return c.aura ~= nil or c.power ~= nil or c.combat ~= nil or c.hardcast ~= nil or c.moving ~= nil
 end
 
 local function ValidateCondition(c, where)
@@ -149,8 +149,10 @@ local function ValidateCondition(c, where)
         if type(c.combat) ~= "boolean" then return false, where .. ".combat must be true or false" end
     elseif c.hardcast ~= nil then
         if type(c.hardcast) ~= "boolean" then return false, where .. ".hardcast must be true or false" end
+    elseif c.moving ~= nil then
+        if type(c.moving) ~= "boolean" then return false, where .. ".moving must be true or false" end
     else
-        return false, where .. " must have aura, power, combat or hardcast"
+        return false, where .. " must have aura, power, combat, hardcast or moving"
     end
     return true
 end

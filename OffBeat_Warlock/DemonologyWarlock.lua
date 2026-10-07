@@ -72,6 +72,31 @@ OffBeat:RegisterProfile({
             spells = { 686 },
             when = { aura = 264173, minStacks = 4 },
         },
+        -- Shards gained past 5 are lost (Twin Fangs, 6 Oct: ~3 shards a
+        -- minute lost this way vs ~0 for top parses). Shadow Bolt gives 1,
+        -- Demonbolt 2, Infernal Bolt 3. Instant Demonbolt while moving is
+        -- fine: nothing that spends shards can be cast on the move.
+        {
+            type = "bad_cast",
+            name = "Soul Shard Overcap",
+            description = "Shadow Bolt at 5 shards, cast Hand of Gul'dan (or Tyrant) first",
+            spells = { 686 },
+            when = { power = "SoulShards", min = 5 },
+        },
+        {
+            type = "bad_cast",
+            name = "Soul Shard Overcap",
+            description = "Demonbolt at 4+ shards while standing still, cast Hand of Gul'dan first",
+            spells = { 264178 },
+            when = { { power = "SoulShards", min = 4 }, { moving = false }, { combat = true } },
+        },
+        {
+            type = "bad_cast",
+            name = "Soul Shard Overcap",
+            description = "Infernal Bolt at 3+ shards, cast Hand of Gul'dan first",
+            spells = { 434506 },
+            when = { power = "SoulShards", min = 3 },
+        },
     },
 
     -- Coaching: Tyrant opens Dominion of Argus' window, and the guides say to

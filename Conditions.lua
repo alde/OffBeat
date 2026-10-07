@@ -7,6 +7,7 @@ local OffBeat = _G.OffBeat
 --   { power = "SoulShards" | Enum.PowerType value, [min = n], [max = n] }
 --   { combat = true | false }
 --   { hardcast = true | false }   the cast had a cast bar (not instant)
+--   { moving = true | false }     you were moving when you pressed it
 --
 -- A value that can't be read (secret, missing) is "unknown": Check treats it
 -- as not matching, so unreadable state can only hide a mistake, never invent
@@ -76,6 +77,13 @@ local CHECKS = {
         if not ok or IsSecret(v) then return nil end
         return (v and true or false) == c.combat
     end,
+    moving = function(c)
+        if not GetUnitSpeed then return nil end
+        local ok, speed = pcall(GetUnitSpeed, "player")
+        speed = ok and ReadNumber(speed)
+        if not speed then return nil end
+        return (speed > 0) == c.moving
+    end,
     hardcast = function(c, ctx)
         if not ctx or ctx.hardcast == nil then return nil end
         return ctx.hardcast == c.hardcast
@@ -88,6 +96,7 @@ function C.Kind(c)
     if c.power then return "power" end
     if c.combat ~= nil then return "combat" end
     if c.hardcast ~= nil then return "hardcast" end
+    if c.moving ~= nil then return "moving" end
 end
 
 local function NormalizeOne(c)
@@ -102,6 +111,8 @@ local function NormalizeOne(c)
                  maxStacks = c.maxStacks, absent = c.absent }
     elseif kind == "combat" then
         return { kind = kind, combat = c.combat }
+    elseif kind == "moving" then
+        return { kind = kind, moving = c.moving }
     elseif kind == "hardcast" then
         return { kind = kind, hardcast = c.hardcast, deferred = true }
     end

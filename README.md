@@ -64,7 +64,7 @@ cd Interface/AddOns/OffBeat
 | `/ob lock` | Lock/unlock frames |
 | `/ob profile <name>` | Switch profile |
 | `/ob test` | Inject test data |
-| `/ob training` | Toggle cooldown window coaching for this session |
+| `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
 | `/ob report` | Show the last training report |
 
 
@@ -122,7 +122,7 @@ Currently filled in for all Warlock and Death Knight specs, and Discipline and H
 
 ## Training
 
-Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off, reload or relog.
+Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
 
 Only combat counts, and in a raid only boss encounters count (setting on the Training page), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts.
 

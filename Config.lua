@@ -79,6 +79,7 @@ function OffBeat:GetDefaults()
             trainingCombatLog = true, -- turn on combat logging while training
             trainingBossOnly = true,  -- in raids, only boss encounters count
             trainingReportPosition = nil,
+            trainingResume = nil,     -- session parked across a /reload
 
             -- Alerts
             soundEnabled = true,

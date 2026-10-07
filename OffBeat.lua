@@ -107,6 +107,8 @@ end
 
 function OffBeat:OnEnable()
     self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD")
+    self:RegisterEvent("PLAYER_LOGOUT")
 
     local config = self:GetModule("Config", true)
     if config then config:Enable() end
@@ -220,9 +222,35 @@ end
 
 -- Slash commands
 
--- Training mode: cooldown window coaching (Windows). Off by default and never
--- saved, so a reload or relog always turns it back off before a raid.
+-- Training mode: cooldown window coaching (Windows). Off by default. It
+-- survives a /reload (the session so far is carried over) but not a relog.
 OffBeat.training = false
+
+-- PLAYER_LOGOUT also fires on /reload: park the session in saved variables.
+function OffBeat:PLAYER_LOGOUT()
+    self.db.profile.trainingResume = nil
+    if not self.training then return end
+    local windows = self:GetModule("Windows", true)
+    self.db.profile.trainingResume = {
+        specId = self.activeSpecId,
+        startedLog = self.trainingStartedLog,
+        session = windows and windows:ExportSession(),
+    }
+end
+
+-- Back from a /reload: pick the session up again. A fresh login drops it.
+function OffBeat:PLAYER_ENTERING_WORLD(_, isInitialLogin, isReloadingUi)
+    local resume = self.db.profile.trainingResume
+    self.db.profile.trainingResume = nil
+    if not resume or isInitialLogin or not isReloadingUi or self.training then return end
+    local profile = self.activeProfile
+    if resume.specId ~= self.activeSpecId or not (profile and (profile.windows or profile.benchmarks)) then return end
+    self.training = true
+    self.trainingStartedLog = resume.startedLog
+    local n = resume.session and resume.session.fights and #resume.session.fights or 0
+    self:Print(string.format("Training still |cff33ff66on|r after reload (%d fight%s so far).", n, n == 1 and "" or "s"))
+    self:SendMessage("OFFBEAT_TRAINING_CHANGED", true, resume.session)
+end
 
 function OffBeat:ToggleTraining()
     local profile = self.activeProfile
@@ -231,7 +259,7 @@ function OffBeat:ToggleTraining()
         return
     end
     self.training = not self.training
-    self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or reload)." or "off. Report below; /ob report shows it again."))
+    self:Print("Training " .. (self.training and "|cff33ff66on|r (until you turn it off or log out)." or "off. Report below; /ob report shows it again."))
     if self.training then self:StartTrainingLog() else self:StopTrainingLog() end
     self:SendMessage("OFFBEAT_TRAINING_CHANGED", self.training)
 end

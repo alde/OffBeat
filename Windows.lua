@@ -194,9 +194,9 @@ end
 
 -- Events
 
-function Windows:OnTrainingChanged(_, on)
+function Windows:OnTrainingChanged(_, on, resumed)
     if on then
-        session = { fights = {} }
+        session = resumed or { fights = {} }
         if UnitAffectingCombat("player") then fight = NewFight() end -- count from now
         return
     end
@@ -307,6 +307,13 @@ function Windows:FoldFight()
     if not session or not fight then return end
     fight.minutes = (GetTime() - fight.start) / 60
     session.fights[#session.fights + 1] = fight
+end
+
+-- The session for saving across a /reload, with any counting fight folded in.
+function Windows:ExportSession()
+    if fight and Counts(fight) then self:FoldFight() end
+    fight = nil
+    return session
 end
 
 -- Group the session's fights by boss and show the report.

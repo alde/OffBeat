@@ -781,8 +781,8 @@ pageBuilders.training = function(parent, y)
         .. "session boss by boss (reopen it with /ob report). In raids only boss fights count, "
         .. "so you can leave training on all night.", y); y = y - h
     _, h = W:Paragraph(parent,
-        "Training is off by default and is never saved: it switches off on reload or relog, "
-        .. "so it can't follow you into a raid. Turn it on here or with /ob training.", y); y = y - h
+        "Training is off by default. It stays on through a /reload (the session so far is "
+        .. "kept) and switches off when you log out. Turn it on here or with /ob training.", y); y = y - h
 
     _, h = W:SectionHeader(parent, "TRAINING MODE", y); y = y - h
     _, h = W:Toggle(parent, "Training Mode (this session)", y,

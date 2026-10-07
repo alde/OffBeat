@@ -622,10 +622,6 @@ function Windows:GetReportFrame()
 end
 
 function Windows:ShowReport(report, page)
-    if not report.pages then
-        OffBeat:Print("That report was saved by an older version of OffBeat. Train again for a new one.")
-        return
-    end
     local f = self:GetReportFrame()
     local c = f.content
     local nPages = #report.pages
@@ -779,6 +775,12 @@ function Windows:ShowLastReport()
         return
     end
     local report = OffBeat.db.profile.lastTrainingReport
+    if report and not report.pages then
+        -- saved by an older version in a layout this one can't draw
+        OffBeat.db.profile.lastTrainingReport = nil
+        OffBeat:Print("The saved report was from an older version of OffBeat and has been cleared.")
+        return
+    end
     if not report then
         OffBeat:Print("No training report yet. Turn on /ob training, fight, then turn it off.")
         return

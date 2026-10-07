@@ -124,7 +124,7 @@ Currently filled in for all Warlock and Death Knight specs, and Discipline and H
 
 Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
 
-Only combat counts, and in a raid only boss encounters count (setting on the Training page), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts.
+Only combat counts, and in a raid only boss encounters count (setting on the Training page), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned (there are no top-parse numbers for dungeons).
 
 How to use it:
 

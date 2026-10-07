@@ -8,8 +8,9 @@ local OffBeat = _G.OffBeat
 --   { combat = true | false }
 --   { hardcast = true | false }   the cast had a cast bar (not instant)
 --
--- A value that can't be read (secret, missing) never matches, so unreadable
--- state can only hide a result, never invent one. That includes "aura not
+-- A value that can't be read (secret, missing) is "unknown": Check treats it
+-- as not matching, so unreadable state can only hide a mistake, never invent
+-- one; Status reports it as nil so callers can show "?" instead of a miss. That includes "aura not
 -- up" (absent = true): while the game hides auras it never matches, since a
 -- hidden aura would otherwise look like a missing one.
 --
@@ -47,18 +48,19 @@ local function AurasHidden()
     return ok and secret and true or false
 end
 
+-- Each check returns true, false, or nil when the answer can't be known.
 local CHECKS = {
     aura = function(c)
         local auras = OffBeat:GetModule("Auras", true)
-        if not auras then return false end
-        if c.absent and AurasHidden() then return false end
+        if not auras then return nil end
+        if AurasHidden() and (c.absent or not auras:IsActive(c.aura)) then return nil end
         local active = auras:IsActive(c.aura)
         if c.absent then return not active end
         if not active then return false end
         if c.minStacks or c.maxStacks then
             local rec = auras:GetAura(c.aura)
             local stacks = rec and ReadNumber(rec.stacks)
-            if not stacks or stacks == 0 then return false end -- 0 = unreadable
+            if not stacks or stacks == 0 then return nil end -- 0 = unreadable
             return InRange(stacks, c.minStacks, c.maxStacks)
         end
         return true
@@ -66,16 +68,16 @@ local CHECKS = {
     power = function(c)
         local ok, v = pcall(UnitPower, "player", c.powerType)
         v = ok and ReadNumber(v)
-        if not v then return false end
+        if not v then return nil end
         return InRange(v, c.min, c.max)
     end,
     combat = function(c)
         local ok, v = pcall(UnitAffectingCombat, "player")
-        if not ok or IsSecret(v) then return false end
+        if not ok or IsSecret(v) then return nil end
         return (v and true or false) == c.combat
     end,
     hardcast = function(c, ctx)
-        if not ctx or ctx.hardcast == nil then return false end -- unknown
+        if not ctx or ctx.hardcast == nil then return nil end
         return ctx.hardcast == c.hardcast
     end,
 }
@@ -129,7 +131,20 @@ function C.Check(list, ctx, only)
         local include = only == nil
             or (only == "immediate" and not c.deferred)
             or (only == "deferred" and c.deferred)
-        if include and not CHECKS[c.kind](c, ctx) then return false end
+        if include and CHECKS[c.kind](c, ctx) ~= true then return false end -- unknown = no match
     end
+    return true
+end
+
+--- true when every condition holds, false when any is known not to, nil
+--- when none fail but at least one couldn't be read.
+function C.Status(list, ctx)
+    local unknown = false
+    for _, c in ipairs(list) do
+        local r = CHECKS[c.kind](c, ctx)
+        if r == false then return false end
+        if r == nil then unknown = true end
+    end
+    if unknown then return nil end
     return true
 end

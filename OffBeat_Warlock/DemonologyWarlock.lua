@@ -99,17 +99,42 @@ OffBeat:RegisterProfile({
     -- Per-minute rates of the top 93 heroic Ula'tek parses (Warcraft Logs,
     -- 5 Oct 2026): low/high are the middle half, scored at combat end in
     -- training mode.
+    -- Per-boss top-parse cast rates (casts per minute), {low, median, high}
+    -- across the top 40 heroic parses; values follow the order of rates.
+    -- window = top players' median Hand of Gul'dan count per Imp Lord window.
     benchmarks = {
-        source = "top 100 heroic Ula'tek",
+        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
         rates = {
-            { name = "Rotation casts",       all = true,                  low = 40.5, median = 41.5, high = 42.7 },
-            { name = "Hand of Gul'dan",      spells = { 105174 },         low = 12.7, median = 13.1, high = 13.6 },
-            { name = "Demonbolt",            spells = { 264178 },         low = 9.2,  median = 9.7,  high = 10.0 },
-            { name = "Shadow/Infernal Bolt", spells = { 686, 434506 },    low = 9.3,  median = 10.0, high = 10.6 },
-            { name = "Call Dreadstalkers",   spells = { 104316 },         low = 2.7,  median = 2.8,  high = 2.8 },
-            { name = "Implosion",            spells = { 196277 },         low = 2.9,  median = 3.2,  high = 3.3 },
-            { name = "Ruination",            spells = { 434635 },         low = 1.4,  median = 1.5,  high = 1.5 },
+            { name = "Rotation casts",       all = true },
+            { name = "Hand of Gul'dan",      spells = { 105174 } },
+            { name = "Demonbolt",            spells = { 264178 } },
+            { name = "Shadow/Infernal Bolt", spells = { 686, 434506 } },
+            { name = "Call Dreadstalkers",   spells = { 104316 } },
+            { name = "Implosion",            spells = { 196277 } },
+            { name = "Ruination",            spells = { 434635 } },
         },
+        encounters = {
+            [3492] = { name = "Ula'tek", window = 8, values = {
+                { 41.2, 42.5, 43.5 }, { 12.9, 13.4, 14.0 }, { 9.5, 9.9, 10.2 }, { 9.8, 10.2, 10.6 }, { 2.7, 2.8, 2.8 }, { 3.0, 3.2, 3.3 }, { 1.4, 1.5, 1.5 } } },
+            [3470] = { name = "Nek'zali the Soulcoiler", window = 9, values = {
+                { 47.6, 48.8, 50.5 }, { 15.0, 15.6, 16.3 }, { 10.2, 10.8, 11.1 }, { 11.8, 12.8, 13.4 }, { 2.9, 2.9, 3.0 }, { 3.3, 3.5, 3.7 }, { 1.5, 1.6, 1.6 } } },
+            [3445] = { name = "Entombed Sentinels", window = 8, values = {
+                { 46.0, 47.1, 48.7 }, { 14.6, 15.0, 15.7 }, { 10.1, 10.7, 11.3 }, { 11.6, 12.5, 13.3 }, { 2.9, 2.9, 3.0 }, { 3.1, 3.3, 3.5 }, { 1.5, 1.6, 1.6 } } },
+            [3455] = { name = "Vashnik the Malignant", window = 9, values = {
+                { 47.0, 49.3, 50.8 }, { 14.9, 15.5, 16.2 }, { 10.2, 10.7, 11.2 }, { 12.3, 14.0, 14.4 }, { 2.8, 2.9, 3.0 }, { 3.1, 3.4, 3.5 }, { 1.5, 1.6, 1.6 } } },
+            [3497] = { name = "The Lost Explorers", window = 9, values = {
+                { 49.5, 50.4, 51.6 }, { 15.7, 16.1, 16.6 }, { 10.1, 10.8, 11.4 }, { 12.3, 13.3, 14.6 }, { 2.9, 3.0, 3.1 }, { 3.4, 3.6, 3.8 }, { 1.4, 1.5, 1.6 } } },
+            [3420] = { name = "Sszorak", window = 9, values = {
+                { 46.4, 47.5, 48.6 }, { 14.8, 15.2, 15.7 }, { 10.0, 10.6, 11.2 }, { 11.3, 12.1, 12.8 }, { 2.9, 3.0, 3.0 }, { 3.2, 3.4, 3.6 }, { 1.5, 1.5, 1.6 } } },
+            [3421] = { name = "The Twin Fangs", window = 9, values = {
+                { 46.9, 47.6, 49.0 }, { 14.9, 15.3, 15.8 }, { 10.3, 10.9, 11.4 }, { 11.3, 11.8, 12.6 }, { 2.9, 3.0, 3.0 }, { 3.5, 3.6, 3.6 }, { 1.5, 1.6, 1.6 } } },
+            [3429] = { name = "The Coiled Altar", window = 9, values = {
+                { 46.6, 47.6, 48.2 }, { 15.2, 15.4, 15.8 }, { 10.7, 11.0, 11.3 }, { 11.0, 12.0, 12.6 }, { 2.8, 2.9, 3.0 }, { 3.3, 3.4, 3.6 }, { 1.5, 1.6, 1.7 } } },
+            [3379] = { name = "Nymrissa Wavecaller", window = 8, values = {
+                { 44.9, 46.7, 48.1 }, { 14.0, 14.8, 15.4 }, { 9.7, 10.3, 11.0 }, { 10.6, 11.6, 13.0 }, { 2.8, 2.9, 3.0 }, { 3.2, 3.4, 3.5 }, { 1.4, 1.5, 1.6 } } },
+        },
+        overall = { name = "all heroic bosses", window = 9, values = {
+            { 46.0, 47.6, 49.6 }, { 14.6, 15.3, 15.9 }, { 10.1, 10.7, 11.2 }, { 10.9, 12.3, 13.2 }, { 2.8, 2.9, 3.0 }, { 3.2, 3.4, 3.6 }, { 1.5, 1.5, 1.6 } } },
     },
 
     -- Demonic Core dropping without a Demonbolt is a wasted instant cast.

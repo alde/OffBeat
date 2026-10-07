@@ -75,20 +75,8 @@ function OffBeat:ValidateProfile(profile)
     end
 
     if profile.benchmarks then
-        local bm = profile.benchmarks
-        if type(bm) ~= "table" or type(bm.rates) ~= "table" or #bm.rates == 0 then
-            return false, "benchmarks.rates must be a non-empty list"
-        end
-        for i, r in ipairs(bm.rates) do
-            local where = "benchmarks.rates[" .. i .. "]"
-            if type(r.name) ~= "string" then return false, where .. ".name must be a string" end
-            if not r.all and (type(r.spells) ~= "table" or #r.spells == 0) then
-                return false, where .. " needs spells or all = true"
-            end
-            for _, k in ipairs({ "low", "median", "high" }) do
-                if type(r[k]) ~= "number" then return false, where .. "." .. k .. " must be a number" end
-            end
-        end
+        local ok, err = self:ValidateBenchmarks(profile.benchmarks)
+        if not ok then return false, err end
     end
 
     if profile.keyLayoutLabels ~= nil then
@@ -173,6 +161,47 @@ local function ValidateWhen(when, where)
     if #when == 0 then return false, where .. " needs at least one condition" end
     for j, c in ipairs(when) do
         local ok, err = ValidateCondition(c, where .. "[" .. j .. "]")
+        if not ok then return false, err end
+    end
+    return true
+end
+
+local function ValidateBench(e, nRates, where)
+    if type(e) ~= "table" then return false, where .. " must be a table" end
+    if type(e.name) ~= "string" then return false, where .. ".name must be a string" end
+    if e.window ~= nil and type(e.window) ~= "number" then return false, where .. ".window must be a number" end
+    if type(e.values) ~= "table" or #e.values == 0 or #e.values > nRates then
+        return false, where .. ".values must list { low, median, high } per rate"
+    end
+    for j, v in ipairs(e.values) do
+        if type(v) ~= "table" or type(v[1]) ~= "number" or type(v[2]) ~= "number" or type(v[3]) ~= "number" then
+            return false, where .. ".values[" .. j .. "] must be { low, median, high }"
+        end
+    end
+    return true
+end
+
+function OffBeat:ValidateBenchmarks(bm)
+    if type(bm) ~= "table" or type(bm.rates) ~= "table" or #bm.rates == 0 then
+        return false, "benchmarks.rates must be a non-empty list"
+    end
+    for i, r in ipairs(bm.rates) do
+        local where = "benchmarks.rates[" .. i .. "]"
+        if type(r.name) ~= "string" then return false, where .. ".name must be a string" end
+        if not r.all and (type(r.spells) ~= "table" or #r.spells == 0) then
+            return false, where .. " needs spells or all = true"
+        end
+    end
+    if bm.encounters == nil and bm.overall == nil then
+        return false, "benchmarks needs encounters and/or overall"
+    end
+    for id, e in pairs(bm.encounters or {}) do
+        if type(id) ~= "number" then return false, "benchmarks.encounters keys must be encounter IDs" end
+        local ok, err = ValidateBench(e, #bm.rates, "benchmarks.encounters[" .. id .. "]")
+        if not ok then return false, err end
+    end
+    if bm.overall then
+        local ok, err = ValidateBench(bm.overall, #bm.rates, "benchmarks.overall")
         if not ok then return false, err end
     end
     return true

@@ -77,6 +77,7 @@ function OffBeat:GetDefaults()
             windowPosition = nil,
             lastTrainingReport = nil, -- shown again by /ob report
             trainingCombatLog = true, -- turn on combat logging while training
+            trainingBossOnly = true,  -- in raids, only boss encounters count
             trainingReportPosition = nil,
 
             -- Alerts

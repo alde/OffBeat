@@ -105,8 +105,8 @@ OffBeat:RegisterProfile({
     -- Training (see below)
     windows = { { name = "Big CD", trigger = 99999, duration = 20,
                   goals = { { name = "Spender", spells = { 22222 }, min = 6 } } } },
-    benchmarks = { source = "top parses", rates = {
-        { name = "Spender", spells = { 22222 }, low = 10, median = 11, high = 12 } } },
+    benchmarks = { source = "top parses", rates = { { name = "Spender", spells = { 22222 } } },
+        encounters = { [1234] = { name = "Some Boss", values = { { 10, 11, 12 } } } } },
 })
 ```
 
@@ -122,14 +122,16 @@ Currently filled in for all Warlock and Death Knight specs, and Discipline and H
 
 ## Training
 
-Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off, reload or relog, so it can't follow you into a raid by accident.
+Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off, reload or relog.
+
+Only combat counts, and in a raid only boss encounters count (setting on the Training page), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts.
 
 How to use it:
 
 1. Turn it on and fight a target dummy (or a boss).
 2. When you press the window's cooldown, OffBeat checks your setup (for Demonology: 5 Soul Shards pooled) and a counter shows the casts that matter inside the window against a goal.
 3. Each window ends with a scorecard in chat; each fight ends with a summary and your casts per minute against the profile's benchmarks.
-4. Turn training off and a **report panel** sums up the session: one bar per window against its goal, and one bar per benchmark spell over the top players' middle half. `/ob report` reopens the last report.
+4. Turn training off and a **report panel** sums up the session, one section per boss: one bar per window against its goal (with the top players' median for that boss), and one bar per benchmark spell over that boss's top players' middle half. `/ob report` reopens the last report.
 
 Goals can be adjusted per spec on the Training page, so you can start with one you can reach and raise it as you improve.
 
@@ -137,7 +139,7 @@ Training also turns on combat logging for the session (setting on the Training p
 
 ### Windows
 
-Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); `goals` count casts inside the window. `note` is shown on the Training page.
+Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); a check the game won't let OffBeat read shows as `?`, never as a miss. `goals` count casts inside the window. `note` is shown on the Training page. If combat ends before the window runs out (the boss dies), the window only counts when you had already reached the goal; otherwise it's left out of the score and shown greyed out as "early".
 
 ```lua
 windows = { {
@@ -150,19 +152,23 @@ windows = { {
 
 ### Benchmarks
 
-Casts per minute taken from top parses: `median` plus `low` / `high` for the middle half. `all = true` counts every `rotationSpells` cast. A fight reaches a benchmark when your rate is at least `low`.
+Casts per minute from top parses, per boss. `rates` says what is measured; each encounter (keyed by its encounter ID, the boss ID Warcraft Logs uses) lists `{ low, median, high }` per rate, where low/high are the middle half. `window` is the top players' median goal count per window on that boss. `overall` covers fights that aren't a boss encounter, like target dummies. A boss without data gets no comparison rather than another boss's numbers. `all = true` counts every `rotationSpells` cast; a fight reaches a benchmark when your rate is at least `low`.
 
 ```lua
 benchmarks = {
-    source = "top 100 heroic Ula'tek",
+    source = "top heroic parses per boss",
     rates = {
-        { name = "Rotation casts",  all = true,           low = 40.5, median = 41.5, high = 42.7 },
-        { name = "Hand of Gul'dan", spells = { 105174 },  low = 12.7, median = 13.1, high = 13.6 },
+        { name = "Rotation casts",  all = true },
+        { name = "Hand of Gul'dan", spells = { 105174 } },
     },
+    encounters = {
+        [3492] = { name = "Ula'tek", window = 8, values = { { 40.5, 41.5, 42.7 }, { 12.7, 13.1, 13.6 } } },
+    },
+    overall = { name = "all heroic bosses", values = { { 42, 44, 46 }, { 13, 14, 15 } } },
 }
 ```
 
-Demonology's goals and benchmarks come from the top 93 heroic Ula'tek Demonology parses on Warcraft Logs (October 2026). They are boss-specific: on other fights treat the casts-per-minute comparison as a rough guide.
+Demonology's goals and benchmarks come from the top Demonology parses for every heroic boss in The Venomous Abyss on Warcraft Logs (October 2026).
 
 ## Mistake types
 

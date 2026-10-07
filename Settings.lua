@@ -777,8 +777,9 @@ pageBuilders.training = function(parent, y)
         .. "in chat, and after combat a summary: how many windows hit the goal, your average "
         .. "and your best. Practise on a target dummy, start with a goal you can reach, and "
         .. "raise it as you improve. After each fight it also compares your casts per minute "
-        .. "with top parses, and when you turn training off a report sums up the whole "
-        .. "session (reopen it with /ob report).", y); y = y - h
+        .. "with that boss's top parses, and when you turn training off a report sums up the "
+        .. "session boss by boss (reopen it with /ob report). In raids only boss fights count, "
+        .. "so you can leave training on all night.", y); y = y - h
     _, h = W:Paragraph(parent,
         "Training is off by default and is never saved: it switches off on reload or relog, "
         .. "so it can't follow you into a raid. Turn it on here or with /ob training.", y); y = y - h
@@ -787,6 +788,9 @@ pageBuilders.training = function(parent, y)
     _, h = W:Toggle(parent, "Training Mode (this session)", y,
         function() return OffBeat.training end,
         function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
+    _, h = W:Toggle(parent, "In Raids, Only Count Bosses", y,
+        function() return db.trainingBossOnly end,
+        function(v) db.trainingBossOnly = v end); y = y - h
     _, h = W:Toggle(parent, "Log Combat While Training", y,
         function() return db.trainingCombatLog end,
         function(v) db.trainingCombatLog = v end); y = y - h
@@ -824,14 +828,17 @@ pageBuilders.training = function(parent, y)
 
     local bm = profile.benchmarks
     if bm then
-        _, h = W:SectionHeader(parent, "TOP-PARSE BENCHMARKS (CASTS PER MINUTE)", y); y = y - h
+        _, h = W:SectionHeader(parent, "TOP-PARSE BENCHMARKS", y); y = y - h
+        local names = {}
+        for _, e in pairs(bm.encounters or {}) do names[#names + 1] = e.name end
+        table.sort(names)
         local lines = {}
-        for _, r in ipairs(bm.rates) do
-            lines[#lines + 1] = string.format("%s: %.1f  (middle half %.1f-%.1f)", r.name, r.median, r.low, r.high)
-        end
-        _, h = W:Paragraph(parent, "From " .. (bm.source or "top parses") .. ". Checked after each "
-            .. "fight in training mode; a tick means you reached the middle half.\n\n"
-            .. table.concat(lines, "\n"), y); y = y - h
+        for _, r in ipairs(bm.rates) do lines[#lines + 1] = r.name end
+        _, h = W:Paragraph(parent, "Casts per minute measured against " .. (bm.source or "top parses")
+            .. ". Each boss is compared with its own top players; fights outside a boss encounter "
+            .. "(target dummies) use " .. (bm.overall and bm.overall.name or "no benchmark") .. ".\n\n"
+            .. "Measured: " .. table.concat(lines, ", ") .. ".\n\n"
+            .. "Bosses: " .. (#names > 0 and table.concat(names, ", ") or "none"), y); y = y - h
     end
 
     return y

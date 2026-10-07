@@ -1,46 +1,60 @@
 local OffBeat = _G.OffBeat
 local Windows = OffBeat:NewModule("Windows", "AceEvent-3.0")
 
--- Cooldown window coaching. A profile window is opened by casting `trigger`
--- and lasts `duration` seconds:
+-- Training: cooldown window coaching and top-parse benchmarks. Only runs in
+-- training mode (/ob training, see OffBeat:ToggleTraining).
+--
+-- A window is opened by casting `trigger` and lasts `duration` seconds:
 --
 --   windows = { {
 --       name = "Tyrant", trigger = 265187, duration = 25,
 --       setup = { { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } } },
---       goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 7 } },
+--       goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 8 } },
 --   } }
---
--- Only runs in training mode (/ob training, see OffBeat:ToggleTraining).
 --
 -- Setup checks are judged when the trigger is pressed (UNIT_SPELLCAST_SENT,
--- like mistake rules) using the shared Conditions. Goals count successful
--- casts inside the window. A live counter shows during the window; a
--- scorecard prints when it closes and a summary when combat ends.
+-- like mistake rules) with the shared Conditions; a check the game won't let
+-- us read is "unknown", shown as ?, never as a miss. Goals count successful
+-- casts inside the window. A window cut short by the end of combat (the boss
+-- died) only counts if its goals were already reached; otherwise it's shown
+-- as "ended early" and left out of the score.
 --
--- profile.benchmarks adds a per-minute comparison against top parses at
--- combat end (also training only):
+-- Benchmarks are casts per minute from top parses, per boss encounter:
 --
---   benchmarks = { source = "...", rates = {
---       { name = "Hand of Gul'dan", spells = { 105174 }, low = 12.7, median = 13.1, high = 13.6 },
---       { name = "Rotation casts", all = true, low = 40.5, median = 41.5, high = 42.7 },
---   } }
+--   benchmarks = {
+--       source = "...",
+--       rates = { { name = "Rotation casts", all = true },
+--                 { name = "Hand of Gul'dan", spells = { 105174 } } },
+--       encounters = {                       -- encounter ID (ENCOUNTER_START)
+--           [3492] = { name = "Ula'tek", window = 8,
+--                      values = { { 40.5, 41.5, 42.7 }, { 12.7, 13.1, 13.6 } } },
+--       },
+--       overall = { name = "all heroic bosses", values = { ... } }, -- dummies etc.
+--   }
 --
--- `all = true` counts every rotationSpells cast; low/high are the middle half.
+-- `values` follow `rates` order as { low, median, high } (low/high = middle
+-- half); `window` is the top players' median goal count per window on that
+-- boss. A boss without data gets no comparison rather than another boss's.
+-- `all = true` counts every rotationSpells cast.
+--
+-- In a raid, only boss encounters count (setting, on by default), so training
+-- can stay on all night; trash is ignored. Outside raids (dummies) every fight
+-- counts. Each fight is folded into the session; turning training off shows
+-- a report grouped by boss.
 
-local READY = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
-local MISS  = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:0|t"
-local FONT  = "Fonts\\FRIZQT__.TTF"
+local READY   = "|TInterface\\RaidFrame\\ReadyCheck-Ready:0|t"
+local MISS    = "|TInterface\\RaidFrame\\ReadyCheck-NotReady:0|t"
+local UNKNOWN = "|TInterface\\RaidFrame\\ReadyCheck-Waiting:0|t"
+local FONT    = "Fonts\\FRIZQT__.TTF"
 
 local defs = {}          -- built window definitions
 local byTrigger = {}     -- trigger spellId -> def
 local pendingSetup = {}  -- castGUID -> setup results, judged at SENT
 local active             -- the open window, or nil
-local combatResults = {} -- closed windows this combat
-local combatCasts = {}   -- spellId -> casts this combat (benchmarks)
-local combatRotation = 0 -- rotationSpells casts this combat
-local combatStart        -- GetTime() at combat start
 local rotationSet = {}   -- profile.rotationSpells as a set
-local session            -- training session totals, reported when training ends
+local encounter          -- { id, name } while a boss encounter is running
+local fight              -- the current fight, see NewFight
+local session            -- { fights = { folded fights } }, reported when training ends
 
 local function GetSpecSettings()
     local profile = OffBeat.activeProfile
@@ -56,7 +70,12 @@ local function SpecOr(key)
     return OffBeat.db.profile[key]
 end
 
---- Goal target: the per-spec override from the Spec page, else the profile's.
+local function Mark(ok)
+    if ok == true then return READY elseif ok == false then return MISS end
+    return UNKNOWN
+end
+
+--- Goal target: the per-spec override from the Training page, else the profile's.
 function Windows:GetGoalMin(def, goal)
     local ss = GetSpecSettings()
     local key = def.name .. ":" .. goal.name
@@ -76,6 +95,8 @@ function Windows:OnEnable()
     self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     self:RegisterEvent("PLAYER_REGEN_DISABLED")
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
+    self:RegisterEvent("ENCOUNTER_START")
+    self:RegisterEvent("ENCOUNTER_END")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "ApplyLock")
     self:RegisterMessage("OFFBEAT_TRAINING_CHANGED", "OnTrainingChanged")
     self:ApplyLock()
@@ -85,9 +106,8 @@ function Windows:OnDisable()
     self:UnregisterAllEvents()
     self:UnregisterAllMessages()
     if active and active.timer then active.timer:Cancel() end
-    active = nil
+    active, fight, encounter = nil, nil, nil
     wipe(pendingSetup)
-    wipe(combatResults)
     if self.frame then self.frame:Hide() end
 end
 
@@ -117,36 +137,77 @@ function Windows:BuildLookups()
     end
 end
 
+-- true / false / nil (unknown) per setup check
 local function JudgeSetup(def)
     local results = {}
     for i, s in ipairs(def.setup) do
-        results[i] = OffBeat.Conditions.Check(s.conds)
+        results[i] = OffBeat.Conditions.Status(s.conds)
     end
     return results
+end
+
+-- Fights
+
+local function InRaid()
+    local ok, inInstance, kind = pcall(IsInInstance)
+    return ok and inInstance and kind == "raid"
+end
+
+local function NewFight()
+    return { start = GetTime(), inRaid = InRaid(), casts = {}, rotation = 0, results = {},
+             encounterId = encounter and encounter.id, encounterName = encounter and encounter.name }
+end
+
+-- Does this fight count? In a raid with "boss encounters only", only fights
+-- that are (or became) a boss encounter count.
+local function Counts(f)
+    if not f then return false end
+    if f.inRaid and OffBeat.db.profile.trainingBossOnly and not f.encounterId then return false end
+    return true
+end
+
+function Windows:ENCOUNTER_START(_, encounterId, encounterName)
+    encounter = { id = encounterId, name = encounterName }
+    if fight and not fight.encounterId then
+        fight.encounterId, fight.encounterName = encounterId, encounterName
+    end
+end
+
+function Windows:ENCOUNTER_END()
+    encounter = nil
+end
+
+function Windows:PLAYER_REGEN_DISABLED()
+    if OffBeat.training then fight = NewFight() end
+end
+
+function Windows:PLAYER_REGEN_ENABLED()
+    if active then self:Close() end
+    if fight and Counts(fight) then
+        self:PrintSummary(fight)
+        self:PrintBenchmarks(fight)
+        self:FoldFight()
+    end
+    fight = nil
+    wipe(pendingSetup)
 end
 
 -- Events
 
 function Windows:OnTrainingChanged(_, on)
     if on then
-        session = { minutes = 0, fights = 0, casts = {}, rotation = 0, results = {} }
-        -- turned on mid-fight: count from now
-        if UnitAffectingCombat("player") then
-            wipe(combatCasts); combatRotation = 0; combatStart = GetTime()
-        end
+        session = { fights = {} }
+        if UnitAffectingCombat("player") then fight = NewFight() end -- count from now
         return
     end
-    -- An unfinished fight still counts toward the report; an open window is
-    -- dropped, since it never got to run its full duration.
-    self:FoldCombat()
-    self:FinishSession()
-    wipe(combatCasts)
-    combatStart = nil
-    -- Turning training off mid-window drops it without a scorecard.
+    -- An open window is dropped (it never ran its full duration); the
+    -- unfinished fight still counts toward the report.
     if active and active.timer then active.timer:Cancel() end
     active = nil
+    if fight and Counts(fight) then self:FoldFight() end
+    fight = nil
+    self:FinishSession()
     wipe(pendingSetup)
-    wipe(combatResults)
     if self.frame and OffBeat.db.profile.locked then self.frame:Hide() end
 end
 
@@ -161,9 +222,10 @@ end
 
 function Windows:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
     if unit ~= "player" or not OffBeat.training then return end
-    if combatStart and not OffBeat.Conditions.IsSecret(spellId) then
-        combatCasts[spellId] = (combatCasts[spellId] or 0) + 1
-        if rotationSet[spellId] then combatRotation = combatRotation + 1 end
+    if OffBeat.Conditions.IsSecret(spellId) then return end
+    if fight then
+        fight.casts[spellId] = (fight.casts[spellId] or 0) + 1
+        if rotationSet[spellId] then fight.rotation = fight.rotation + 1 end
     end
 
     local def = byTrigger[spellId]
@@ -173,103 +235,120 @@ function Windows:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
             setup = pendingSetup[castGUID]
             pendingSetup[castGUID] = nil
         end
-        self:Open(def, setup or JudgeSetup(def)) -- no SENT snapshot: judge now
+        -- raid trash with "boss encounters only": no window
+        if fight == nil or Counts(fight) then
+            self:Open(def, setup or JudgeSetup(def)) -- no SENT snapshot: judge now
+        end
         return
     end
 
     if active then
         for i, g in ipairs(active.def.goals) do
-            if g.spells[spellId] then
-                active.counts[i] = active.counts[i] + 1
-            end
+            if g.spells[spellId] then active.counts[i] = active.counts[i] + 1 end
         end
         self:RefreshFrame()
     end
 end
 
-function Windows:PLAYER_REGEN_DISABLED()
-    wipe(combatResults)
-    wipe(combatCasts)
-    combatRotation = 0
-    combatStart = GetTime()
+-- Benchmarks
+
+--- The benchmark for a fight: its boss's numbers, or the all-boss numbers
+--- for fights that aren't a boss encounter (dummies). nil when the boss has
+--- no data.
+function Windows:BenchmarkFor(f)
+    local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
+    if not bm then return nil end
+    if f.encounterId then return bm.encounters and bm.encounters[f.encounterId] end
+    return bm.overall
 end
 
-function Windows:PLAYER_REGEN_ENABLED()
-    if active then self:Close() end
-    self:PrintSummary()
-    self:PrintBenchmarks()
-    self:FoldCombat()
-    wipe(combatResults)
-    wipe(pendingSetup)
-    wipe(combatCasts)
-    combatStart = nil
-end
-
--- Per-minute rates for this combat against the profile's top-parse numbers.
--- Skipped for short fights, where a single cast swings the rate.
-function Windows:PrintBenchmarks()
-    local profile = OffBeat.activeProfile
-    local bm = profile and profile.benchmarks
-    if not OffBeat.training or not bm or not combatStart then return end
-    local minutes = (GetTime() - combatStart) / 60
-    if minutes < 1 then return end
-
-    OffBeat:Print(string.format("Vs top parses (%s), per minute:", bm.source or "benchmark"))
-    for _, row in ipairs(self:BenchmarkRows(bm, minutes, combatCasts, combatRotation)) do
-        OffBeat:Print(string.format("  %s %s %.1f  (top %.1f-%.1f, median %.1f)",
-            row.ok and READY or MISS, row.name, row.rate, row.low, row.high, row.median))
-    end
-end
-
-function Windows:BenchmarkRows(bm, minutes, casts, rotation)
+function Windows:BenchmarkRows(bench, minutes, casts, rotation)
+    local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
+    if not bm or not bench then return nil end
     local rows = {}
-    for _, r in ipairs(bm.rates) do
-        local count = 0
-        if r.all then
-            count = rotation
-        else
-            for _, id in ipairs(r.spells) do count = count + (casts[id] or 0) end
+    for i, r in ipairs(bm.rates) do
+        local v = bench.values[i]
+        if v then
+            local count = 0
+            if r.all then
+                count = rotation
+            else
+                for _, id in ipairs(r.spells) do count = count + (casts[id] or 0) end
+            end
+            local rate = count / minutes
+            rows[#rows + 1] = { name = r.name, rate = rate, low = v[1], median = v[2], high = v[3], ok = rate >= v[1] }
         end
-        local rate = count / minutes
-        rows[#rows + 1] = { name = r.name, rate = rate, low = r.low, high = r.high,
-                            median = r.median, ok = rate >= r.low }
     end
     return rows
 end
 
--- Training session
-
--- Add the current fight to the session totals (once per fight).
-function Windows:FoldCombat()
-    if not session or not combatStart then return end
-    local minutes = (GetTime() - combatStart) / 60
-    session.minutes = session.minutes + minutes
-    if minutes >= 0.25 then session.fights = session.fights + 1 end
-    for id, n in pairs(combatCasts) do session.casts[id] = (session.casts[id] or 0) + n end
-    session.rotation = session.rotation + combatRotation
-    for _, r in ipairs(combatResults) do session.results[#session.results + 1] = r end
-    wipe(combatCasts); wipe(combatResults); combatRotation = 0
-    combatStart = UnitAffectingCombat("player") and GetTime() or nil
+-- Per-minute rates for this fight against its boss's top-parse numbers.
+-- Skipped for short fights, where a single cast swings the rate.
+function Windows:PrintBenchmarks(f)
+    local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
+    if not bm then return end
+    local minutes = (GetTime() - f.start) / 60
+    if minutes < 1 then return end
+    local bench = self:BenchmarkFor(f)
+    if not bench then
+        OffBeat:Print(string.format("No top-parse numbers for %s yet.", f.encounterName or "this fight"))
+        return
+    end
+    OffBeat:Print(string.format("Vs top parses (%s), per minute:", bench.name))
+    for _, row in ipairs(self:BenchmarkRows(bench, minutes, f.casts, f.rotation)) do
+        OffBeat:Print(string.format("  %s %s %.1f  (top %.1f-%.1f, median %.1f)",
+            Mark(row.ok), row.name, row.rate, row.low, row.high, row.median))
+    end
 end
 
--- Build the report from the session and show it.
+-- Training session
+
+function Windows:FoldFight()
+    if not session or not fight then return end
+    fight.minutes = (GetTime() - fight.start) / 60
+    session.fights[#session.fights + 1] = fight
+end
+
+-- Group the session's fights by boss and show the report.
 function Windows:FinishSession()
     local s = session
     session = nil
-    if not s or (s.minutes < 0.5 and #s.results == 0) then
+    local total, groups, byKey = 0, {}, {}
+    for _, f in ipairs(s and s.fights or {}) do
+        total = total + f.minutes
+        local key = f.encounterId or 0
+        local g = byKey[key]
+        if not g then
+            g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId,
+                  fights = 0, minutes = 0, casts = {}, rotation = 0, results = {} }
+            byKey[key] = g
+            groups[#groups + 1] = g
+        end
+        if f.minutes >= 0.25 then g.fights = g.fights + 1 end
+        g.minutes = g.minutes + f.minutes
+        for id, n in pairs(f.casts) do g.casts[id] = (g.casts[id] or 0) + n end
+        g.rotation = g.rotation + f.rotation
+        for _, r in ipairs(f.results) do g.results[#g.results + 1] = r end
+    end
+    if total < 0.5 and #groups == 0 then
         OffBeat:Print("Training ended. No fights were recorded, so there is no report.")
         return
     end
+
     local profile = OffBeat.activeProfile
-    local report = {
-        spec = profile and profile.meta.name or "",
-        fights = s.fights, minutes = s.minutes,
-        windows = self:Aggregate(s.results),
-        detail = s.results, -- each window's goals/setup, drawn as bars
-        source = profile and profile.benchmarks and profile.benchmarks.source,
-        rates = (profile and profile.benchmarks and s.minutes >= 1)
-            and self:BenchmarkRows(profile.benchmarks, s.minutes, s.casts, s.rotation) or nil,
-    }
+    local report = { spec = profile and profile.meta.name or "", minutes = total, fights = 0, groups = {} }
+    for _, g in ipairs(groups) do
+        report.fights = report.fights + g.fights
+        local bench = self:BenchmarkFor(g)
+        report.groups[#report.groups + 1] = {
+            name = g.name, fights = g.fights, minutes = g.minutes,
+            windows = self:Aggregate(g.results),
+            detail = g.results, -- each window's goals/setup, drawn as bars
+            benchName = bench and bench.name, topWindow = bench and bench.window,
+            hasBenchmarks = profile and profile.benchmarks ~= nil,
+            rates = (bench and g.minutes >= 1) and self:BenchmarkRows(bench, g.minutes, g.casts, g.rotation) or nil,
+        }
+    end
     OffBeat.db.profile.lastTrainingReport = report
     self:ShowReport(report)
 end
@@ -280,8 +359,7 @@ function Windows:Open(def, setup)
     if active then self:Close() end -- a re-trigger closes the previous window
     local counts = {}
     for i = 1, #def.goals do counts[i] = 0 end
-    active = { def = def, setup = setup, counts = counts,
-               endsAt = GetTime() + def.duration }
+    active = { def = def, setup = setup, counts = counts, endsAt = GetTime() + def.duration }
     active.timer = C_Timer.NewTimer(def.duration, function() Windows:Close() end)
     self:SendMessage("OFFBEAT_WINDOW_OPENED", def.name)
     self:RefreshFrame()
@@ -292,12 +370,13 @@ function Windows:Close()
     if not w then return end
     active = nil
     if w.timer then w.timer:Cancel() end
+    local cutShort = GetTime() < w.endsAt - 0.5
 
     local result = { name = w.def.name, setup = {}, goals = {}, met = true }
     for i, s in ipairs(w.def.setup) do
-        local ok = w.setup[i] and true or false
+        local ok = w.setup[i] -- true / false / nil (unknown)
         result.setup[i] = { name = s.name, ok = ok }
-        if not ok then result.met = false end
+        if ok == false then result.met = false end
     end
     for i, g in ipairs(w.def.goals) do
         local min = self:GetGoalMin(w.def, g)
@@ -305,15 +384,28 @@ function Windows:Close()
         result.goals[i] = { name = g.name, count = w.counts[i], min = min, ok = ok }
         if not ok then result.met = false end
     end
-    combatResults[#combatResults + 1] = result
+    -- Cut short and not yet on target: you never had the full window.
+    if cutShort and not result.met then result.early = true end
+    if fight then fight.results[#fight.results + 1] = result end
+
+    if result.early then
+        if SpecOr("windowChat") then
+            local g = result.goals[1]
+            OffBeat:Print(string.format("%s window ended early (combat ended)%s: not scored.", result.name,
+                g and string.format(", %s %d", g.name, g.count) or ""))
+        end
+        self:SendMessage("OFFBEAT_WINDOW_CLOSED", result)
+        if self.frame and OffBeat.db.profile.locked then self.frame:Hide() end
+        return
+    end
 
     if SpecOr("windowChat") then
         local parts = {}
         for _, g in ipairs(result.goals) do
-            parts[#parts + 1] = string.format("%s %s %d/%d", g.ok and READY or MISS, g.name, g.count, g.min)
+            parts[#parts + 1] = string.format("%s %s %d/%d", Mark(g.ok), g.name, g.count, g.min)
         end
         for _, s in ipairs(result.setup) do
-            parts[#parts + 1] = string.format("%s %s", s.ok and READY or MISS, s.name)
+            parts[#parts + 1] = string.format("%s %s%s", Mark(s.ok), s.name, s.ok == nil and " (couldn't read)" or "")
         end
         OffBeat:Print(string.format("%s window: %s", result.name, table.concat(parts, "  ")))
     end
@@ -323,53 +415,70 @@ function Windows:Close()
 end
 
 -- Window results grouped by window name: count, on-target, per-goal
--- totals/best, per-setup successes. Returns a list in first-seen order.
+-- totals/best, per-setup ok / unknown counts. List in first-seen order.
 function Windows:Aggregate(results)
     local byName, order = {}, {}
     for _, r in ipairs(results) do
         local s = byName[r.name]
         if not s then
-            s = { name = r.name, n = 0, met = 0, goals = {}, setupOk = {} }
+            s = { name = r.name, n = 0, met = 0, early = 0, goals = {}, setupOk = {} }
             byName[r.name] = s
             order[#order + 1] = s
         end
-        s.n = s.n + 1
-        if r.met then s.met = s.met + 1 end
-        for i, g in ipairs(r.goals) do
-            local t = s.goals[i] or { name = g.name, total = 0, best = 0, min = g.min }
-            t.total = t.total + g.count
-            if g.count > t.best then t.best = g.count end
-            s.goals[i] = t
-        end
-        for i, st in ipairs(r.setup) do
-            local t = s.setupOk[i] or { name = st.name, ok = 0 }
-            if st.ok then t.ok = t.ok + 1 end
-            s.setupOk[i] = t
+        if r.early then
+            s.early = s.early + 1
+        else
+            s.n = s.n + 1
+            if r.met then s.met = s.met + 1 end
+            for i, g in ipairs(r.goals) do
+                local t = s.goals[i] or { name = g.name, total = 0, best = 0, min = g.min }
+                t.total = t.total + g.count
+                if g.count > t.best then t.best = g.count end
+                s.goals[i] = t
+            end
+            for i, st in ipairs(r.setup) do
+                local t = s.setupOk[i] or { name = st.name, ok = 0, unknown = 0 }
+                if st.ok == true then t.ok = t.ok + 1 elseif st.ok == nil then t.unknown = t.unknown + 1 end
+                s.setupOk[i] = t
+            end
         end
     end
     return order
 end
 
-function Windows:PrintSummary()
-    if #combatResults == 0 or not OffBeat.db.profile.combatReport then return end
-    for _, s in ipairs(self:Aggregate(combatResults)) do
-        local name = s.name
-        local parts = { string.format("%d/%d on target", s.met, s.n) }
-        for _, g in ipairs(s.goals) do
-            parts[#parts + 1] = string.format("%s avg %.1f (goal %d, best %d)",
-                g.name, g.total / s.n, g.min, g.best)
+local function SetupLine(t, n)
+    local known = n - t.unknown
+    local mark = (known > 0 and t.ok == known) and READY or (known == 0 and UNKNOWN or MISS)
+    local s = string.format("%s %s on %d of %d windows", mark, t.name, t.ok, n)
+    if t.unknown > 0 then s = s .. string.format(" (%d couldn't be read)", t.unknown) end
+    return s
+end
+
+function Windows:PrintSummary(f)
+    if #f.results == 0 or not OffBeat.db.profile.combatReport then return end
+    for _, s in ipairs(self:Aggregate(f.results)) do
+        if s.n > 0 then
+            local parts = { string.format("%d/%d on target", s.met, s.n) }
+            for _, g in ipairs(s.goals) do
+                parts[#parts + 1] = string.format("%s avg %.1f (goal %d, best %d)", g.name, g.total / s.n, g.min, g.best)
+            end
+            for _, t in ipairs(s.setupOk) do
+                parts[#parts + 1] = string.format("%s %d/%d%s", t.name, t.ok, s.n,
+                    t.unknown > 0 and string.format(" (%d unread)", t.unknown) or "")
+            end
+            if s.early > 0 then parts[#parts + 1] = string.format("%d ended early", s.early) end
+            OffBeat:Print(string.format("%s windows: %s", s.name, table.concat(parts, ", ")))
+        elseif s.early > 0 then
+            OffBeat:Print(string.format("%s windows: %d ended early (combat ended), not scored", s.name, s.early))
         end
-        for _, t in ipairs(s.setupOk) do
-            parts[#parts + 1] = string.format("%s %d/%d", t.name, t.ok, s.n)
-        end
-        OffBeat:Print(string.format("%s windows: %s", name, table.concat(parts, ", ")))
     end
 end
 
 -- Training report window
 --
 -- Drawn like the post-fight buff timeline (BuffTimeline.lua): a dark panel,
--- a label column on the left and horizontal bars on the right.
+-- a label column on the left and horizontal bars on the right. One section
+-- per boss.
 
 local R_PAD, R_LABEL, R_ROW, R_WIDTH = 10, 120, 14, 460
 local NAV_NORMAL = { 0.85, 0.85, 0.85 }
@@ -377,6 +486,7 @@ local NAV_HOVER  = { 1.00, 0.82, 0.30 }
 local C_GOOD = { 0.30, 0.85, 0.45 }
 local C_BAD  = { 0.90, 0.35, 0.30 }
 local C_BAND = { 0.35, 0.70, 1.00 }
+local C_BOSS = { 1.00, 0.82, 0.30 }
 
 function Windows:GetReportFrame()
     if self.reportFrame then return self.reportFrame end
@@ -431,7 +541,15 @@ function Windows:GetReportFrame()
     return f
 end
 
+local function fmtTime(minutes)
+    return string.format("%dm %02ds", math.floor(minutes), math.floor((minutes % 1) * 60))
+end
+
 function Windows:ShowReport(report)
+    if not report.groups then
+        OffBeat:Print("That report was saved by an older version of OffBeat. Train again for a new one.")
+        return
+    end
     local f = self:GetReportFrame()
     local c = f.content
     for _, t in ipairs(f.texts) do t:Hide() end
@@ -472,63 +590,85 @@ function Windows:ShowReport(report)
 
     f.title:SetFont(OffBeat:GetFont(2))
     f.closeButton.label:SetFont(OffBeat:GetFont(1))
-    f.title:SetText(string.format("OffBeat — Training report (%d fight%s, %dm %02ds)",
-        report.fights, report.fights == 1 and "" or "s",
-        math.floor(report.minutes), math.floor((report.minutes % 1) * 60)))
+    f.title:SetText(string.format("OffBeat — Training report (%d fight%s, %s)",
+        report.fights, report.fights == 1 and "" or "s", fmtTime(report.minutes)))
 
-    -- Cooldown windows: one bar per window, length = goal casts, tick = goal
-    for _, agg in ipairs(report.windows or {}) do
-        local g1 = agg.goals[1]
-        local scale = math.max(g1 and g1.min or 1, g1 and g1.best or 1) * 1.25
-        header(string.format("%s WINDOWS  ·  %d of %d on target  ·  %s avg %.1f, best %d, goal %d",
-            string.upper(agg.name), agg.met, agg.n, g1 and g1.name or "", g1 and g1.total / agg.n or 0,
-            g1 and g1.best or 0, g1 and g1.min or 0))
-        local idx = 0
-        for _, r in ipairs(report.detail or {}) do
-            if r.name == agg.name and r.goals[1] then
-                idx = idx + 1
-                local g = r.goals[1]
-                local setupOk = true
-                for _, st in ipairs(r.setup) do if not st.ok then setupOk = false end end
-                text(string.format("%s %d", agg.name, idx), 0, y, nil, 0, R_LABEL - 20)
-                if not setupOk then text(MISS, R_LABEL - 18, y) end
+    for gi, grp in ipairs(report.groups) do
+        if gi > 1 then
+            rect(0, y + 4, R_WIDTH - R_PAD * 2, 1, 1, 1, 1, 0.12)
+            y = y - 6
+        end
+        text(string.format("%s  ·  %d fight%s, %s", grp.name, grp.fights, grp.fights == 1 and "" or "s",
+            fmtTime(grp.minutes)), 0, y, C_BOSS, 1)
+        y = y - 20
+
+        -- Cooldown windows: one bar per window, tick = goal
+        for _, agg in ipairs(grp.windows or {}) do
+            local g1 = agg.goals[1]
+            local scale = math.max(g1 and g1.min or 1, g1 and g1.best or 1, grp.topWindow or 0) * 1.25
+            header(string.format("%s WINDOWS  ·  %d of %d on target  ·  %s avg %.1f, best %d, goal %d%s%s",
+                string.upper(agg.name), agg.met, agg.n, g1 and g1.name or "",
+                (g1 and agg.n > 0) and g1.total / agg.n or 0, g1 and g1.best or 0, g1 and g1.min or 0,
+                grp.topWindow and string.format(", top median %d", grp.topWindow) or "",
+                agg.early > 0 and string.format("  ·  %d ended early", agg.early) or ""))
+            local idx = 0
+            for _, r in ipairs(grp.detail or {}) do
+                if r.name == agg.name and r.goals[1] then
+                    idx = idx + 1
+                    local g = r.goals[1]
+                    local setup = true
+                    for _, st in ipairs(r.setup) do
+                        if st.ok == false then setup = false elseif st.ok == nil and setup then setup = nil end
+                    end
+                    text(string.format("%s %d", agg.name, idx), 0, y, nil, 0, R_LABEL - 20)
+                    if setup ~= true then text(Mark(setup), R_LABEL - 18, y) end
+                    rect(R_LABEL, y - 1, barW, R_ROW - 2, 0.15, 0.15, 0.15, 0.8)
+                    local col = r.early and { 0.5, 0.5, 0.5 } or (g.ok and C_GOOD or C_BAD)
+                    rect(R_LABEL, y - 1, barW * math.min(1, g.count / scale), R_ROW - 2, col[1], col[2], col[3], 0.85)
+                    rect(R_LABEL + barW * math.min(1, g.min / scale), y - 1, 2, R_ROW - 2, 1, 1, 1, 0.9)
+                    if grp.topWindow then
+                        rect(R_LABEL + barW * math.min(1, grp.topWindow / scale), y - 1, 2, R_ROW - 2,
+                            C_BAND[1], C_BAND[2], C_BAND[3], 1)
+                    end
+                    text(r.early and string.format("%d  early", g.count) or string.format("%d / %d", g.count, g.min),
+                        R_LABEL + barW + 6, y, col, 0, 60)
+                    y = y - R_ROW - 2
+                end
+            end
+            for _, st in ipairs(agg.setupOk) do
+                if agg.n > 0 then
+                    text(SetupLine(st, agg.n), 0, y, { 0.7, 0.7, 0.7 }, -1)
+                    y = y - 14
+                end
+            end
+            y = y - 8
+        end
+
+        -- Casts per minute: your rate over this boss's top players' middle half
+        if grp.rates then
+            header("CASTS PER MINUTE  ·  YOU VS TOP PARSES ON " .. string.upper(grp.benchName or "")
+                .. "  (band = middle half, tick = median)")
+            for _, r in ipairs(grp.rates) do
+                local scale = math.max(r.rate, r.high) * 1.15
+                local px = function(v) return R_LABEL + barW * math.min(1, v / scale) end
+                text(r.name, 0, y, nil, 0, R_LABEL - 6)
                 rect(R_LABEL, y - 1, barW, R_ROW - 2, 0.15, 0.15, 0.15, 0.8)
-                local col = g.ok and C_GOOD or C_BAD
-                rect(R_LABEL, y - 1, barW * math.min(1, g.count / scale), R_ROW - 2, col[1], col[2], col[3], 0.85)
-                rect(R_LABEL + barW * math.min(1, g.min / scale), y - 1, 2, R_ROW - 2, 1, 1, 1, 0.9)
-                text(string.format("%d / %d", g.count, g.min), R_LABEL + barW + 6, y, col, 0, 60)
+                rect(px(r.low), y - 1, px(r.high) - px(r.low), R_ROW - 2, C_BAND[1], C_BAND[2], C_BAND[3], 0.30)
+                local col = r.ok and C_GOOD or C_BAD
+                rect(R_LABEL, y + 3 - R_ROW / 2, px(r.rate) - R_LABEL, 4, col[1], col[2], col[3], 0.95)
+                rect(px(r.median), y - 1, 2, R_ROW - 2, C_BAND[1], C_BAND[2], C_BAND[3], 1)
+                text(string.format("%.1f", r.rate), R_LABEL + barW + 6, y, col, 0, 30, "RIGHT")
+                text(string.format("/%.1f", r.median), R_LABEL + barW + 37, y, { 0.55, 0.55, 0.55 }, -1)
                 y = y - R_ROW - 2
             end
-        end
-        for _, st in ipairs(agg.setupOk) do
-            text(string.format("%s %s on %d of %d windows", st.ok == agg.n and READY or MISS, st.name, st.ok, agg.n),
-                0, y, { 0.7, 0.7, 0.7 }, -1)
+            y = y - 6
+        elseif grp.hasBenchmarks then
+            local why = grp.benchName and "Fight at least a minute for the casts-per-minute comparison."
+                or string.format("No top-parse numbers for %s yet.", grp.name)
+            text(why, 0, y, { 0.6, 0.6, 0.6 }, -1)
             y = y - 14
         end
-        y = y - 10
-    end
-
-    -- Casts per minute: your rate as a bar over the top players' middle half
-    if report.rates then
-        header("CASTS PER MINUTE  ·  YOU VS " .. string.upper(report.source or "TOP PARSES")
-            .. "  (band = middle half, tick = median)")
-        for _, r in ipairs(report.rates) do
-            local scale = math.max(r.rate, r.high) * 1.15
-            local px = function(v) return R_LABEL + barW * math.min(1, v / scale) end
-            text(r.name, 0, y, nil, 0, R_LABEL - 6)
-            rect(R_LABEL, y - 1, barW, R_ROW - 2, 0.15, 0.15, 0.15, 0.8)
-            rect(px(r.low), y - 1, px(r.high) - px(r.low), R_ROW - 2, C_BAND[1], C_BAND[2], C_BAND[3], 0.30)
-            local col = r.ok and C_GOOD or C_BAD
-            rect(R_LABEL, y + 3 - R_ROW / 2, px(r.rate) - R_LABEL, 4, col[1], col[2], col[3], 0.95)
-            rect(px(r.median), y - 1, 2, R_ROW - 2, C_BAND[1], C_BAND[2], C_BAND[3], 1)
-            text(string.format("%.1f", r.rate), R_LABEL + barW + 6, y, col, 0, 30, "RIGHT")
-            text(string.format("/%.1f", r.median), R_LABEL + barW + 37, y, { 0.55, 0.55, 0.55 }, -1)
-            y = y - R_ROW - 2
-        end
         y = y - 6
-    elseif OffBeat.activeProfile and OffBeat.activeProfile.benchmarks then
-        text("Fight at least a minute in total for the casts-per-minute comparison.", 0, y, { 0.6, 0.6, 0.6 }, -1)
-        y = y - 14
     end
 
     f:SetHeight(-y + R_PAD * 2 + 34)
@@ -597,7 +737,7 @@ function Windows:RefreshFrame()
         lines[#lines + 1] = string.format("%s %s%d|r / %d", g.name, color, active.counts[i], min)
     end
     for i, s in ipairs(active.def.setup) do
-        if not active.setup[i] then lines[#lines + 1] = MISS .. " " .. s.name end
+        if active.setup[i] ~= true then lines[#lines + 1] = Mark(active.setup[i]) .. " " .. s.name end
     end
     f.body:SetText(table.concat(lines, "\n"))
     f:SetHeight(30 + 15 * #lines)

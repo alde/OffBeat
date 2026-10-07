@@ -101,7 +101,7 @@ OffBeat:RegisterProfile({
     -- training mode.
     -- Per-boss top-parse cast rates (casts per minute), {low, median, high}
     -- across the top 40 heroic parses; values follow the order of rates.
-    -- window = top players' median Hand of Gul'dan count per Imp Lord window.
+    -- window = top players' median Hand of Gul'dan count per Tyrant window.
     benchmarks = {
         source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
         rates = {

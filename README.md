@@ -131,7 +131,7 @@ How to use it:
 1. Turn it on and fight a target dummy (or a boss).
 2. When you press the window's cooldown, OffBeat checks your setup (for Demonology: 5 Soul Shards pooled) and a counter shows the casts that matter inside the window against a goal.
 3. Each window ends with a scorecard in chat; each fight ends with a summary and your casts per minute against the profile's benchmarks.
-4. Turn training off and a **report panel** sums up the session, one section per boss: one bar per window against its goal (with the top players' median for that boss), and one bar per benchmark spell over that boss's top players' middle half. `/ob report` reopens the last report.
+4. Turn training off and a **report panel** sums up the session. It has a page per boss with all its pulls together, then a page per pull (marked kill or wipe); `<` and `>` flip between them. Each page has one bar per window against its goal (with the top players' median for that boss) and one bar per benchmark spell over that boss's top players' middle half. `/ob report` shows the session so far while training is on (opening on the latest boss), otherwise the last report.
 
 Goals can be adjusted per spec on the Training page, so you can start with one you can reach and raise it as you improve.
 

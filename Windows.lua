@@ -173,8 +173,9 @@ function Windows:ENCOUNTER_START(_, encounterId, encounterName)
     end
 end
 
-function Windows:ENCOUNTER_END()
+function Windows:ENCOUNTER_END(_, _, _, _, _, success)
     encounter = nil
+    if fight and fight.encounterId then fight.kill = success == 1 end
 end
 
 function Windows:PLAYER_REGEN_DISABLED()
@@ -316,45 +317,81 @@ function Windows:ExportSession()
     return session
 end
 
--- Group the session's fights by boss and show the report.
-function Windows:FinishSession()
-    local s = session
-    session = nil
+-- One report page from a set of fights (a whole boss, or a single pull).
+function Windows:BuildPage(name, encounterId, fights, subtitle)
+    local minutes, casts, rotation, results = 0, {}, 0, {}
+    for _, f in ipairs(fights) do
+        minutes = minutes + f.minutes
+        for id, n in pairs(f.casts) do casts[id] = (casts[id] or 0) + n end
+        rotation = rotation + f.rotation
+        for _, res in ipairs(f.results) do results[#results + 1] = res end
+    end
+    local profile = OffBeat.activeProfile
+    local bench = self:BenchmarkFor({ encounterId = encounterId })
+    return {
+        name = name, subtitle = subtitle, minutes = minutes,
+        windows = self:Aggregate(results),
+        detail = results, -- each window's goals/setup, drawn as bars
+        benchName = bench and bench.name, topWindow = bench and bench.window,
+        hasBenchmarks = profile and profile.benchmarks ~= nil,
+        rates = (bench and minutes >= 1) and self:BenchmarkRows(bench, minutes, casts, rotation) or nil,
+    }
+end
+
+local function fmtTime(minutes)
+    return string.format("%dm %02ds", math.floor(minutes), math.floor((minutes % 1) * 60))
+end
+
+-- A session's report: per boss, a page for all its pulls together, then a
+-- page per pull when there was more than one. nil when nothing counted.
+function Windows:BuildReport(s)
     local total, groups, byKey = 0, {}, {}
     for _, f in ipairs(s and s.fights or {}) do
-        total = total + f.minutes
-        local key = f.encounterId or 0
-        local g = byKey[key]
-        if not g then
-            g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId,
-                  fights = 0, minutes = 0, casts = {}, rotation = 0, results = {} }
-            byKey[key] = g
-            groups[#groups + 1] = g
+        -- a blip of combat (under 15s) with no window isn't a pull
+        if f.minutes >= 0.25 or #f.results > 0 then
+            total = total + f.minutes
+            local key = f.encounterId or 0
+            local g = byKey[key]
+            if not g then
+                g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId, fights = {} }
+                byKey[key] = g
+                groups[#groups + 1] = g
+            end
+            g.fights[#g.fights + 1] = f
         end
-        if f.minutes >= 0.25 then g.fights = g.fights + 1 end
-        g.minutes = g.minutes + f.minutes
-        for id, n in pairs(f.casts) do g.casts[id] = (g.casts[id] or 0) + n end
-        g.rotation = g.rotation + f.rotation
-        for _, r in ipairs(f.results) do g.results[#g.results + 1] = r end
     end
-    if total < 0.5 and #groups == 0 then
-        OffBeat:Print("Training ended. No fights were recorded, so there is no report.")
-        return
-    end
+    if #groups == 0 then return nil end
 
     local profile = OffBeat.activeProfile
-    local report = { spec = profile and profile.meta.name or "", minutes = total, fights = 0, groups = {} }
+    local report = { spec = profile and profile.meta.name or "", minutes = total, fights = 0, pages = {} }
     for _, g in ipairs(groups) do
-        report.fights = report.fights + g.fights
-        local bench = self:BenchmarkFor(g)
-        report.groups[#report.groups + 1] = {
-            name = g.name, fights = g.fights, minutes = g.minutes,
-            windows = self:Aggregate(g.results),
-            detail = g.results, -- each window's goals/setup, drawn as bars
-            benchName = bench and bench.name, topWindow = bench and bench.window,
-            hasBenchmarks = profile and profile.benchmarks ~= nil,
-            rates = (bench and g.minutes >= 1) and self:BenchmarkRows(bench, g.minutes, g.casts, g.rotation) or nil,
-        }
+        local n = #g.fights
+        report.fights = report.fights + n
+        local word = g.encounterId and "pull" or "fight"
+        local all = 0
+        for _, f in ipairs(g.fights) do all = all + f.minutes end
+        report.lastBossPage = #report.pages + 1 -- mid-session, /ob report opens on the latest boss
+        report.pages[#report.pages + 1] = self:BuildPage(g.name, g.encounterId, g.fights,
+            n == 1 and string.format("1 %s, %s", word, fmtTime(all))
+                or string.format("all %d %ss, %s", n, word, fmtTime(all)))
+        if n > 1 then
+            for i, f in ipairs(g.fights) do
+                local outcome = f.kill == true and "kill  ·  " or (f.kill == false and "wipe  ·  " or "")
+                report.pages[#report.pages + 1] = self:BuildPage(g.name, g.encounterId, { f },
+                    string.format("%s %d of %d  ·  %s%s", word, i, n, outcome, fmtTime(f.minutes)))
+            end
+        end
+    end
+    return report
+end
+
+-- Training turned off: save and show the session's report.
+function Windows:FinishSession()
+    local report = self:BuildReport(session)
+    session = nil
+    if not report then
+        OffBeat:Print("Training ended. No fights were recorded, so there is no report.")
+        return
     end
     OffBeat.db.profile.lastTrainingReport = report
     self:ShowReport(report)
@@ -539,6 +576,30 @@ function Windows:GetReportFrame()
     close:SetScript("OnLeave", function() x:SetTextColor(unpack(NAV_NORMAL)) end)
     f.closeButton = close
 
+    -- < page / pages >: one page per boss, then one per pull
+    local function navButton(label, anchorTo, dx, onClick)
+        local b = CreateFrame("Button", nil, f)
+        b:SetSize(18, 18)
+        b:SetPoint("RIGHT", anchorTo, "LEFT", dx, 0)
+        local t = b:CreateFontString(nil, "OVERLAY")
+        t:SetFont(OffBeat:GetFont(1))
+        t:SetPoint("CENTER")
+        t:SetText(label)
+        t:SetTextColor(unpack(NAV_NORMAL))
+        b.label = t
+        b:SetScript("OnClick", onClick)
+        b:SetScript("OnEnter", function() t:SetTextColor(unpack(NAV_HOVER)) end)
+        b:SetScript("OnLeave", function() t:SetTextColor(unpack(NAV_NORMAL)) end)
+        return b
+    end
+    f.nextButton = navButton(">", close, -10, function() Windows:ShowReport(f.report, f.page + 1) end)
+    local pageText = f:CreateFontString(nil, "OVERLAY")
+    pageText:SetFont(OffBeat:GetFont(0))
+    pageText:SetPoint("RIGHT", f.nextButton, "LEFT", -2, 0)
+    pageText:SetTextColor(0.6, 0.6, 0.6)
+    f.pageText = pageText
+    f.prevButton = navButton("<", pageText, -2, function() Windows:ShowReport(f.report, f.page - 1) end)
+
     f.content = CreateFrame("Frame", nil, f)
     f.content:SetPoint("TOPLEFT", R_PAD, -(R_PAD + 34))
     f.content:SetPoint("BOTTOMRIGHT", -R_PAD, R_PAD)
@@ -548,17 +609,16 @@ function Windows:GetReportFrame()
     return f
 end
 
-local function fmtTime(minutes)
-    return string.format("%dm %02ds", math.floor(minutes), math.floor((minutes % 1) * 60))
-end
-
-function Windows:ShowReport(report)
-    if not report.groups then
+function Windows:ShowReport(report, page)
+    if not report.pages then
         OffBeat:Print("That report was saved by an older version of OffBeat. Train again for a new one.")
         return
     end
     local f = self:GetReportFrame()
     local c = f.content
+    local nPages = #report.pages
+    page = math.max(1, math.min(page or 1, nPages))
+    f.report, f.page = report, page
     for _, t in ipairs(f.texts) do t:Hide() end
     for _, t in ipairs(f.textures) do t:Hide() end
     local nText, nTex, y = 0, 0, 0
@@ -597,27 +657,37 @@ function Windows:ShowReport(report)
 
     f.title:SetFont(OffBeat:GetFont(2))
     f.closeButton.label:SetFont(OffBeat:GetFont(1))
-    f.title:SetText(string.format("OffBeat — Training report (%d fight%s, %s)",
-        report.fights, report.fights == 1 and "" or "s", fmtTime(report.minutes)))
+    f.title:SetText(string.format("OffBeat — Training report%s (%d fight%s, %s)",
+        report.soFar and " so far" or "", report.fights, report.fights == 1 and "" or "s", fmtTime(report.minutes)))
+    for _, b in ipairs({ f.prevButton, f.nextButton }) do
+        b.label:SetFont(OffBeat:GetFont(1))
+        b:SetShown(nPages > 1)
+    end
+    f.prevButton:SetEnabled(page > 1)
+    f.prevButton.label:SetAlpha(page > 1 and 1 or 0.3)
+    f.nextButton:SetEnabled(page < nPages)
+    f.nextButton.label:SetAlpha(page < nPages and 1 or 0.3)
+    f.pageText:SetFont(OffBeat:GetFont(0))
+    f.pageText:SetText(nPages > 1 and string.format("%d / %d", page, nPages) or "")
 
-    for gi, grp in ipairs(report.groups) do
-        if gi > 1 then
-            rect(0, y + 4, R_WIDTH - R_PAD * 2, 1, 1, 1, 1, 0.12)
-            y = y - 6
-        end
-        text(string.format("%s  ·  %d fight%s, %s", grp.name, grp.fights, grp.fights == 1 and "" or "s",
-            fmtTime(grp.minutes)), 0, y, C_BOSS, 1)
+    do
+        local grp = report.pages[page]
+        text(string.format("%s  ·  %s", grp.name, grp.subtitle), 0, y, C_BOSS, 1)
         y = y - 20
 
         -- Cooldown windows: one bar per window, tick = goal
         for _, agg in ipairs(grp.windows or {}) do
             local g1 = agg.goals[1]
             local scale = math.max(g1 and g1.min or 1, g1 and g1.best or 1, grp.topWindow or 0) * 1.25
+            if agg.n == 0 then
+                header(string.format("%s WINDOWS  ·  %d ended early, not scored", string.upper(agg.name), agg.early))
+            else
             header(string.format("%s WINDOWS  ·  %d of %d on target  ·  %s avg %.1f, best %d, goal %d%s%s",
                 string.upper(agg.name), agg.met, agg.n, g1 and g1.name or "",
                 (g1 and agg.n > 0) and g1.total / agg.n or 0, g1 and g1.best or 0, g1 and g1.min or 0,
                 grp.topWindow and string.format(", top median %d", grp.topWindow) or "",
                 agg.early > 0 and string.format("  ·  %d ended early", agg.early) or ""))
+            end
             local idx = 0
             for _, r in ipairs(grp.detail or {}) do
                 if r.name == agg.name and r.goals[1] then
@@ -682,8 +752,19 @@ function Windows:ShowReport(report)
     f:Show()
 end
 
---- Reopen the last training report (/ob report).
+--- /ob report: the session so far while training is on, otherwise the
+--- last finished session.
 function Windows:ShowLastReport()
+    if OffBeat.training and session then
+        local live = self:BuildReport(session)
+        if not live then
+            OffBeat:Print("Training is on, but no fights have been recorded yet this session.")
+            return
+        end
+        live.soFar = true
+        self:ShowReport(live, live.lastBossPage)
+        return
+    end
     local report = OffBeat.db.profile.lastTrainingReport
     if not report then
         OffBeat:Print("No training report yet. Turn on /ob training, fight, then turn it off.")

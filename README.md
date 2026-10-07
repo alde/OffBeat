@@ -65,7 +65,7 @@ cd Interface/AddOns/OffBeat
 | `/ob profile <name>` | Switch profile |
 | `/ob test` | Inject test data |
 | `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
-| `/ob report` | Show the last training report |
+| `/ob report` | Show the training report (the session so far while training is on) |
 
 
 ## Creating a profile

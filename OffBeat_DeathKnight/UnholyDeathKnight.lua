@@ -70,6 +70,44 @@ OffBeat:RegisterProfile({
         },
     },
 
+    -- /ob bars: puts these on your bars, on the keys your account already
+    -- uses (binds are account-wide, shared with the warlock). Most-pressed
+    -- spells on the best keys, by how often the top 80 heroic Unholy parses
+    -- (Oct 2026) press them. Slots: 1-12 main bar, 61-72 bottom left,
+    -- 49-60 bottom right. Vampiric Strike / Sudden Doom procs show up on
+    -- the Scourge Strike / Death Coil buttons by themselves.
+    barLayout = {
+        -- main rotation (100% of top players)
+        { slot = 1,  key = "1",       spellId = 55090,   note = "Scourge Strike / Vampiric Strike, most pressed (~23/min)" },
+        { slot = 2,  key = "2",       spellId = 47541,   note = "Death Coil (~12/min)" },
+        { slot = 6,  key = "Q",       spellId = 1242174, note = "Necrotic Coil (~8/min)" },
+        { slot = 3,  key = "3",       spellId = 85948,   note = "Festering Strike" },
+        { slot = 8,  key = "E",       spellId = 458128,  alt = { 455397 }, note = "Festering Scythe" },
+        { slot = 4,  key = "4",       spellId = 1247378, note = "Putrefy: save charges for Dark Transformation" },
+        { slot = 5,  key = "5",       spellId = 343294,  note = "Soul Reaper" },
+        { slot = 7,  key = "G",       spellId = 1271967, alt = { 1271974 }, note = "Blightfall" },
+        { slot = 11, key = "Wheel up", spellId = 77575,  note = "Outbreak" },
+        -- cooldowns
+        { slot = 67, key = "R",       spellId = 1233448, note = "Dark Transformation, main cooldown" },
+        { slot = 68, key = "T",       spellId = 42650,   note = "Army of the Dead" },
+        -- movement, defensives, interrupt
+        { slot = 9,  key = "Mouse 4", spellId = 48265,   note = "Death's Advance (96% use it)" },
+        { slot = 70, key = "F",       spellId = 48707,   note = "Anti-Magic Shell (90%)" },
+        { slot = 71, key = "Shift-F", spellId = 48792,   note = "Icebound Fortitude (63%)" },
+        { slot = 12, key = "X",       spellId = 47528,   note = "Mind Freeze" },
+        { slot = 66, key = "Shift-Q", spellId = 49039,   note = "Lichborne (33%)" },
+        { slot = 61, key = "Shift-1", spellId = 49998,   note = "Death Strike" },
+        { slot = 62, key = "Shift-2", spellId = 48743,   note = "Death Pact (18%)" },
+        { slot = 63, key = "Shift-3", spellId = 51052,   note = "Anti-Magic Zone (24%)" },
+        -- AoE (only when there are adds)
+        { slot = 10, key = "Wheel down", spellId = 207317, note = "Epidemic, 3+ targets" },
+        { slot = 64, key = "Shift-4", spellId = 383269,  note = "Graveyard, 4+ targets" },
+        -- rarely pressed by top players
+        { slot = 65, key = "Shift-5", spellId = 61999,   note = "Raise Ally (combat rez)" },
+        { slot = 50, key = "Shift-E", spellId = 49576,   note = "Death Grip (4%)" },
+        { slot = 51, key = "Ctrl-E",  spellId = 212552,  note = "Wraith Walk (9%)" },
+    },
+
     -- Coaching: Method says to dump Putrefy inside Dark Transformation (and
     -- not to cap its charges). Across the top 40 heroic parses per boss
     -- (Oct 2026) the median 15s Dark Transformation holds 2 Putrefy on

@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout",
 }
 
 
@@ -87,6 +87,22 @@ function OffBeat:ValidateProfile(profile)
             if type(m) ~= "table" or type(m.spellId) ~= "number" then
                 return false, "movingCasts[" .. i .. "].spellId must be a spell ID"
             end
+        end
+    end
+
+    if profile.barLayout ~= nil then
+        if type(profile.barLayout) ~= "table" or #profile.barLayout == 0 then
+            return false, "barLayout must be a non-empty list"
+        end
+        local used = {}
+        for i, e in ipairs(profile.barLayout) do
+            local where = "barLayout[" .. i .. "]"
+            if type(e) ~= "table" or type(e.slot) ~= "number" or type(e.spellId) ~= "number" then
+                return false, where .. " needs a slot and a spellId"
+            end
+            if e.slot < 1 or e.slot > 180 then return false, where .. ".slot must be 1-180" end
+            if used[e.slot] then return false, where .. ": slot " .. e.slot .. " is used twice" end
+            used[e.slot] = true
         end
     end
 

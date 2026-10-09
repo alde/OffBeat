@@ -68,6 +68,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob test` | Inject test data |
 | `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
 | `/ob report` | Show the training report (the session so far while training is on) |
+| `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat) |
 
 
 ## Creating a profile

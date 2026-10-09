@@ -84,6 +84,9 @@ function OffBeat:ValidateProfile(profile)
         if profile.pet.quickSummon ~= nil and type(profile.pet.quickSummon) ~= "number" then
             return false, "pet.quickSummon must be a spell ID"
         end
+        if profile.pet.sacrifice ~= nil and type(profile.pet.sacrifice) ~= "number" then
+            return false, "pet.sacrifice must be a spell ID"
+        end
     end
 
     if profile.keyLayoutLabels ~= nil then

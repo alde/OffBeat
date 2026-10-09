@@ -15,7 +15,7 @@ OffBeat:RegisterProfile({
 
     -- Pet died / missing / low warnings, and pet deaths in training.
     -- Fel Domination makes the next summon instant.
-    pet = { quickSummon = 333889 },
+    pet = { quickSummon = 333889, sacrifice = 108503 }, -- Grimoire of Sacrifice: no pet
 
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt

@@ -3,7 +3,11 @@ local Pet = OffBeat:NewModule("Pet", "AceEvent-3.0")
 
 -- Keeps your permanent pet alive and out (profile.pet):
 --
---   pet = { quickSummon = 333889 }   -- optional: makes the next summon instant
+--   pet = { quickSummon = 333889,    -- optional: makes the next summon instant
+--           sacrifice = 108503 }     -- optional: a talent that replaces the pet
+--
+-- With the sacrifice talent known there's no pet to keep alive, so all of
+-- this goes quiet (and training doesn't count pet time).
 --
 -- Warns when the pet dies (or is missing when a pull starts) and when it
 -- drops low, so you can pull it back or heal it. Training counts deaths and
@@ -75,6 +79,15 @@ local function Warn(msg)
     OffBeat:Print("|cffff8800" .. msg .. "|r")
 end
 
+--- Does this character want a pet out? False when the profile's sacrifice
+--- talent (Grimoire of Sacrifice) is known.
+function Pet:Wanted()
+    local cfg = OffBeat.activeProfile and OffBeat.activeProfile.pet
+    if not cfg then return false end
+    if cfg.sacrifice and Bool(IsPlayerSpell, cfg.sacrifice) then return false end
+    return true
+end
+
 local function ResummonHint()
     local quick = OffBeat.activeProfile and OffBeat.activeProfile.pet and OffBeat.activeProfile.pet.quickSummon
     if quick and Bool(IsPlayerSpell, quick) then
@@ -100,6 +113,7 @@ end
 -- Compare with the last known state and report changes. Deaths are
 -- reported in combat only; out of combat the pet just quietly comes back.
 function Pet:Check()
+    if not self:Wanted() then return end
     local now = PetAlive()
     if now == nil then return end
     local was = alive
@@ -118,7 +132,7 @@ function Pet:UNIT_PET(_, unit)
 end
 
 function Pet:UNIT_HEALTH(_, unit)
-    if unit ~= "pet" then return end
+    if unit ~= "pet" or not self:Wanted() then return end
     self:Check()
     if not alive or not GetSpecOr("petLowHealthAlert") or not UnitAffectingCombat("player") then return end
     local pct = PetHealth()
@@ -132,6 +146,7 @@ function Pet:UNIT_HEALTH(_, unit)
 end
 
 function Pet:PLAYER_REGEN_DISABLED()
+    if not self:Wanted() then return end
     -- A beat later, so training has opened its fight first.
     C_Timer.After(0.2, function()
         alive = PetAlive()

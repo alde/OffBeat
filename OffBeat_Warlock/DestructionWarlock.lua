@@ -16,7 +16,7 @@ OffBeat:RegisterProfile({
     -- Fel Domination makes the next summon instant. All of the top 82
     -- heroic Ula'tek parses we could read (Oct 2026) kept a pet out, mostly
     -- the Imp or the Sayaad; none played without one.
-    pet = { quickSummon = 333889 },
+    pet = { quickSummon = 333889, sacrifice = 108503 }, -- Grimoire of Sacrifice: no pet
 
     rotationSpells = {
         { spellId = 29722 },  -- Incinerate

@@ -159,8 +159,13 @@ local function InRaid()
     return ok and inInstance and kind == "raid"
 end
 
+local function PetWanted()
+    local pet = OffBeat:GetModule("Pet", true)
+    return pet and pet:IsEnabled() and pet:Wanted() or false
+end
+
 local function NewFight()
-    return { start = GetTime(), inRaid = InRaid(), casts = {}, rotation = 0, results = {},
+    return { start = GetTime(), inRaid = InRaid(), casts = {}, rotation = 0, results = {}, petWanted = PetWanted(),
              encounterId = encounter and encounter.id, encounterName = encounter and encounter.name }
 end
 
@@ -226,7 +231,7 @@ local function KeyName()
 end
 
 local function StartRun()
-    run = { start = GetTime(), inRaid = false, casts = {}, rotation = 0, results = {},
+    run = { start = GetTime(), inRaid = false, casts = {}, rotation = 0, results = {}, petWanted = PetWanted(),
             run = true, encounterName = KeyName(), minutes = 0 }
 end
 
@@ -455,8 +460,9 @@ end
 -- One report page from a set of fights (a whole boss, or a single pull).
 function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     local minutes, casts, rotation, results = 0, {}, 0, {}
-    local petDeaths, petDown = 0, 0
+    local petDeaths, petDown, petWanted = 0, 0, false
     for _, f in ipairs(fights) do
+        petWanted = petWanted or f.petWanted
         minutes = minutes + f.minutes
         petDeaths, petDown = petDeaths + (f.petDeaths or 0), petDown + (f.petDown or 0)
         for id, n in pairs(f.casts) do casts[id] = (casts[id] or 0) + n end
@@ -467,7 +473,7 @@ function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     local bench = self:BenchmarkFor({ encounterId = encounterId, run = isRun })
     return {
         name = name, subtitle = subtitle, minutes = minutes,
-        pet = profile and profile.pet and { deaths = petDeaths, down = petDown } or nil,
+        pet = petWanted and { deaths = petDeaths, down = petDown } or nil,
         windows = self:Aggregate(results),
         detail = results, -- each window's goals/setup, drawn as bars
         benchName = bench and bench.name, topWindow = bench and bench.window,

@@ -17,8 +17,9 @@ local OffBeat = _G.OffBeat
 -- becomes a per-character macro "#showtooltip / /cast [known:Malevolence]
 -- Malevolence; Cataclysm": the first spell you know wins, the last one is
 -- the fallback. `cursor = true` casts them at the mouse cursor
--- ([@cursor]), for ground-targeted spells; a cursor macro can hold just one
--- spell. Spell names come from the game, so it works in any client
+-- ([@cursor]), for ground-targeted spells, or `cursor = { ids }` only those
+-- (Havoc on your target, Cataclysm at the cursor). A macro with cursor can
+-- hold just one spell. Spell names come from the game, so it works in any client
 -- language. /ob bars apply creates the macro, or rewrites it if it exists.
 --
 -- Slots are Blizzard's: 1-12 main bar, 61-72 bottom left, 49-60 bottom right,
@@ -38,12 +39,17 @@ local function SpellName(spellId)
 end
 
 local function MacroBody(m)
-    local at = m.cursor and "@cursor" or nil
+    local atCursor = {}
+    if m.cursor == true then
+        for _, id in ipairs(m.spells) do atCursor[id] = true end
+    elseif type(m.cursor) == "table" then
+        for _, id in ipairs(m.cursor) do atCursor[id] = true end
+    end
     local parts = {}
     for i, id in ipairs(m.spells) do
         local name = SpellName(id)
         local cond = {}
-        if at then cond[#cond + 1] = at end
+        if atCursor[id] then cond[#cond + 1] = "@cursor" end
         if i < #m.spells then cond[#cond + 1] = "known:" .. name end
         parts[#parts + 1] = (#cond > 0 and ("[" .. table.concat(cond, ",") .. "] ") or "") .. name
     end
@@ -69,7 +75,7 @@ end
 local function MacroLabel(m)
     local names = {}
     for _, id in ipairs(m.spells) do names[#names + 1] = SpellName(id) end
-    return "macro: " .. table.concat(names, " / ") .. (m.cursor and " at cursor" or "")
+    return "macro: " .. table.concat(names, " / ") .. (m.cursor == true and " at cursor" or "")
 end
 
 function OffBeat:ShowBarLayout(apply)

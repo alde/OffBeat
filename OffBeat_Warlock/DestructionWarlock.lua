@@ -165,7 +165,8 @@ OffBeat:RegisterProfile({
     -- Season 2): all Diabolist, every one casts Cataclysm (~1.2 a minute)
     -- and Rain of Fire (~5). Immolate is placed as the base spell; with
     -- Hellcaller the button shows Wither.
-    -- Infernal and Rain of Fire are [@cursor] macros: they land where the
+    -- Infernal, Rain of Fire and Cataclysm (in the R macro) cast at the
+    -- cursor ([@cursor]): they land where the
     -- mouse points, no targeting circle.
     -- Command Demon is Spell Lock with a Felhunter out, or sacrificed with
     -- Grimoire of Sacrifice.
@@ -179,7 +180,7 @@ OffBeat:RegisterProfile({
           note = "Summon Infernal at your cursor: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 442726, note = "Malevolence: on cooldown (Imp Lord's spot)" },
         { slot = 7,  key = "G",       spellId = 6353,   alt = { 265321 }, note = "Soul Fire: on cooldown, with Backdraft" },
-        { slot = 67, key = "R",       macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } },
+        { slot = 67, key = "R",       macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 }, cursor = { 152108 } },
           note = "Havoc in raid (second target), Cataclysm in M+ (every pack)" },
         { slot = 66, key = "Shift-Q", macro = { name = "OB Rain", spells = { 5740 }, cursor = true },
           note = "Rain of Fire at your cursor: M+ spender at 3+ targets" },

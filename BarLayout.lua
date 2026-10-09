@@ -8,6 +8,17 @@ local OffBeat = _G.OffBeat
 --       ...
 --   }
 --
+-- A slot can hold a macro that picks between spells two talent builds
+-- don't share, so one key works in both:
+--
+--       { slot = 63, key = "Shift-3", macro = { name = "OB Malev/Cata",
+--             spells = { 442726, 152108 } } },
+--
+-- becomes a per-character macro "#showtooltip / /cast [known:Malevolence]
+-- Malevolence; Cataclysm": the first spell you know wins, the last one is
+-- the fallback. Spell names come from the game, so it works in any client
+-- language. /ob bars apply creates the macro, or rewrites it if it exists.
+--
 -- Slots are Blizzard's: 1-12 main bar, 61-72 bottom left, 49-60 bottom right,
 -- 25-36 right, 37-48 left, 145-180 bars 5-7. `key` is only shown in the plan.
 -- /ob bars shows the plan, /ob bars apply places it (out of combat). What was
@@ -24,6 +35,41 @@ local function SpellName(spellId)
     return info and info.name or ("spell " .. spellId)
 end
 
+local function MacroBody(spells)
+    local parts = {}
+    for i, id in ipairs(spells) do
+        local name = SpellName(id)
+        if i < #spells then
+            parts[#parts + 1] = "[known:" .. name .. "] " .. name
+        else
+            parts[#parts + 1] = name
+        end
+    end
+    return "#showtooltip\n/cast " .. table.concat(parts, "; ")
+end
+OffBeat.BarLayoutMacroBody = MacroBody
+
+-- Create or update the macro; returns true once it's on the cursor.
+local function PickupLayoutMacro(m)
+    local body = MacroBody(m.spells)
+    local index = GetMacroIndexByName(m.name)
+    if index and index > 0 then
+        EditMacro(index, m.name, nil, body)
+    else
+        local ok, newIndex = pcall(CreateMacro, m.name, "INV_MISC_QUESTIONMARK", body, true)
+        if not ok or not newIndex then return false end
+        index = newIndex
+    end
+    PickupMacro(index)
+    return GetCursorInfo() == "macro"
+end
+
+local function MacroLabel(m)
+    local names = {}
+    for _, id in ipairs(m.spells) do names[#names + 1] = SpellName(id) end
+    return "macro: " .. table.concat(names, " / ")
+end
+
 function OffBeat:ShowBarLayout(apply)
     local layout = self.activeProfile and self.activeProfile.barLayout
     if not layout then
@@ -38,6 +84,21 @@ function OffBeat:ShowBarLayout(apply)
     if not apply then self:Print("Bar layout for " .. self.activeProfile.meta.name .. " (key: spell):") end
     local placed, skipped = 0, {}
     for _, e in ipairs(layout) do
+      if e.macro then
+        if apply then
+            ClearCursor()
+            if PickupLayoutMacro(e.macro) then
+                PlaceAction(e.slot)
+                placed = placed + 1
+            else
+                skipped[#skipped + 1] = e.macro.name .. " (no free macro slot)"
+            end
+            ClearCursor()
+        else
+            self:Print(string.format("  |cffffd100%-10s|r %s", e.key or ("slot " .. e.slot),
+                e.note and (e.note .. " |cff888888(" .. MacroLabel(e.macro) .. ")|r") or MacroLabel(e.macro)))
+        end
+      else
         local id = e.spellId
         if not Known(id) and e.alt then
             for _, a in ipairs(e.alt) do if Known(a) then id = a; break end end
@@ -59,11 +120,12 @@ function OffBeat:ShowBarLayout(apply)
         else
             self:Print(string.format("  |cffffd100%-10s|r %s", e.key or ("slot " .. e.slot), e.note or name))
         end
+      end
     end
 
     if apply then
         self:Print(string.format("Placed %d spells on your bars.%s", placed,
-            #skipped > 0 and (" Skipped (not known): " .. table.concat(skipped, ", ") .. ".") or ""))
+            #skipped > 0 and (" Skipped: " .. table.concat(skipped, ", ") .. ".") or ""))
     else
         self:Print("Type |cffffd100/ob bars apply|r to put these on your bars (replaces what's in those slots).")
     end

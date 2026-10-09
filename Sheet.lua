@@ -9,8 +9,15 @@ local Sheet = OffBeat:NewModule("Sheet", "AceEvent-3.0")
 --           { text = "A tip with no spell" },
 --       } },
 --       { title = "AoE (3+)", lines = { ... } },
+--       { title = "Diabolist", unknown = { 445465 }, lines = { ... } },
 --   }
 --
+-- A section with `known` only shows when you know one of those spells, one
+-- with `unknown` only when you know none of them: different sheets for
+-- different talent builds (say Hellcaller for raid, Diabolist for M+),
+-- switching by themselves when you change loadout. `content = "raid"` or
+-- `"dungeon"` limits a section to raids or dungeons; outside instances
+-- (dummies, the open world) every section shows.
 -- Each line shows the spell's icon, the key it's bound to (read from your
 -- bars) and the text. Lines for spells you don't know are hidden; the first
 -- known ID of spellId / alt wins. /ob sheet shows or hides it (per spec).
@@ -55,6 +62,28 @@ local function ResolveSpell(line)
         if Known(a) then return a end
     end
     return false -- has a spell, none known
+end
+
+local function AnyKnown(ids)
+    for _, id in ipairs(ids) do
+        if Known(id) then return true end
+    end
+    return false
+end
+
+local function InContent(content)
+    local ok, inInstance, kind = pcall(IsInInstance)
+    if not ok or not inInstance then return true end
+    if content == "raid" then return kind == "raid" end
+    if content == "dungeon" then return kind == "party" end
+    return true
+end
+
+local function SectionShown(section)
+    if section.content and not InContent(section.content) then return false end
+    if section.known and not AnyKnown(section.known) then return false end
+    if section.unknown and AnyKnown(section.unknown) then return false end
+    return true
 end
 
 local function CreatePanel()
@@ -135,6 +164,7 @@ function Sheet:Render()
     local y = -PAD - 18
     local nh, nr = 0, 0
     for _, section in ipairs(sheet) do
+      if SectionShown(section) then
         if section.title then
             nh = nh + 1
             local h = GetHeader(nh)
@@ -168,6 +198,7 @@ function Sheet:Render()
                 y = y - h - LINE_GAP
             end
         end
+      end
     end
     frame:SetHeight(-y + PAD - LINE_GAP)
     self:UpdateVisibility()
@@ -206,6 +237,8 @@ function Sheet:OnEnable()
     self:RegisterEvent("UPDATE_MACROS", "QueueRefresh")
     self:RegisterEvent("PLAYER_TALENT_UPDATE", "QueueRefresh")
     self:RegisterEvent("TRAIT_CONFIG_UPDATED", "QueueRefresh")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", "QueueRefresh")
+    self:RegisterEvent("ZONE_CHANGED_NEW_AREA", "QueueRefresh")
     self:RegisterEvent("PLAYER_REGEN_DISABLED", "UpdateVisibility")
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "UpdateVisibility")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "OnLockChanged")

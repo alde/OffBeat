@@ -97,8 +97,22 @@ function OffBeat:ValidateProfile(profile)
         local used = {}
         for i, e in ipairs(profile.barLayout) do
             local where = "barLayout[" .. i .. "]"
-            if type(e) ~= "table" or type(e.slot) ~= "number" or type(e.spellId) ~= "number" then
-                return false, where .. " needs a slot and a spellId"
+            if type(e) ~= "table" or type(e.slot) ~= "number" then
+                return false, where .. " needs a slot"
+            end
+            if e.macro ~= nil then
+                local m = e.macro
+                if type(m) ~= "table" or type(m.name) ~= "string" or #m.name == 0 or #m.name > 16 then
+                    return false, where .. ".macro needs a name of 1-16 characters"
+                end
+                if type(m.spells) ~= "table" or #m.spells < 2 then
+                    return false, where .. ".macro needs at least two spells"
+                end
+                for _, id in ipairs(m.spells) do
+                    if type(id) ~= "number" then return false, where .. ".macro.spells must be spell IDs" end
+                end
+            elseif type(e.spellId) ~= "number" then
+                return false, where .. " needs a spellId or a macro"
             end
             if e.slot < 1 or e.slot > 180 then return false, where .. ".slot must be 1-180" end
             if used[e.slot] then return false, where .. ": slot " .. e.slot .. " is used twice" end
@@ -114,6 +128,14 @@ function OffBeat:ValidateProfile(profile)
             local where = "rotationSheet[" .. i .. "]"
             if type(section) ~= "table" or type(section.lines) ~= "table" then
                 return false, where .. " needs lines"
+            end
+            if section.content ~= nil and section.content ~= "raid" and section.content ~= "dungeon" then
+                return false, where .. ".content must be \"raid\" or \"dungeon\""
+            end
+            for _, k in ipairs({ "known", "unknown" }) do
+                if section[k] ~= nil and type(section[k]) ~= "table" then
+                    return false, where .. "." .. k .. " must be a list of spell IDs"
+                end
             end
             for j, line in ipairs(section.lines) do
                 if type(line) ~= "table" or type(line.text) ~= "string" then

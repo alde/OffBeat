@@ -151,41 +151,51 @@ OffBeat:RegisterProfile({
     -- /ob bars: role for role on your Demonology keys. Spender on 1, short
     -- cooldown on 2, filler on 3, second spender on 4, DoT on 5, big
     -- cooldown on Q, second cooldown on Shift-3, interrupt Shift-E, movement
-    -- F, soulstone F5, long / short defensive on ` / Shift-`. G and R get
-    -- Soul Fire and Havoc. Your curses (Shift-1, Shift-2), Shadowfury
-    -- (Shift-4), Drain Life (Shift-5), potion (E) and F1/F2 are left alone.
-    -- From the top 31 heroic parses on Nek'zali, Sszorak, Lost Explorers and
-    -- Sentinels (Oct 2026): all Hellcaller, every one presses Incinerate,
-    -- Chaos Bolt, Shadowburn (9 a minute), Conflagrate, Wither, Soul Fire,
-    -- Malevolence and Infernal; half press Havoc; three quarters Dark Pact.
-    -- Rain of Fire and Cataclysm don't show up on these bosses (M+ only).
-    -- With Grimoire of Sacrifice, Command Demon casts the sacrificed demon's
-    -- ability: sacrifice a Felhunter and it's Spell Lock.
+    -- F, soulstone F5, long / short defensive on ` / Shift-`. G, R and
+    -- Shift-Q get Soul Fire, Havoc / Cataclysm and Rain of Fire. Your curses
+    -- (Shift-1, Shift-2), Shadowfury (Shift-4), Drain Life (Shift-5), potion
+    -- (E) and F1/F2 are left alone.
+    --
+    -- One build for raid and M+, so practice carries over: Hellcaller in
+    -- both (Kalamazi 12.1 lists a Hellcaller M+ build). Raid takes Havoc;
+    -- M+ takes Mayhem (passive Havoc) and Cataclysm, and spends on Rain of
+    -- Fire at 3+. R is a macro that casts whichever of Havoc and Cataclysm
+    -- the loadout has. Top raid parses (31 heroic, Oct 2026): all Hellcaller,
+    -- Shadowburn ~9 a minute, no Cataclysm or Rain of Fire. Top M+ runs (48,
+    -- Season 2): all Diabolist, every one casts Cataclysm (~1.2 a minute)
+    -- and Rain of Fire (~5). Immolate is placed as the base spell; with
+    -- Hellcaller the button shows Wither.
+    -- Command Demon is Spell Lock with a Felhunter out, or sacrificed with
+    -- Grimoire of Sacrifice.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 116858, note = "Chaos Bolt: main shard spender (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 17962,  note = "Conflagrate: 2 charges, gives Backdraft (Dreadstalkers' spot)" },
         { slot = 3,  key = "3",       spellId = 29722,  note = "Incinerate: filler, most pressed (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 17877,  note = "Shadowburn: ~9 a minute for top players, free on Fiendish Cruelty (Implosion's spot)" },
-        { slot = 5,  key = "5",       spellId = 445468, alt = { 445465, 348 }, note = "Wither: keep it up; Immolate if you play Diabolist (Demonbolt's spot)" },
+        { slot = 5,  key = "5",       spellId = 348,    alt = { 445468 }, note = "Immolate / Wither: keep it up (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 1122,   note = "Summon Infernal: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 442726, note = "Malevolence: on cooldown (Imp Lord's spot)" },
         { slot = 7,  key = "G",       spellId = 6353,   alt = { 265321 }, note = "Soul Fire: on cooldown, with Backdraft" },
-        { slot = 67, key = "R",       spellId = 80240,  note = "Havoc: cleave fights, on the second target" },
-        { slot = 50, key = "Shift-E", spellId = 119898, note = "Command Demon: Spell Lock with a sacrificed Felhunter (interrupt)" },
+        { slot = 67, key = "R",       macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } },
+          note = "Havoc in raid (second target), Cataclysm in M+ (every pack)" },
+        { slot = 66, key = "Shift-Q", spellId = 5740,   note = "Rain of Fire: M+ spender at 3+ targets" },
+        { slot = 50, key = "Shift-E", spellId = 119898, note = "Command Demon: Spell Lock (interrupt)" },
         { slot = 70, key = "F",       spellId = 111400, note = "Burning Rush: movement" },
         { slot = 25, key = "F5",      spellId = 20707,  note = "Soulstone: combat rez" },
         { slot = 55, key = "`",       spellId = 104773, note = "Unending Resolve: long defensive" },
         { slot = 56, key = "Shift-`", spellId = 108416, note = "Dark Pact: short defensive" },
     },
 
-    -- The movable cheat sheet (/ob sheet). Method 12.1 priority, Hellcaller,
-    -- checked against the top parses above.
+    -- The movable cheat sheet (/ob sheet). Method 12.1 / Kalamazi 12.1
+    -- priority, checked against the top parses above. Hellcaller sections
+    -- show while you know Wither, the Diabolist one otherwise; raid / M+
+    -- sections follow the instance you're in (all of them outside).
     rotationSheet = {
         { title = "Before the pull", lines = {
             { spellId = 108503, text = "Summon Felhunter, then Grimoire of Sacrifice (no pet to keep alive)" },
         } },
-        { title = "Single target", lines = {
-            { spellId = 445468, alt = { 445465, 348 }, text = "Wither: keep it up, refresh in the last few seconds" },
+        { title = "Single target", known = { 445465, 445468 }, lines = {
+            { spellId = 445468, alt = { 445465 }, text = "Wither: keep it up, refresh in the last few seconds" },
             { spellId = 442726, text = "Malevolence: on cooldown, don't hold it for Infernal" },
             { spellId = 1122,   text = "Summon Infernal: on cooldown, then Chaos Bolt everything (top players: 7 per Infernal)" },
             { spellId = 116858, text = "Chaos Bolt: spend shards, never sit at 5" },
@@ -194,16 +204,25 @@ OffBeat:RegisterProfile({
             { spellId = 6353,   alt = { 265321 }, text = "Soul Fire: on cooldown, with Backdraft" },
             { spellId = 29722,  text = "Incinerate: filler" },
         } },
-        { title = "Cleave (2 targets)", lines = {
-            { spellId = 80240,  text = "Havoc the second target with 2.5-3.5 shards, Wither on both; Mayhem does this by itself" },
+        { title = "Raid cleave (2 targets)", content = "raid", lines = {
+            { spellId = 80240,  text = "Havoc the second target with 2.5-3.5 shards, Wither on both" },
         } },
-        -- Kalamazi 12.1 Mythic+ / AoE priority. Top raid parses never cast
-        -- Cataclysm or Rain of Fire (single-target bosses), so this is M+.
-        { title = "AoE / Mythic+ (3+)", lines = {
+        -- Kalamazi 12.1 AoE / M+ priority.
+        { title = "M+ packs (3+)", content = "dungeon", known = { 445465, 445468 }, lines = {
             { spellId = 152108, text = "Cataclysm: first on every pack, then on cooldown" },
-            { spellId = 1122,   text = "Summon Infernal (and Malevolence) on big packs" },
-            { spellId = 5740,   text = "Rain of Fire: spend shards on it at 3+ (Diabolist: Chaos Bolt until lots of targets)" },
+            { spellId = 1122,   text = "Summon Infernal and Malevolence on big packs" },
+            { spellId = 5740,   text = "Rain of Fire: spend every shard on it at 3+ (unless one mob must die first)" },
             { spellId = 17962,  text = "Conflagrate, Incinerate, Soul Fire: build shards for it" },
+            { text = "2 targets: Mayhem cleaves by itself, Wither both if they live 6+ seconds" },
+        } },
+        { title = "Diabolist", unknown = { 445465, 445468 }, lines = {
+            { spellId = 348,    text = "Immolate: keep it up on what lives" },
+            { spellId = 152108, text = "Cataclysm: first on every pack, then on cooldown" },
+            { spellId = 1122,   text = "Summon Infernal on big packs and bosses" },
+            { spellId = 116858, text = "Chaos Bolt: spender, also at 3+ until lots of targets (then Rain of Fire). Becomes Ruination" },
+            { spellId = 17877,  text = "Shadowburn: on Fiendish Cruelty and while moving" },
+            { spellId = 17962,  text = "Conflagrate: don't sit at 2 charges" },
+            { spellId = 29722,  text = "Incinerate: filler, becomes Infernal Bolt" },
         } },
     },
 

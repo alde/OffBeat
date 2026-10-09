@@ -42,6 +42,18 @@ OffBeat:RegisterProfile({
             spells = { 49184 },
             when = { aura = 59052, absent = true },
         },
+        -- Breath goes with Pillar, every other one (all top players). The
+        -- cooldown macro skips Pillar when it's on cooldown and fires Breath
+        -- alone: 10 of 15 Breaths in your +10 Ruby Life Pools. Checked
+        -- from your casts (Pillar in the last 12s), so it works while the
+        -- game hides auras.
+        {
+            type = "bad_cast",
+            name = "Breath without Pillar",
+            description = "Breath of Sindragosa outside Pillar of Frost: press the macro only when Pillar is ready",
+            spells = { 1249658 },
+            when = { recent = 51271, within = 12, absent = true },
+        },
     },
 
     trackedAuras = {

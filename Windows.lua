@@ -105,6 +105,7 @@ function Windows:OnEnable()
     self:RegisterMessage("OFFBEAT_TRAINING_CHANGED", "OnTrainingChanged")
     self:RegisterMessage("OFFBEAT_PET_LOST", "OnPetLost")
     self:RegisterMessage("OFFBEAT_PET_BACK", "OnPetBack")
+    self:RegisterMessage("OFFBEAT_MISTAKE", "OnMistake")
     self:ApplyLock()
 end
 
@@ -190,6 +191,22 @@ function Windows:OnPetLost(_, reason)
     if not fight then return end
     if reason == "died" then fight.petDeaths = (fight.petDeaths or 0) + 1 end
     fight.petDownAt = fight.petDownAt or GetTime()
+end
+
+-- Mistake rules (profile.mistakes) that fired, counted per fight by name.
+function Windows:OnMistake(_, _, name)
+    if not fight or not name then return end
+    fight.mistakes = fight.mistakes or {}
+    fight.mistakes[name] = (fight.mistakes[name] or 0) + 1
+end
+
+local function MistakeLine(counts)
+    local list = {}
+    for name, n in pairs(counts or {}) do list[#list + 1] = { name, n } end
+    if #list == 0 then return nil end
+    table.sort(list, function(a, b) return a[2] > b[2] end)
+    for i, m in ipairs(list) do list[i] = string.format("%s %d", m[1], m[2]) end
+    return table.concat(list, ", ")
 end
 
 function Windows:OnPetBack()
@@ -461,7 +478,9 @@ end
 function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     local minutes, casts, rotation, results = 0, {}, 0, {}
     local petDeaths, petDown, petWanted = 0, 0, false
+    local mistakes = {}
     for _, f in ipairs(fights) do
+        for name, n in pairs(f.mistakes or {}) do mistakes[name] = (mistakes[name] or 0) + n end
         petWanted = petWanted or f.petWanted
         minutes = minutes + f.minutes
         petDeaths, petDown = petDeaths + (f.petDeaths or 0), petDown + (f.petDown or 0)
@@ -474,6 +493,7 @@ function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     return {
         name = name, subtitle = subtitle, minutes = minutes,
         pet = petWanted and { deaths = petDeaths, down = petDown } or nil,
+        mistakes = (profile and profile.mistakes) and mistakes or nil,
         windows = self:Aggregate(results),
         detail = results, -- each window's goals/setup, drawn as bars
         benchName = bench and bench.name, topWindow = bench and bench.window,
@@ -648,6 +668,8 @@ function Windows:PrintSummary(f)
     if not OffBeat.db.profile.combatReport then return end
     local pet = PetLine(f.petDeaths, f.petDown)
     if pet then OffBeat:Print("|cffff8800Pet: " .. pet .. "|r") end
+    local mistakes = MistakeLine(f.mistakes)
+    if mistakes then OffBeat:Print("|cffff8800Mistakes: " .. mistakes .. "|r") end
     if #f.results == 0 then return end
     for _, s in ipairs(self:Aggregate(f.results)) do
         if s.n > 0 then
@@ -837,6 +859,12 @@ function Windows:ShowReport(report, page)
         if grp.pet then
             local line = PetLine(grp.pet.deaths, grp.pet.down)
             text(line and ("PET  ·  " .. line) or "PET  ·  alive the whole time", 0, y,
+                line and C_BAD or C_GOOD, -1)
+            y = y - 18
+        end
+        if grp.mistakes then
+            local line = MistakeLine(grp.mistakes)
+            text(line and ("MISTAKES  ·  " .. line) or "MISTAKES  ·  none", 0, y,
                 line and C_BAD or C_GOOD, -1)
             y = y - 18
         end

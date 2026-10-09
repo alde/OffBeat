@@ -8,6 +8,12 @@ local OffBeat = _G.OffBeat
 --   { combat = true | false }
 --   { hardcast = true | false }   the cast had a cast bar (not instant)
 --   { moving = true | false }     you were moving when you pressed it
+--   { recent = id, within = s, [absent = true] }
+--                                 you cast spell `id` in the last `s` seconds
+--                                 (or, with absent, didn't). Read from your
+--                                 own casts, so it works while auras are
+--                                 hidden. Judged when the cast completes, so a
+--                                 macro's earlier spell has counted by then.
 --
 -- A value that can't be read (secret, missing) is "unknown": Check treats it
 -- as not matching, so unreadable state can only hide a mistake, never invent
@@ -41,6 +47,13 @@ local function InRange(v, min, max)
     if min and v < min then return false end
     if max and v > max then return false end
     return true
+end
+
+-- Your own successful casts (Rotation feeds this), for `recent`.
+local lastCast = {}
+function C.NoteCast(spellId)
+    if spellId == nil or IsSecret(spellId) then return end
+    lastCast[spellId] = GetTime()
 end
 
 local function AurasHidden()
@@ -84,6 +97,12 @@ local CHECKS = {
         if not speed then return nil end
         return (speed > 0) == c.moving
     end,
+    recent = function(c)
+        local t = lastCast[c.recent]
+        local cast = t ~= nil and (GetTime() - t) <= c.within
+        if c.absent then return not cast end
+        return cast
+    end,
     hardcast = function(c, ctx)
         if not ctx or ctx.hardcast == nil then return nil end
         return ctx.hardcast == c.hardcast
@@ -97,6 +116,7 @@ function C.Kind(c)
     if c.combat ~= nil then return "combat" end
     if c.hardcast ~= nil then return "hardcast" end
     if c.moving ~= nil then return "moving" end
+    if c.recent then return "recent" end
 end
 
 local function NormalizeOne(c)
@@ -115,6 +135,9 @@ local function NormalizeOne(c)
         return { kind = kind, moving = c.moving }
     elseif kind == "hardcast" then
         return { kind = kind, hardcast = c.hardcast, deferred = true }
+    elseif kind == "recent" then
+        if type(c.within) ~= "number" then return nil end
+        return { kind = kind, recent = c.recent, within = c.within, absent = c.absent, deferred = true }
     end
 end
 

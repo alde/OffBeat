@@ -217,7 +217,7 @@ The **Gear** settings page (and `/ob gear`) lists, for every spec, the enchants 
 | `repeat_cast` | Same spell cast twice in a row | Windwalker mastery break |
 | `bad_cast` | One of `spells` cast while every condition in `when` holds | Frost Strike at 2 Killing Machine, Heart Strike at 75+ Runic Power |
 
-`when` is one condition or a list of them (all must hold). Five kinds:
+`when` is one condition or a list of them (all must hold). Six kinds:
 
 ```lua
 { aura = 264173, minStacks = 4 }              -- aura up, optional stack range; absent = true for "not up"
@@ -225,9 +225,12 @@ The **Gear** settings page (and `/ob gear`) lists, for every spec, the enchants 
 { combat = true }                             -- in or out of combat
 { hardcast = true }                           -- the cast had a cast bar (not instant)
 { moving = false }                            -- standing still when you pressed it
+{ recent = 51271, within = 12, absent = true } -- you did (or, absent, didn't) cast this in the last N seconds
 ```
 
-Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one; that includes "aura not up" while the game hides auras. Prefer `hardcast` over "proc aura absent" for instant-on-proc spells: it doesn't depend on reading auras.
+Conditions are judged when the cast is sent, so costs and consumed procs don't skew the result, and only casts that succeed are counted. A value the game won't reveal (secret) never matches, so it can hide a mistake but never invent one; that includes "aura not up" while the game hides auras. Prefer `hardcast` over "proc aura absent" for instant-on-proc spells: it doesn't depend on reading auras. `recent` is read from your own casts and judged when the cast completes, so it also works while auras are hidden, and the earlier spells of a macro have counted by then (Frost: "Breath without Pillar").
+
+With training on, each pull's mistakes are counted and shown on the training report page (and in the chat summary).
 
 ## License
 

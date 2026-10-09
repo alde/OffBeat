@@ -280,6 +280,7 @@ function Rotation:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
     if rotationSpellSet[spellId] then
         self:RecordAbility(spellId, castGUID)
     end
+    OffBeat.Conditions.NoteCast(spellId) -- after judging, so a spell never counts as its own "recent"
 end
 
 function Rotation:RecordAbility(spellId, castGUID)

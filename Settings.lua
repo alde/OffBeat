@@ -27,6 +27,7 @@ local CATEGORIES = {
     { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
     { key = "keyLayout",  label = "Key Layout",  requires = "keyLayout" },
     { key = "training",   label = "Training",    requires = "windows" },
+    { key = "gear",       label = "Gear",        requires = "gearRecs" },
     { key = "profiles",   label = "Profiles" },
 }
 
@@ -98,7 +99,9 @@ local function UpdateSidebarVisibility()
     local visibleIndex = 0
     for _, btn in ipairs(sidebarButtons) do
         local visible = true
-        if btn.requires then
+        if btn.requires == "gearRecs" then
+            visible = OffBeat:GetGearRecs() ~= nil -- every spec, profile or not
+        elseif btn.requires then
             visible = profile and profile[btn.requires] ~= nil
         end
         if visible then
@@ -799,6 +802,59 @@ end
 
 -- Training: cooldown window coaching (Windows.lua). Off by default; turned on
 -- per session with /ob training or the toggle below.
+
+-- Gear: enchants and gems top players use, checked against what you wear.
+pageBuilders.gear = function(parent, y)
+    local W = OffBeat.Widgets
+    local check, recs = OffBeat:CheckGear()
+    if not check then return y end
+    local _, h
+    local GOOD, WARN, BAD, DIM = { 0.3, 0.9, 0.45 }, { 1, 0.82, 0.3 }, { 1, 0.35, 0.3 }, { 0.6, 0.6, 0.6 }
+
+    _, h = W:SectionHeader(parent, "ENCHANTS", y); y = y - h
+    _, h = W:Paragraph(parent, "What the top players of your spec use (" .. (recs.source or "")
+        .. "), checked against what you have on. Percentages are how many of them use it.", y); y = y - h
+    for _, e in ipairs(check.enchants) do
+        local opts = {}
+        for i, o in ipairs(e.options) do
+            if i > 3 then break end
+            opts[#opts + 1] = string.format("%s %d%%", OffBeat:GearName("enchant", o[1], recs), o[2])
+        end
+        local status, color
+        if e.status == "ok" then status, color = "OK", GOOD
+        elseif e.status == "missing" then status, color = "MISSING", BAD
+        elseif e.status == "empty" then status, color = "no item", DIM
+        else status, color = "other: " .. OffBeat:GearName("enchant", e.have, recs), WARN end
+        _, h = W:GearRow(parent, y, {
+            icon = e.icon, title = e.label, sub = table.concat(opts, "  ·  "),
+            status = status, color = color,
+            tooltipLink = GetInventoryItemLink("player", (function()
+                for _, s in ipairs(OffBeat.GEAR_SLOTS) do if s[3] == e.label then return s[2] end end
+            end)()),
+        }); y = y - h
+    end
+
+    local g = check.gems
+    _, h = W:SectionHeader(parent, "GEMS", y); y = y - h
+    for i, r in ipairs(g.recommended) do
+        if i > 6 then break end
+        _, h = W:GearRow(parent, y, {
+            icon = C_Item.GetItemIconByID and C_Item.GetItemIconByID(r[1]),
+            title = OffBeat:GearName("gem", r[1]),
+            sub = string.format("%d%% of top players use it", r[2]),
+            tooltipLink = "item:" .. r[1],
+        }); y = y - h
+    end
+    local socketLine = string.format("Your sockets: %d of %d filled.", g.filled, g.sockets)
+    if #g.empty > 0 then socketLine = socketLine .. " Empty: " .. table.concat(g.empty, ", ") .. "." end
+    if #g.odd > 0 then
+        local odd = {}
+        for _, o in ipairs(g.odd) do odd[#odd + 1] = o[1] .. " (" .. OffBeat:GearName("gem", o[2]) .. ")" end
+        socketLine = socketLine .. " Not a common pick: " .. table.concat(odd, ", ") .. "."
+    end
+    _, h = W:Paragraph(parent, socketLine, y); y = y - h
+    return y
+end
 
 pageBuilders.training = function(parent, y)
     local W = OffBeat.Widgets

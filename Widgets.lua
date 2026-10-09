@@ -584,6 +584,55 @@ function W:SpellRow(parent, y, info, labels)
     return f, ROW
 end
 
+-- Gear check row: item icon, slot + recommendation, status on the right.
+-- info = { icon, title, sub, status, color = {r,g,b}, tooltipLink }
+function W:GearRow(parent, y, info)
+    local ROW = 36
+    local f = MakeRow(parent, y, ROW)
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(24, 24)
+    icon:SetPoint("LEFT", f, "LEFT", LABEL_PAD, 0)
+    icon:SetTexture(info.icon or 134400)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+
+    local status = f:CreateFontString(nil, "OVERLAY")
+    status:SetFont(FONT, 10, "")
+    status:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
+    status:SetJustifyH("RIGHT")
+    local c = info.color or { 1, 1, 1 }
+    status:SetTextColor(c[1], c[2], c[3], 1)
+    status:SetText(info.status or "")
+
+    local title = f:CreateFontString(nil, "OVERLAY")
+    title:SetFont(FONT, FONT_SIZE, "")
+    title:SetJustifyH("LEFT")
+    title:SetWordWrap(false)
+    title:SetTextColor(1, 1, 1, 0.9)
+    title:SetText(info.title or "")
+    title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 8, 0)
+    title:SetPoint("RIGHT", status, "LEFT", -8, 0)
+
+    local sub = f:CreateFontString(nil, "OVERLAY")
+    sub:SetFont(FONT, 9, "")
+    sub:SetJustifyH("LEFT")
+    sub:SetWordWrap(false)
+    sub:SetTextColor(1, 1, 1, 0.5)
+    sub:SetText(info.sub or "")
+    sub:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", 8, 1)
+    sub:SetPoint("RIGHT", status, "LEFT", -8, 0)
+
+    if info.tooltipLink then
+        f:EnableMouse(true)
+        f:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetHyperlink(info.tooltipLink)
+            GameTooltip:Show()
+        end)
+        f:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    end
+    return f, ROW
+end
+
 -- Wrapped paragraph of dim text
 
 function W:Paragraph(parent, text, y)

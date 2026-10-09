@@ -69,6 +69,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
 | `/ob report` | Show the training report (the session so far while training is on) |
 | `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat) |
+| `/ob gear` | Check your enchants and gems against what top players of your spec use |
 
 
 ## Creating a profile
@@ -180,6 +181,10 @@ Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when
 ### While moving
 
 A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on the Spec page.
+
+## Gear
+
+The **Gear** settings page (and `/ob gear`) lists, for every spec, the enchants and gems the top 15 heroic Ula'tek players of that spec use (healers ranked by healing), with how many of them use each, and checks them against what you have on: OK, a different enchant, missing, or empty sockets. The data is in `GearData.lua`, generated from Warcraft Logs.
 
 ## Mistake types
 

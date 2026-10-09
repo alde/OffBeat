@@ -327,6 +327,8 @@ function OffBeat:OnSlashCommand(input)
         self:InjectTestData()
     elseif cmd == "training" or cmd == "train" then
         self:ToggleTraining()
+    elseif cmd == "gear" then
+        self:PrintGearCheck()
     elseif cmd == "bars" then
         local _, sub = self:GetArgs(input, 2)
         self:ShowBarLayout(sub == "apply")
@@ -354,6 +356,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob training     — Toggle cooldown window coaching (this session)")
         self:Print("  /ob report       — Show the last training report")
         self:Print("  /ob bars         — Show this spec's bar layout (/ob bars apply to place it)")
+        self:Print("  /ob gear         — Check your enchants and gems against top players")
     end
 
 end

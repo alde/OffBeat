@@ -76,9 +76,10 @@ OffBeat:RegisterProfile({
     -- summon cooldown on Shift-3, interrupt on Shift-E, movement on F,
     -- combat rez on F5, long / short defensive on ` / Shift-`. E (potion)
     -- and F1/F2 (healthstone, health potion) are left as they are, and
-    -- Shift-4/Shift-5 are free for M+ utility. Necrotic Coil and Festering
-    -- Scythe aren't buttons of their own: they show up on Death Coil and
-    -- Festering Strike.
+    -- Shift-2, Shift-4, Shift-5 and R are free for M+ utility. Not buttons
+    -- of their own (they take over another button): Necrotic Coil (Death
+    -- Coil), Festering Scythe (Festering Strike), Blightfall (Dark
+    -- Transformation), Graveyard (Epidemic), Vampiric Strike (Scourge Strike).
     -- Slots: 1-12 main bar, 61-72 bottom left, 49-60 bottom right, 25-36 right.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 47541,   note = "Death Coil: main spender, Necrotic Coil shows up here (Hand of Gul'dan's spot)" },
@@ -86,9 +87,8 @@ OffBeat:RegisterProfile({
         { slot = 3,  key = "3",       spellId = 55090,   note = "Scourge Strike / Vampiric Strike: filler, most pressed (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 85948,   note = "Festering Strike, Festering Scythe shows up here" },
         { slot = 5,  key = "5",       spellId = 343294,  note = "Soul Reaper (Demonbolt's spot)" },
-        { slot = 6,  key = "Q",       spellId = 1233448, note = "Dark Transformation: big cooldown (Tyrant's spot)" },
+        { slot = 6,  key = "Q",       spellId = 1233448, note = "Dark Transformation: big cooldown, becomes Blightfall after you press it (Tyrant's spot)" },
         { slot = 61, key = "Shift-1", spellId = 77575,   note = "Outbreak: diseases (curse spot)" },
-        { slot = 62, key = "Shift-2", spellId = 1271967, alt = { 1271974 }, note = "Blightfall (second curse spot)" },
         { slot = 63, key = "Shift-3", spellId = 42650,   note = "Army of the Dead: summon cooldown (Imp Lord's spot)" },
         { slot = 50, key = "Shift-E", spellId = 47528,   note = "Mind Freeze: interrupt" },
         { slot = 70, key = "F",       spellId = 48265,   note = "Death's Advance: movement (Burning Rush's spot)" },
@@ -96,8 +96,7 @@ OffBeat:RegisterProfile({
         { slot = 55, key = "`",       spellId = 48792,   note = "Icebound Fortitude: long defensive" },
         { slot = 56, key = "Shift-`", spellId = 48707,   note = "Anti-Magic Shell: short defensive, top players use it a lot" },
         { slot = 12, key = "X",       spellId = 51052,   note = "Anti-Magic Zone (swap in your macro)" },
-        { slot = 7,  key = "G",       spellId = 207317,  note = "Epidemic: 3+ targets" },
-        { slot = 67, key = "R",       spellId = 383269,  note = "Graveyard: 4+ targets" },
+        { slot = 7,  key = "G",       spellId = 207317,  note = "Epidemic: 3+ targets, becomes Graveyard after Army" },
         { slot = 68, key = "T",       spellId = 49998,   note = "Death Strike: emergencies" },
     },
 
@@ -175,7 +174,5 @@ OffBeat:RegisterProfile({
         { spellId = 43265,            aoe = 2, note = "2+ targets" },
         { spellId = 1233448, st = 3, aoe = 3, note = "Main cooldown" },
         { spellId = 42650,   st = 3, aoe = 3, note = "On cooldown" },
-        { spellId = 383269,           aoe = 3, note = "4+ targets" },
-        { spellId = 1271974, alt = { 1271967 }, st = 3, note = "San'layn: before Soul Reaper expires" },
     },
 })

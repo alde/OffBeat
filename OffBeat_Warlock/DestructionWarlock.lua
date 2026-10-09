@@ -194,9 +194,16 @@ OffBeat:RegisterProfile({
             { spellId = 6353,   alt = { 265321 }, text = "Soul Fire: on cooldown, with Backdraft" },
             { spellId = 29722,  text = "Incinerate: filler" },
         } },
-        { title = "Cleave / AoE", lines = {
-            { spellId = 80240,  text = "2 targets: Havoc the second one, then the same rotation" },
-            { spellId = 5740,   text = "3+ targets: Rain of Fire instead of Chaos Bolt" },
+        { title = "Cleave (2 targets)", lines = {
+            { spellId = 80240,  text = "Havoc the second target with 2.5-3.5 shards, Wither on both; Mayhem does this by itself" },
+        } },
+        -- Kalamazi 12.1 Mythic+ / AoE priority. Top raid parses never cast
+        -- Cataclysm or Rain of Fire (single-target bosses), so this is M+.
+        { title = "AoE / Mythic+ (3+)", lines = {
+            { spellId = 152108, text = "Cataclysm: first on every pack, then on cooldown" },
+            { spellId = 1122,   text = "Summon Infernal (and Malevolence) on big packs" },
+            { spellId = 5740,   text = "Rain of Fire: spend shards on it at 3+ (Diabolist: Chaos Bolt until lots of targets)" },
+            { spellId = 17962,  text = "Conflagrate, Incinerate, Soul Fire: build shards for it" },
         } },
     },
 
@@ -214,6 +221,7 @@ OffBeat:RegisterProfile({
         { spellId = 265321, alt = { 6353 }, st = 2, aoe = 2, note = "Cast with Backdraft" },
         { spellId = 17877,  st = 2, aoe = 2, note = "Fiendish Cruelty, movement, shard cap" },
         { spellId = 5740,   aoe = 2, note = "Hellcaller AoE spender. Diabolist: 8+ targets" },
+        { spellId = 152108, aoe = 2, note = "M+: first on every pack, then on cooldown" },
         { spellId = 1122,   st = 3, aoe = 3, note = "Main cooldown" },
         { spellId = 442726, st = 3, aoe = 3, note = "Hellcaller: on cooldown, don't hold it" },
     },

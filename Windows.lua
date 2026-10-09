@@ -691,9 +691,11 @@ function Windows:GetReportFrame()
     f:SetFrameStrata("MEDIUM")
     f:SetClampedToScreen(true)
     f:SetMovable(true)
-    f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart", f.StartMoving)
+    OffBeat:SetClickThrough(f) -- ignores the mouse while locked; its buttons still work
+    f:SetScript("OnDragStart", function(self)
+        if not OffBeat.db.profile.locked then self:StartMoving() end
+    end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, relPoint, x, y = self:GetPoint()

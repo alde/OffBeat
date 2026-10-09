@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts",
 }
 
 
@@ -77,6 +77,17 @@ function OffBeat:ValidateProfile(profile)
     if profile.benchmarks then
         local ok, err = self:ValidateBenchmarks(profile.benchmarks)
         if not ok then return false, err end
+    end
+
+    if profile.movingCasts ~= nil then
+        if type(profile.movingCasts) ~= "table" or #profile.movingCasts == 0 then
+            return false, "movingCasts must be a non-empty list"
+        end
+        for i, m in ipairs(profile.movingCasts) do
+            if type(m) ~= "table" or type(m.spellId) ~= "number" then
+                return false, "movingCasts[" .. i .. "].spellId must be a spell ID"
+            end
+        end
     end
 
     if profile.pet ~= nil then

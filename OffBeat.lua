@@ -28,6 +28,7 @@ local FEATURE_MODULES = {
     windows        = { "Windows" },
     benchmarks     = { "Windows" },
     pet            = { "Pet" },
+    movingCasts    = { "Moving" },
 }
 
 local ALL_FEATURE_MODULE_NAMES = {}
@@ -110,6 +111,7 @@ function OffBeat:OnEnable()
     self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_LOGOUT")
+    self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "ApplyClickThrough")
 
     local config = self:GetModule("Config", true)
     if config then config:Enable() end

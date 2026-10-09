@@ -32,6 +32,21 @@ end
 ---@param name string Global frame name
 ---@param positionKey string Key in db.profile for saving position
 ---@param defaults table { width, height, backdrop, backdropColor, borderColor, strata, defaultPoint, defaultRelPoint, defaultX, defaultY }
+-- Click-through: while OffBeat is locked, panels ignore the mouse so clicks
+-- and camera drags go to the world. Their own buttons (close, < >) still
+-- work since those are separate frames. Unlock to drag a panel again.
+local clickThrough = {}
+
+function OffBeat:SetClickThrough(frame)
+    clickThrough[#clickThrough + 1] = frame
+    frame:EnableMouse(not self.db.profile.locked)
+end
+
+function OffBeat:ApplyClickThrough()
+    local locked = self.db.profile.locked
+    for _, f in ipairs(clickThrough) do f:EnableMouse(not locked) end
+end
+
 function OffBeat:CreateMovableFrame(name, positionKey, defaults)
     local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
     f:SetSize(defaults.width or 48, defaults.height or 48)
@@ -47,8 +62,8 @@ function OffBeat:CreateMovableFrame(name, positionKey, defaults)
     f:SetFrameStrata(defaults.strata or "MEDIUM")
     f:SetClampedToScreen(true)
     f:SetMovable(true)
-    f:EnableMouse(true)
     f:RegisterForDrag("LeftButton")
+    OffBeat:SetClickThrough(f)
     f:SetScript("OnDragStart", function(self)
         if not OffBeat.db.profile.locked then self:StartMoving() end
     end)

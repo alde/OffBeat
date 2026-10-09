@@ -18,6 +18,10 @@ OffBeat:RegisterProfile({
     -- Fel Domination makes the next summon instant.
     pet = { quickSummon = 333889 },
 
+    -- Ula'tek, 8 Oct: 79% of the time spent moving without casting had a
+    -- Demonic Core up. Nudge when Demonbolt is instant while you move.
+    movingCasts = { { spellId = 264178, name = "Demonbolt" } },
+
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt
         { spellId = 264178 },  -- Demonbolt

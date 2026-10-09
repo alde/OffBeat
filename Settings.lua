@@ -550,6 +550,26 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.procExpireSound = v end); y = y - h
     end
 
+    -- Moving nudge
+    if profile.movingCasts then
+        local names = {}
+        for _, m in ipairs(profile.movingCasts) do names[#names + 1] = m.name or tostring(m.spellId) end
+        _, h = W:SectionHeader(parent, "WHILE MOVING (" .. string.upper(table.concat(names, ", ")) .. ")", y); y = y - h
+        _, h = W:Toggle(parent, "Nudge When It's Instant", y,
+            function()
+                local v = ss.movingNudge
+                if v == nil then return db.movingNudge end
+                return v
+            end,
+            function(v) ss.movingNudge = v end); y = y - h
+        _, h = W:Slider(parent, "After Moving (seconds)", y, 0.5, 4, 0.5,
+            function() return ss.movingNudgeDelay or db.movingNudgeDelay end,
+            function(v) ss.movingNudgeDelay = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Sound", y,
+            function() return ss.movingNudgeSound or db.movingNudgeSound end,
+            function(v) ss.movingNudgeSound = v end); y = y - h
+    end
+
     -- Pet
     if profile.pet then
         _, h = W:SectionHeader(parent, "PET", y); y = y - h

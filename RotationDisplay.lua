@@ -46,6 +46,7 @@ function RotationDisplay:OnEnable()
     self:RegisterMessage("OFFBEAT_PROC_WASTE", "OnProcWaste")
     self:RegisterMessage("OFFBEAT_MISTAKE", "OnMistake")
     self:RegisterMessage("OFFBEAT_PROC_EXPIRED", "OnProcExpired")
+    self:RegisterMessage("OFFBEAT_MOVING_INSTANT", "OnMovingInstant")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "OnLockChanged")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -571,6 +572,14 @@ function RotationDisplay:OnMistake(_, spellId, mistakeName)
     local info = C_Spell.GetSpellInfo(spellId)
     local name = info and info.name or "?"
     self:ShowWarning(mistakeName .. ": " .. name, "mistake", 2)
+end
+
+function RotationDisplay:OnMovingInstant(_, spellId, name)
+    if not name then
+        local info = C_Spell.GetSpellInfo(spellId)
+        name = info and info.name or "?"
+    end
+    self:ShowWarning("Moving: " .. name .. " is instant", "info", 1.5)
 end
 
 function RotationDisplay:OnProcExpired(_, spellId, procName)

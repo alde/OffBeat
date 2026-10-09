@@ -86,7 +86,7 @@ function RotationTimeline:GetFrame()
     f:SetFrameStrata("MEDIUM")
     f:SetClampedToScreen(true)
     f:SetMovable(true)
-    f:EnableMouse(true)
+    OffBeat:SetClickThrough(f) -- ignores the mouse while locked
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", function(self)
         if not OffBeat.db.profile.locked then self:StartMoving() end

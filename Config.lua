@@ -92,6 +92,10 @@ function OffBeat:GetDefaults()
             petAlertSound = "raid_warning",
             petAlertSoundCustomId = "",
             petLowHealthAlert = true,    -- pet under 35% in combat
+            movingNudge = true,          -- "Demonbolt is instant" while moving and not casting
+            movingNudgeDelay = 1.5,
+            movingNudgeSound = "map_ping",
+            movingNudgeSoundCustomId = "",
             idleCooldownNag = true,
             idleCooldownThreshold = 5,
             trackRacials = true, -- add offensive racials (Berserking, Blood Fury, ...) to idle tracking

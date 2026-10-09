@@ -54,6 +54,8 @@ cd Interface/AddOns/OffBeat
 .\dev_install.ps1       # Windows (creates junctions)
 ```
 
+Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go through to the world; their own buttons (close, `<` `>`) still work. Unlock to move them.
+
 ## Commands
 
 | Command | Action |
@@ -173,6 +175,10 @@ Demonology's goals and benchmarks come from the top Demonology parses for every 
 ### Pet
 
 Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when the pet dies in combat, when a pull starts without one, and when it drops under 35% health, with a reminder to use the quick-summon spell (Fel Domination) first if you know it. Each can be turned off on the Spec page. While training, every fight's report page shows how many times the pet died and how long you were without one.
+
+### While moving
+
+A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on the Spec page.
 
 ## Mistake types
 

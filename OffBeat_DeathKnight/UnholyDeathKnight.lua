@@ -75,20 +75,21 @@ OffBeat:RegisterProfile({
     -- cooldown on 2, filler on 3, big cooldown on Q, debuffs on Shift-1/2,
     -- summon cooldown on Shift-3, interrupt on Shift-E, movement on F,
     -- combat rez on F5, long / short defensive on ` / Shift-`. E (potion)
-    -- and F1/F2 (healthstone, health potion) are left as they are.
+    -- and F1/F2 (healthstone, health potion) are left as they are, and
+    -- Shift-4/Shift-5 are free for M+ utility. Necrotic Coil and Festering
+    -- Scythe aren't buttons of their own: they show up on Death Coil and
+    -- Festering Strike.
     -- Slots: 1-12 main bar, 61-72 bottom left, 49-60 bottom right, 25-36 right.
     barLayout = {
-        { slot = 1,  key = "1",       spellId = 47541,   note = "Death Coil: main spender (Hand of Gul'dan's spot)" },
+        { slot = 1,  key = "1",       spellId = 47541,   note = "Death Coil: main spender, Necrotic Coil shows up here (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 1247378, note = "Putrefy: short cooldown, save for Dark Transformation (Dreadstalkers' spot)" },
         { slot = 3,  key = "3",       spellId = 55090,   note = "Scourge Strike / Vampiric Strike: filler, most pressed (Shadow Bolt's spot)" },
-        { slot = 4,  key = "4",       spellId = 85948,   note = "Festering Strike" },
-        { slot = 5,  key = "5",       spellId = 1242174, note = "Necrotic Coil: second spender (Demonbolt's spot)" },
+        { slot = 4,  key = "4",       spellId = 85948,   note = "Festering Strike, Festering Scythe shows up here" },
+        { slot = 5,  key = "5",       spellId = 343294,  note = "Soul Reaper (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 1233448, note = "Dark Transformation: big cooldown (Tyrant's spot)" },
         { slot = 61, key = "Shift-1", spellId = 77575,   note = "Outbreak: diseases (curse spot)" },
-        { slot = 62, key = "Shift-2", spellId = 458128,  alt = { 455397 }, note = "Festering Scythe: keep its debuff up (second curse spot)" },
+        { slot = 62, key = "Shift-2", spellId = 1271967, alt = { 1271974 }, note = "Blightfall (second curse spot)" },
         { slot = 63, key = "Shift-3", spellId = 42650,   note = "Army of the Dead: summon cooldown (Imp Lord's spot)" },
-        { slot = 64, key = "Shift-4", spellId = 1271967, alt = { 1271974 }, note = "Blightfall: San'layn talent (Shadowfury's spot)" },
-        { slot = 65, key = "Shift-5", spellId = 343294,  note = "Soul Reaper: low-health damage (Shadowburn's spot)" },
         { slot = 50, key = "Shift-E", spellId = 47528,   note = "Mind Freeze: interrupt" },
         { slot = 70, key = "F",       spellId = 48265,   note = "Death's Advance: movement (Burning Rush's spot)" },
         { slot = 25, key = "F5",      spellId = 61999,   note = "Raise Ally: combat rez (soulstone's spot)" },
@@ -169,8 +170,6 @@ OffBeat:RegisterProfile({
         { spellId = 47541,   st = 1, aoe = 2, note = "Sudden Doom, RP dump. AoE: 2 targets or fewer" },
         { spellId = 207317,           aoe = 1, note = "3+ targets" },
         { spellId = 1247378, st = 2, aoe = 1, note = "Don't cap charges, dump in Dark Transformation" },
-        { spellId = 1242174, st = 2, aoe = 2, note = "3 targets or fewer" },
-        { spellId = 455397,  alt = { 458128 }, st = 2, aoe = 2, note = "Refresh the debuff" },
         { spellId = 77575,   st = 2, aoe = 2, note = "When Virulent Plague is missing" },
         { spellId = 343294,  st = 2, aoe = 2, note = "On cooldown" },
         { spellId = 43265,            aoe = 2, note = "2+ targets" },

@@ -165,6 +165,8 @@ OffBeat:RegisterProfile({
     -- Season 2): all Diabolist, every one casts Cataclysm (~1.2 a minute)
     -- and Rain of Fire (~5). Immolate is placed as the base spell; with
     -- Hellcaller the button shows Wither.
+    -- Infernal and Rain of Fire are [@cursor] macros: they land where the
+    -- mouse points, no targeting circle.
     -- Command Demon is Spell Lock with a Felhunter out, or sacrificed with
     -- Grimoire of Sacrifice.
     barLayout = {
@@ -173,12 +175,14 @@ OffBeat:RegisterProfile({
         { slot = 3,  key = "3",       spellId = 29722,  note = "Incinerate: filler, most pressed (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 17877,  note = "Shadowburn: ~9 a minute for top players, free on Fiendish Cruelty (Implosion's spot)" },
         { slot = 5,  key = "5",       spellId = 348,    alt = { 445468 }, note = "Immolate / Wither: keep it up (Demonbolt's spot)" },
-        { slot = 6,  key = "Q",       spellId = 1122,   note = "Summon Infernal: big cooldown (Tyrant's spot)" },
+        { slot = 6,  key = "Q",       macro = { name = "OB Infernal", spells = { 1122 }, cursor = true },
+          note = "Summon Infernal at your cursor: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 442726, note = "Malevolence: on cooldown (Imp Lord's spot)" },
         { slot = 7,  key = "G",       spellId = 6353,   alt = { 265321 }, note = "Soul Fire: on cooldown, with Backdraft" },
         { slot = 67, key = "R",       macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } },
           note = "Havoc in raid (second target), Cataclysm in M+ (every pack)" },
-        { slot = 66, key = "Shift-Q", spellId = 5740,   note = "Rain of Fire: M+ spender at 3+ targets" },
+        { slot = 66, key = "Shift-Q", macro = { name = "OB Rain", spells = { 5740 }, cursor = true },
+          note = "Rain of Fire at your cursor: M+ spender at 3+ targets" },
         { slot = 50, key = "Shift-E", spellId = 119898, note = "Command Demon: Spell Lock (interrupt)" },
         { slot = 70, key = "F",       spellId = 111400, note = "Burning Rush: movement" },
         { slot = 25, key = "F5",      spellId = 20707,  note = "Soulstone: combat rez" },

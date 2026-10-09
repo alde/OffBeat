@@ -16,7 +16,9 @@ local OffBeat = _G.OffBeat
 --
 -- becomes a per-character macro "#showtooltip / /cast [known:Malevolence]
 -- Malevolence; Cataclysm": the first spell you know wins, the last one is
--- the fallback. Spell names come from the game, so it works in any client
+-- the fallback. `cursor = true` casts them at the mouse cursor
+-- ([@cursor]), for ground-targeted spells; a cursor macro can hold just one
+-- spell. Spell names come from the game, so it works in any client
 -- language. /ob bars apply creates the macro, or rewrites it if it exists.
 --
 -- Slots are Blizzard's: 1-12 main bar, 61-72 bottom left, 49-60 bottom right,
@@ -35,15 +37,15 @@ local function SpellName(spellId)
     return info and info.name or ("spell " .. spellId)
 end
 
-local function MacroBody(spells)
+local function MacroBody(m)
+    local at = m.cursor and "@cursor" or nil
     local parts = {}
-    for i, id in ipairs(spells) do
+    for i, id in ipairs(m.spells) do
         local name = SpellName(id)
-        if i < #spells then
-            parts[#parts + 1] = "[known:" .. name .. "] " .. name
-        else
-            parts[#parts + 1] = name
-        end
+        local cond = {}
+        if at then cond[#cond + 1] = at end
+        if i < #m.spells then cond[#cond + 1] = "known:" .. name end
+        parts[#parts + 1] = (#cond > 0 and ("[" .. table.concat(cond, ",") .. "] ") or "") .. name
     end
     return "#showtooltip\n/cast " .. table.concat(parts, "; ")
 end
@@ -51,7 +53,7 @@ OffBeat.BarLayoutMacroBody = MacroBody
 
 -- Create or update the macro; returns true once it's on the cursor.
 local function PickupLayoutMacro(m)
-    local body = MacroBody(m.spells)
+    local body = MacroBody(m)
     local index = GetMacroIndexByName(m.name)
     if index and index > 0 then
         EditMacro(index, m.name, nil, body)
@@ -67,7 +69,7 @@ end
 local function MacroLabel(m)
     local names = {}
     for _, id in ipairs(m.spells) do names[#names + 1] = SpellName(id) end
-    return "macro: " .. table.concat(names, " / ")
+    return "macro: " .. table.concat(names, " / ") .. (m.cursor and " at cursor" or "")
 end
 
 function OffBeat:ShowBarLayout(apply)

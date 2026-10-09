@@ -105,8 +105,9 @@ function OffBeat:ValidateProfile(profile)
                 if type(m) ~= "table" or type(m.name) ~= "string" or #m.name == 0 or #m.name > 16 then
                     return false, where .. ".macro needs a name of 1-16 characters"
                 end
-                if type(m.spells) ~= "table" or #m.spells < 2 then
-                    return false, where .. ".macro needs at least two spells"
+                local minSpells = m.cursor and 1 or 2
+                if type(m.spells) ~= "table" or #m.spells < minSpells then
+                    return false, where .. ".macro needs at least " .. minSpells .. " spell(s)"
                 end
                 for _, id in ipairs(m.spells) do
                     if type(id) ~= "number" then return false, where .. ".macro.spells must be spell IDs" end

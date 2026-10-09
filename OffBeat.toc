@@ -41,6 +41,7 @@ Auras.lua
 Conditions.lua
 Rotation.lua
 Windows.lua
+Pet.lua
 RotationDisplay.lua
 RotationTimeline.lua
 

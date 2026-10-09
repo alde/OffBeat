@@ -14,6 +14,10 @@ OffBeat:RegisterProfile({
         source = "Method 12.1 (27 Sep 2026)",
     },
 
+    -- Pet died / missing / low warnings, and pet deaths in training.
+    -- Fel Domination makes the next summon instant.
+    pet = { quickSummon = 333889 },
+
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt
         { spellId = 264178 },  -- Demonbolt

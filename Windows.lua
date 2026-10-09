@@ -55,6 +55,7 @@ local rotationSet = {}   -- profile.rotationSpells as a set
 local encounter          -- { id, name } while a boss encounter is running
 local fight              -- the current fight, see NewFight
 local session            -- { fights = { folded fights } }, reported when training ends
+local run                -- the Mythic+ run in progress: one fight that every pull folds into
 
 local function GetSpecSettings()
     local profile = OffBeat.activeProfile
@@ -97,8 +98,13 @@ function Windows:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
     self:RegisterEvent("ENCOUNTER_START")
     self:RegisterEvent("ENCOUNTER_END")
+    self:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+    self:RegisterEvent("CHALLENGE_MODE_RESET")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "ApplyLock")
     self:RegisterMessage("OFFBEAT_TRAINING_CHANGED", "OnTrainingChanged")
+    self:RegisterMessage("OFFBEAT_PET_LOST", "OnPetLost")
+    self:RegisterMessage("OFFBEAT_PET_BACK", "OnPetBack")
     self:ApplyLock()
 end
 
@@ -106,7 +112,7 @@ function Windows:OnDisable()
     self:UnregisterAllEvents()
     self:UnregisterAllMessages()
     if active and active.timer then active.timer:Cancel() end
-    active, fight, encounter = nil, nil, nil
+    active, fight, encounter, run = nil, nil, nil, nil
     wipe(pendingSetup)
     if self.frame then self.frame:Hide() end
 end
@@ -166,9 +172,106 @@ local function Counts(f)
     return true
 end
 
+-- Pet (Pet.lua): deaths and time without a pet, per fight
+
+local function ClosePetClock(f)
+    if f and f.petDownAt then
+        f.petDown = (f.petDown or 0) + (GetTime() - f.petDownAt)
+        f.petDownAt = nil
+    end
+end
+
+function Windows:OnPetLost(_, reason)
+    if not fight then return end
+    if reason == "died" then fight.petDeaths = (fight.petDeaths or 0) + 1 end
+    fight.petDownAt = fight.petDownAt or GetTime()
+end
+
+function Windows:OnPetBack()
+    ClosePetClock(fight)
+end
+
+local function PetLine(deaths, down)
+    deaths, down = deaths or 0, math.floor((down or 0) + 0.5)
+    if deaths == 0 and down < 1 then return nil end
+    local parts = {}
+    if deaths > 0 then parts[#parts + 1] = string.format("died %d time%s", deaths, deaths == 1 and "" or "s") end
+    if down >= 1 then parts[#parts + 1] = string.format("%ds without a pet", down) end
+    return table.concat(parts, ", ")
+end
+
+-- Mythic+ runs
+--
+-- A keystone run counts as one fight: every pull (trash and bosses) folds
+-- into it, its length is time in combat, and it ends timed, over time or
+-- abandoned. There are no top-parse numbers for dungeons.
+
+local function KeyActive()
+    if not (C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive) then return false end
+    local ok, on = pcall(C_ChallengeMode.IsChallengeModeActive)
+    return ok and on and true or false
+end
+
+local function KeyName()
+    local name, level
+    local ok, mapId = pcall(C_ChallengeMode.GetActiveChallengeMapID)
+    if ok and mapId then
+        local ok2, n = pcall(C_ChallengeMode.GetMapUIInfo, mapId)
+        if ok2 then name = n end
+    end
+    local ok3, lvl = pcall(C_ChallengeMode.GetActiveKeystoneInfo)
+    if ok3 then level = lvl end
+    name = name or "Mythic+"
+    return (level and level > 0) and string.format("%s +%d", name, level) or name
+end
+
+local function StartRun()
+    run = { start = GetTime(), inRaid = false, casts = {}, rotation = 0, results = {},
+            run = true, encounterName = KeyName(), minutes = 0 }
+end
+
+-- Add the current stretch of combat to the run's length.
+local function StopRunClock()
+    if run and run.combatStart then
+        run.minutes = run.minutes + (GetTime() - run.combatStart) / 60
+        run.combatStart = nil
+    end
+end
+
+function Windows:FinishRun(outcome)
+    if not run then return end
+    if active then self:Close() end
+    StopRunClock()
+    run.outcome = outcome
+    local r = run
+    run = nil
+    if fight == r then fight = nil end
+    self:PrintSummary(r)
+    self:FoldFight(r)
+end
+
+function Windows:CHALLENGE_MODE_COMPLETED()
+    if not run then return end
+    local onTime
+    if C_ChallengeMode.GetChallengeCompletionInfo then
+        local ok, info = pcall(C_ChallengeMode.GetChallengeCompletionInfo)
+        if ok and type(info) == "table" then onTime = info.onTime end
+    end
+    self:FinishRun(onTime == true and "timed" or (onTime == false and "over time" or "completed"))
+end
+
+function Windows:CHALLENGE_MODE_RESET()
+    self:FinishRun("abandoned")
+end
+
+-- Left the dungeon (or reloaded outside it) with the run still open.
+function Windows:PLAYER_ENTERING_WORLD()
+    if run and not KeyActive() then self:FinishRun("abandoned") end
+end
+
 function Windows:ENCOUNTER_START(_, encounterId, encounterName)
     encounter = { id = encounterId, name = encounterName }
-    if fight and not fight.encounterId then
+    if fight and not fight.encounterId and not fight.run then
         fight.encounterId, fight.encounterName = encounterId, encounterName
     end
 end
@@ -178,12 +281,28 @@ function Windows:ENCOUNTER_END(_, _, _, _, _, success)
     if fight and fight.encounterId then fight.kill = success == 1 end
 end
 
+local function StartFight()
+    if KeyActive() then
+        if not run then StartRun() end
+        run.combatStart = GetTime()
+        return run
+    end
+    return NewFight()
+end
+
 function Windows:PLAYER_REGEN_DISABLED()
-    if OffBeat.training then fight = NewFight() end
+    if OffBeat.training then fight = StartFight() end
 end
 
 function Windows:PLAYER_REGEN_ENABLED()
     if active then self:Close() end
+    ClosePetClock(fight)
+    if fight and fight.run then -- a pull of a key: the run goes on
+        StopRunClock()
+        fight = nil
+        wipe(pendingSetup)
+        return
+    end
     if fight and Counts(fight) then
         self:PrintSummary(fight)
         self:PrintBenchmarks(fight)
@@ -198,9 +317,15 @@ end
 function Windows:OnTrainingChanged(_, on, resumed)
     if on then
         session = resumed or { fights = {} }
-        if UnitAffectingCombat("player") then fight = NewFight() end -- count from now
+        local open = session.openRun -- a run parked across a /reload
+        session.openRun = nil
+        if open then
+            if KeyActive() then run = open else self:FoldFight(open) end
+        end
+        if UnitAffectingCombat("player") then fight = StartFight() end -- count from now
         return
     end
+    if run then self:FinishRun("training turned off") end
     -- An open window is dropped (it never ran its full duration); the
     -- unfinished fight still counts toward the report.
     if active and active.timer then active.timer:Cancel() end
@@ -258,7 +383,7 @@ end
 --- no data.
 function Windows:BenchmarkFor(f)
     local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
-    if not bm then return nil end
+    if not bm or f.run then return nil end
     if f.encounterId then return bm.encounters and bm.encounters[f.encounterId] end
     return bm.overall
 end
@@ -304,36 +429,49 @@ end
 
 -- Training session
 
-function Windows:FoldFight()
-    if not session or not fight then return end
-    fight.minutes = (GetTime() - fight.start) / 60
-    session.fights[#session.fights + 1] = fight
+function Windows:FoldFight(f)
+    f = f or fight
+    if not session or not f then return end
+    ClosePetClock(f)
+    if not f.run then f.minutes = (GetTime() - f.start) / 60 end -- a run's is time in combat
+    session.fights[#session.fights + 1] = f
 end
 
--- The session for saving across a /reload, with any counting fight folded in.
+-- The session for saving across a /reload, with any counting fight folded
+-- in. An open Mythic+ run is parked and picked up again after the reload.
 function Windows:ExportSession()
+    if run then
+        StopRunClock()
+        ClosePetClock(run)
+        if session then session.openRun = run end
+        if fight == run then fight = nil end
+        run = nil
+    end
     if fight and Counts(fight) then self:FoldFight() end
     fight = nil
     return session
 end
 
 -- One report page from a set of fights (a whole boss, or a single pull).
-function Windows:BuildPage(name, encounterId, fights, subtitle)
+function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     local minutes, casts, rotation, results = 0, {}, 0, {}
+    local petDeaths, petDown = 0, 0
     for _, f in ipairs(fights) do
         minutes = minutes + f.minutes
+        petDeaths, petDown = petDeaths + (f.petDeaths or 0), petDown + (f.petDown or 0)
         for id, n in pairs(f.casts) do casts[id] = (casts[id] or 0) + n end
         rotation = rotation + f.rotation
         for _, res in ipairs(f.results) do results[#results + 1] = res end
     end
     local profile = OffBeat.activeProfile
-    local bench = self:BenchmarkFor({ encounterId = encounterId })
+    local bench = self:BenchmarkFor({ encounterId = encounterId, run = isRun })
     return {
         name = name, subtitle = subtitle, minutes = minutes,
+        pet = profile and profile.pet and { deaths = petDeaths, down = petDown } or nil,
         windows = self:Aggregate(results),
         detail = results, -- each window's goals/setup, drawn as bars
         benchName = bench and bench.name, topWindow = bench and bench.window,
-        hasBenchmarks = profile and profile.benchmarks ~= nil,
+        hasBenchmarks = not isRun and profile and profile.benchmarks ~= nil,
         rates = (bench and minutes >= 1) and self:BenchmarkRows(bench, minutes, casts, rotation) or nil,
     }
 end
@@ -350,10 +488,11 @@ function Windows:BuildReport(s)
         -- a blip of combat (under 15s) with no window isn't a pull
         if f.minutes >= 0.25 or #f.results > 0 then
             total = total + f.minutes
-            local key = f.encounterId or 0
+            local key = f.run and f or (f.encounterId or 0) -- each key run is its own entry
             local g = byKey[key]
             if not g then
-                g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId, fights = {} }
+                g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId,
+                      isRun = f.run, fights = {} }
                 byKey[key] = g
                 groups[#groups + 1] = g
             end
@@ -367,16 +506,19 @@ function Windows:BuildReport(s)
     for _, g in ipairs(groups) do
         local n = #g.fights
         report.fights = report.fights + n
-        local word = g.encounterId and "pull" or "fight"
+        local word = g.isRun and "run" or (g.encounterId and "pull" or "fight")
         for i, f in ipairs(g.fights) do
-            local outcome = f.kill == true and "kill" or (f.kill == false and "wipe" or nil)
+            local outcome = f.outcome or (f.kill == true and "kill" or (f.kill == false and "wipe" or nil))
             local parts = {}
             if n > 1 then parts[#parts + 1] = string.format("%s %d of %d", word, i, n) end
             if outcome then parts[#parts + 1] = outcome end
             parts[#parts + 1] = fmtTime(f.minutes)
-            local page = self:BuildPage(g.name, g.encounterId, { f }, table.concat(parts, "  ·  "))
-            page.menuText = string.format("%s  ·  %s %d%s  ·  %s", g.name, word, i,
-                outcome and ("  ·  " .. outcome) or "", fmtTime(f.minutes))
+            if g.isRun then parts[#parts] = fmtTime(f.minutes) .. " in combat" end
+            local page = self:BuildPage(g.name, g.encounterId, { f }, table.concat(parts, "  ·  "), g.isRun)
+            page.menuText = g.isRun
+                and string.format("%s%s  ·  %s", g.name, outcome and ("  ·  " .. outcome) or "", fmtTime(f.minutes))
+                or string.format("%s  ·  %s %d%s  ·  %s", g.name, word, i,
+                    outcome and ("  ·  " .. outcome) or "", fmtTime(f.minutes))
             report.pages[#report.pages + 1] = page
         end
     end
@@ -497,7 +639,10 @@ local function SetupLine(t, n)
 end
 
 function Windows:PrintSummary(f)
-    if #f.results == 0 or not OffBeat.db.profile.combatReport then return end
+    if not OffBeat.db.profile.combatReport then return end
+    local pet = PetLine(f.petDeaths, f.petDown)
+    if pet then OffBeat:Print("|cffff8800Pet: " .. pet .. "|r") end
+    if #f.results == 0 then return end
     for _, s in ipairs(self:Aggregate(f.results)) do
         if s.n > 0 then
             local parts = { string.format("%d/%d on target", s.met, s.n) }
@@ -683,6 +828,12 @@ function Windows:ShowReport(report, page)
         local grp = report.pages[page]
         text(string.format("%s  ·  %s", grp.name, grp.subtitle), 0, y, C_BOSS, 1)
         y = y - 20
+        if grp.pet then
+            local line = PetLine(grp.pet.deaths, grp.pet.down)
+            text(line and ("PET  ·  " .. line) or "PET  ·  alive the whole time", 0, y,
+                line and C_BAD or C_GOOD, -1)
+            y = y - 18
+        end
 
         -- Cooldown windows: one bar per window, tick = goal
         for _, agg in ipairs(grp.windows or {}) do

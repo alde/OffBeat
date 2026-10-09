@@ -13,6 +13,10 @@ OffBeat:RegisterProfile({
         source = "Method 12.1 (12 Aug 2026)",
     },
 
+    -- Pet died / missing / low warnings, and pet deaths in training.
+    -- Fel Domination makes the next summon instant.
+    pet = { quickSummon = 333889 },
+
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt
         { spellId = 198590 },  -- Drain Soul (talent, replaces Shadow Bolt)

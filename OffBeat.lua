@@ -27,6 +27,7 @@ local FEATURE_MODULES = {
     rotationSpells = { "Rotation", "RotationDisplay", "RotationTimeline" },
     windows        = { "Windows" },
     benchmarks     = { "Windows" },
+    pet            = { "Pet" },
 }
 
 local ALL_FEATURE_MODULE_NAMES = {}

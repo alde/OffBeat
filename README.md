@@ -34,7 +34,7 @@ A profile can use any combination.
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
-| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout; Training (Demonology) |
+| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout, pet warnings; Training (Demonology, Destruction) |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 | OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns |
 
@@ -169,6 +169,10 @@ benchmarks = {
 ```
 
 Demonology's goals and benchmarks come from the top Demonology parses for every heroic boss in The Venomous Abyss on Warcraft Logs (October 2026).
+
+### Pet
+
+Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when the pet dies in combat, when a pull starts without one, and when it drops under 35% health, with a reminder to use the quick-summon spell (Fel Domination) first if you know it. Each can be turned off on the Spec page. While training, every fight's report page shows how many times the pet died and how long you were without one.
 
 ## Mistake types
 

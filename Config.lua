@@ -88,6 +88,10 @@ function OffBeat:GetDefaults()
             castWarnings = true,
             specSettings = {},
             idleCooldownAlert = true,
+            petAlert = true,             -- pet died / no pet at the pull
+            petAlertSound = "raid_warning",
+            petAlertSoundCustomId = "",
+            petLowHealthAlert = true,    -- pet under 35% in combat
             idleCooldownNag = true,
             idleCooldownThreshold = 5,
             trackRacials = true, -- add offensive racials (Berserking, Blood Fury, ...) to idle tracking

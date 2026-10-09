@@ -550,6 +550,28 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.procExpireSound = v end); y = y - h
     end
 
+    -- Pet
+    if profile.pet then
+        _, h = W:SectionHeader(parent, "PET", y); y = y - h
+        _, h = W:Toggle(parent, "Pet Died / Missing Warning", y,
+            function()
+                local v = ss.petAlert
+                if v == nil then return db.petAlert end
+                return v
+            end,
+            function(v) ss.petAlert = v end); y = y - h
+        _, h = W:Toggle(parent, "Pet Low Health Warning", y,
+            function()
+                local v = ss.petLowHealthAlert
+                if v == nil then return db.petLowHealthAlert end
+                return v
+            end,
+            function(v) ss.petLowHealthAlert = v end); y = y - h
+        _, h = W:SoundPicker(parent, "Sound", y,
+            function() return ss.petAlertSound or db.petAlertSound end,
+            function(v) ss.petAlertSound = v end); y = y - h
+    end
+
     -- Idle Cooldowns
     if profile.idleCooldowns and #profile.idleCooldowns > 0 then
         _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h

@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet",
 }
 
 
@@ -77,6 +77,13 @@ function OffBeat:ValidateProfile(profile)
     if profile.benchmarks then
         local ok, err = self:ValidateBenchmarks(profile.benchmarks)
         if not ok then return false, err end
+    end
+
+    if profile.pet ~= nil then
+        if type(profile.pet) ~= "table" then return false, "pet must be a table" end
+        if profile.pet.quickSummon ~= nil and type(profile.pet.quickSummon) ~= "number" then
+            return false, "pet.quickSummon must be a spell ID"
+        end
     end
 
     if profile.keyLayoutLabels ~= nil then

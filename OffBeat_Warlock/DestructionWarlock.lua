@@ -101,10 +101,13 @@ OffBeat:RegisterProfile({
             name = "Infernal",
             trigger = 1122,
             duration = 30,
-            note = "Spend everything on Chaos Bolt while the Infernal is out (it feeds you "
-                .. "shards). Top players' median: 7 per window. No need to pool before it.",
+            note = "Spend everything while the Infernal is out (it feeds you shards): Chaos Bolt "
+                .. "on 1-2 targets, Rain of Fire on 3+. Top players' median: 7 per window. "
+                .. "No need to pool before it.",
+            -- Rain of Fire counts too: on packs it's the spender (raid top
+            -- players never cast it, so the 7 is all Chaos Bolt there).
             goals = {
-                { name = "Chaos Bolt", spells = { 116858 }, min = 7 },
+                { name = "Chaos Bolt / Rain of Fire", spells = { 116858, 5740 }, min = 7 },
             },
         },
     },

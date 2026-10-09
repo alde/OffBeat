@@ -691,11 +691,9 @@ function Windows:GetReportFrame()
     f:SetFrameStrata("MEDIUM")
     f:SetClampedToScreen(true)
     f:SetMovable(true)
+    f:EnableMouse(true) -- a popup you open yourself: always takes clicks and drags
     f:RegisterForDrag("LeftButton")
-    OffBeat:SetClickThrough(f) -- ignores the mouse while locked; its buttons still work
-    f:SetScript("OnDragStart", function(self)
-        if not OffBeat.db.profile.locked then self:StartMoving() end
-    end)
+    f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, relPoint, x, y = self:GetPoint()

@@ -54,7 +54,7 @@ cd Interface/AddOns/OffBeat
 .\dev_install.ps1       # Windows (creates junctions)
 ```
 
-Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go through to the world; their own buttons (close, `<` `>`) still work. Unlock to move them.
+Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go through to the world; their own buttons (close, `<` `>`) still work. Unlock to move them. The training report is the exception: it only opens when you ask for it, so it always takes clicks and can be dragged.
 
 ## Commands
 

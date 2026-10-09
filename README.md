@@ -18,6 +18,8 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Key Layout**: a settings page that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
+**Rotation sheet** (Destruction Warlock, Frost DK): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
+
 **Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
 
 A profile can use any combination.
@@ -69,6 +71,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
 | `/ob report` | Show the training report (the session so far while training is on) |
 | `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat) |
+| `/ob sheet` | Show or hide this spec's rotation cheat sheet |
 | `/ob gear` | Check your enchants and gems against what top players of your spec use |
 
 
@@ -115,6 +118,21 @@ OffBeat:RegisterProfile({
 ```
 
 Profiles can be exported as `!OB1!` strings from the settings panel and shared in chat or on the web.
+
+## Rotation sheet
+
+Profiles with a `rotationSheet` get a movable cheat sheet panel: sections (e.g. single target, AoE) of lines, each with the spell's icon, your keybind for it (read from your bars, `--` when it isn't on one) and a short instruction. Lines for spells you don't know are hidden.
+
+```lua
+rotationSheet = {
+    { title = "Single target", lines = {
+        { spellId = 445468, alt = { 348 }, text = "Wither: keep it up" },
+        { text = "A tip with no spell" },
+    } },
+}
+```
+
+`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Destruction Warlock and Frost Death Knight.
 
 ## Key Layout
 

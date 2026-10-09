@@ -44,6 +44,7 @@ Windows.lua
 Pet.lua
 Moving.lua
 BarLayout.lua
+Sheet.lua
 Gear.lua
 GearData.lua
 RotationDisplay.lua

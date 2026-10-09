@@ -29,6 +29,7 @@ local FEATURE_MODULES = {
     benchmarks     = { "Windows" },
     pet            = { "Pet" },
     movingCasts    = { "Moving" },
+    rotationSheet  = { "Sheet" },
 }
 
 local ALL_FEATURE_MODULE_NAMES = {}
@@ -327,6 +328,10 @@ function OffBeat:OnSlashCommand(input)
         self:InjectTestData()
     elseif cmd == "training" or cmd == "train" then
         self:ToggleTraining()
+    elseif cmd == "sheet" then
+        local sheet = self:GetModule("Sheet", true)
+        if sheet and sheet:IsEnabled() then sheet:Toggle()
+        else self:Print("No rotation sheet for this spec yet.") end
     elseif cmd == "gear" then
         self:PrintGearCheck()
     elseif cmd == "bars" then
@@ -356,6 +361,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob training     — Toggle cooldown window coaching (this session)")
         self:Print("  /ob report       — Show the last training report")
         self:Print("  /ob bars         — Show this spec's bar layout (/ob bars apply to place it)")
+        self:Print("  /ob sheet        — Show/hide this spec's rotation cheat sheet")
         self:Print("  /ob gear         — Check your enchants and gems against top players")
     end
 

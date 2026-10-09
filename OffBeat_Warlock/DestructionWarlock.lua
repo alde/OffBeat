@@ -148,6 +148,58 @@ OffBeat:RegisterProfile({
             { 50.0, 52.4, 54.7 }, { 9.1, 10.4, 11.8 }, { 11.5, 14.3, 17.7 }, { 8.4, 8.9, 9.1 }, { 8.6, 10.3, 12.1 }, { 1.2, 1.3, 1.3 }, { 2.5, 3.3, 4.3 } } },
     },
 
+    -- /ob bars: role for role on your Demonology keys. Spender on 1, short
+    -- cooldown on 2, filler on 3, second spender on 4, DoT on 5, big
+    -- cooldown on Q, second cooldown on Shift-3, interrupt Shift-E, movement
+    -- F, soulstone F5, long / short defensive on ` / Shift-`. G and R get
+    -- Soul Fire and Havoc. Your curses (Shift-1, Shift-2), Shadowfury
+    -- (Shift-4), Drain Life (Shift-5), potion (E) and F1/F2 are left alone.
+    -- From the top 31 heroic parses on Nek'zali, Sszorak, Lost Explorers and
+    -- Sentinels (Oct 2026): all Hellcaller, every one presses Incinerate,
+    -- Chaos Bolt, Shadowburn (9 a minute), Conflagrate, Wither, Soul Fire,
+    -- Malevolence and Infernal; half press Havoc; three quarters Dark Pact.
+    -- Rain of Fire and Cataclysm don't show up on these bosses (M+ only).
+    -- With Grimoire of Sacrifice, Command Demon casts the sacrificed demon's
+    -- ability: sacrifice a Felhunter and it's Spell Lock.
+    barLayout = {
+        { slot = 1,  key = "1",       spellId = 116858, note = "Chaos Bolt: main shard spender (Hand of Gul'dan's spot)" },
+        { slot = 2,  key = "2",       spellId = 17962,  note = "Conflagrate: 2 charges, gives Backdraft (Dreadstalkers' spot)" },
+        { slot = 3,  key = "3",       spellId = 29722,  note = "Incinerate: filler, most pressed (Shadow Bolt's spot)" },
+        { slot = 4,  key = "4",       spellId = 17877,  note = "Shadowburn: ~9 a minute for top players, free on Fiendish Cruelty (Implosion's spot)" },
+        { slot = 5,  key = "5",       spellId = 445468, alt = { 445465, 348 }, note = "Wither: keep it up; Immolate if you play Diabolist (Demonbolt's spot)" },
+        { slot = 6,  key = "Q",       spellId = 1122,   note = "Summon Infernal: big cooldown (Tyrant's spot)" },
+        { slot = 63, key = "Shift-3", spellId = 442726, note = "Malevolence: on cooldown (Imp Lord's spot)" },
+        { slot = 7,  key = "G",       spellId = 6353,   alt = { 265321 }, note = "Soul Fire: on cooldown, with Backdraft" },
+        { slot = 67, key = "R",       spellId = 80240,  note = "Havoc: cleave fights, on the second target" },
+        { slot = 50, key = "Shift-E", spellId = 119898, note = "Command Demon: Spell Lock with a sacrificed Felhunter (interrupt)" },
+        { slot = 70, key = "F",       spellId = 111400, note = "Burning Rush: movement" },
+        { slot = 25, key = "F5",      spellId = 20707,  note = "Soulstone: combat rez" },
+        { slot = 55, key = "`",       spellId = 104773, note = "Unending Resolve: long defensive" },
+        { slot = 56, key = "Shift-`", spellId = 108416, note = "Dark Pact: short defensive" },
+    },
+
+    -- The movable cheat sheet (/ob sheet). Method 12.1 priority, Hellcaller,
+    -- checked against the top parses above.
+    rotationSheet = {
+        { title = "Before the pull", lines = {
+            { spellId = 108503, text = "Summon Felhunter, then Grimoire of Sacrifice (no pet to keep alive)" },
+        } },
+        { title = "Single target", lines = {
+            { spellId = 445468, alt = { 445465, 348 }, text = "Wither: keep it up, refresh in the last few seconds" },
+            { spellId = 442726, text = "Malevolence: on cooldown, don't hold it for Infernal" },
+            { spellId = 1122,   text = "Summon Infernal: on cooldown, then Chaos Bolt everything (top players: 7 per Infernal)" },
+            { spellId = 116858, text = "Chaos Bolt: spend shards, never sit at 5" },
+            { spellId = 17877,  text = "Shadowburn: when Fiendish Cruelty makes it free, and while moving" },
+            { spellId = 17962,  text = "Conflagrate: don't sit at 2 charges (gives Backdraft)" },
+            { spellId = 6353,   alt = { 265321 }, text = "Soul Fire: on cooldown, with Backdraft" },
+            { spellId = 29722,  text = "Incinerate: filler" },
+        } },
+        { title = "Cleave / AoE", lines = {
+            { spellId = 80240,  text = "2 targets: Havoc the second one, then the same rotation" },
+            { spellId = 5740,   text = "3+ targets: Rain of Fire instead of Chaos Bolt" },
+        } },
+    },
+
     -- Method 12.1 (same for both hero trees): Haste > Crit = Mastery >> Vers
     statPriority = { HASTE = 1, CRIT = 2, MASTERY = 2, VERS = 3 },
 

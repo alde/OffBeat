@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet",
 }
 
 
@@ -103,6 +103,26 @@ function OffBeat:ValidateProfile(profile)
             if e.slot < 1 or e.slot > 180 then return false, where .. ".slot must be 1-180" end
             if used[e.slot] then return false, where .. ": slot " .. e.slot .. " is used twice" end
             used[e.slot] = true
+        end
+    end
+
+    if profile.rotationSheet ~= nil then
+        if type(profile.rotationSheet) ~= "table" or #profile.rotationSheet == 0 then
+            return false, "rotationSheet must be a non-empty list of sections"
+        end
+        for i, section in ipairs(profile.rotationSheet) do
+            local where = "rotationSheet[" .. i .. "]"
+            if type(section) ~= "table" or type(section.lines) ~= "table" then
+                return false, where .. " needs lines"
+            end
+            for j, line in ipairs(section.lines) do
+                if type(line) ~= "table" or type(line.text) ~= "string" then
+                    return false, where .. ".lines[" .. j .. "] needs text"
+                end
+                if line.spellId ~= nil and type(line.spellId) ~= "number" then
+                    return false, where .. ".lines[" .. j .. "].spellId must be a number"
+                end
+            end
         end
     end
 

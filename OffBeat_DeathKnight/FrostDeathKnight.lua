@@ -141,10 +141,11 @@ OffBeat:RegisterProfile({
     -- defensive on ` / Shift-`, Anti-Magic Zone on X. E (potion), F1/F2,
     -- Shift-4, Shift-5, G and R are left alone, as are T (your Death Grip) and
     -- F11 (your Death and Decay macro, on a mouse button). Exterminate takes over the
-    -- Obliterate button, so it gets no slot. Shift-1 and Shift-3 hold your
-    -- cooldown macros and are never touched: Shift-1 = Pillar of Frost +
-    -- Reaper's Mark + Raise Dead, Shift-3 = the same plus Berserking and
-    -- Breath of Sindragosa (every other Pillar).
+    -- Obliterate button, so it gets no slot. Shift-1 holds your cooldown
+    -- macro and is never touched: Pillar of Frost + Reaper's Mark + Raise
+    -- Dead + Berserking + Breath of Sindragosa (shown as Pillar, so Breath
+    -- only goes out with a Pillar). Shift-3 is Reaper's Mark on its own, for
+    -- when the macro's Reaper's Mark hits the global cooldown.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 49143,   note = "Frost Strike: Runic Power spender (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 47568,   note = "Empower Rune Weapon: ~5 a minute, twice per Pillar (Dreadstalkers' spot)" },
@@ -152,6 +153,7 @@ OffBeat:RegisterProfile({
         { slot = 4,  key = "4",       spellId = 49184,   note = "Howling Blast: only on Rime" },
         { slot = 5,  key = "5",       spellId = 207230,  note = "Frostscythe: Obliterate's 3+ target version" },
         { slot = 6,  key = "Q",       spellId = 279302,  note = "Frostwyrm's Fury: right after Pillar starts, when it's off cooldown" },
+        { slot = 63, key = "Shift-3", spellId = 439843,  note = "Reaper's Mark: again if the macro's one didn't land" },
         { slot = 62, key = "Shift-2", spellId = 194913,  note = "Glacial Advance: AoE spender (Epidemic's spot)" },
         { slot = 50, key = "Shift-E", spellId = 47528,   note = "Mind Freeze: interrupt" },
         { slot = 70, key = "F",       spellId = 48265,   note = "Death's Advance: movement (every top player uses it)" },
@@ -159,6 +161,28 @@ OffBeat:RegisterProfile({
         { slot = 55, key = "`",       spellId = 48792,   note = "Icebound Fortitude: long defensive" },
         { slot = 56, key = "Shift-`", spellId = 48707,   note = "Anti-Magic Shell: short defensive (every top player uses it)" },
         { slot = 12, key = "X",       spellId = 51052,   note = "Anti-Magic Zone (swap in your macro)" },
+    },
+
+    -- The movable cheat sheet (/ob sheet). Method 12.1, checked against the
+    -- top 40 heroic parses per boss.
+    rotationSheet = {
+        { title = "Cooldowns", lines = {
+            { spellId = 51271,  text = "Cooldown macro when Pillar is ready (Breath comes along every other one)" },
+            { spellId = 439843, text = "Reaper's Mark: press again if no mark landed with Pillar" },
+            { spellId = 279302, text = "Frostwyrm's Fury: right after Pillar starts" },
+            { spellId = 47568,  text = "Empower Rune Weapon: twice per Pillar (~5 a minute)" },
+            { text = "In Pillar: Obliterate on every Killing Machine and rune (top: 9 per Pillar)" },
+        } },
+        { title = "Single target", lines = {
+            { spellId = 49020,  text = "Obliterate: on Killing Machine, and to spend runes" },
+            { spellId = 49184,  text = "Howling Blast: only on Rime (it has range, save it for running)" },
+            { spellId = 49143,  text = "Frost Strike: spend Runic Power, don't cap it" },
+        } },
+        { title = "AoE (3+)", lines = {
+            { spellId = 207230, text = "Frostscythe instead of Obliterate" },
+            { spellId = 194913, text = "Glacial Advance at 75+ Runic Power or in Pillar" },
+            { spellId = 49143,  text = "Frost Strike while Frostbane is up" },
+        } },
     },
 
     -- Method 12.1 (same for both hero trees): Crit > Mastery >= Haste > Vers

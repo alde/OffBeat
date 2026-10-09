@@ -96,6 +96,9 @@ function OffBeat:GetDefaults()
             movingNudgeDelay = 1.5,
             movingNudgeSound = "map_ping",
             movingNudgeSoundCustomId = "",
+            showSheet = true,            -- rotation cheat sheet (profiles with rotationSheet)
+            sheetHideInCombat = false,
+            sheetPosition = nil,
             idleCooldownNag = true,
             idleCooldownThreshold = 5,
             trackRacials = true, -- add offensive racials (Berserking, Blood Fury, ...) to idle tracking

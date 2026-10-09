@@ -564,6 +564,29 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.procExpireSound = v end); y = y - h
     end
 
+    -- Rotation cheat sheet
+    if profile.rotationSheet then
+        _, h = W:SectionHeader(parent, "ROTATION SHEET", y); y = y - h
+        local function refresh()
+            local sheet = OffBeat:GetModule("Sheet", true)
+            if sheet and sheet:IsEnabled() then sheet:Render() end
+        end
+        _, h = W:Toggle(parent, "Show Rotation Sheet (/ob sheet)", y,
+            function()
+                local v = ss.showSheet
+                if v == nil then return db.showSheet end
+                return v
+            end,
+            function(v) ss.showSheet = v; refresh() end); y = y - h
+        _, h = W:Toggle(parent, "Hide It in Combat", y,
+            function()
+                local v = ss.sheetHideInCombat
+                if v == nil then return db.sheetHideInCombat end
+                return v
+            end,
+            function(v) ss.sheetHideInCombat = v; refresh() end); y = y - h
+    end
+
     -- Moving nudge
     if profile.movingCasts then
         local names = {}

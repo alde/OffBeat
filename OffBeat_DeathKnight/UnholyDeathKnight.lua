@@ -81,7 +81,8 @@ OffBeat:RegisterProfile({
     -- summon cooldown on Shift-3, interrupt on Shift-E, movement on F,
     -- combat rez on F5, long / short defensive on ` / Shift-`. E (potion)
     -- and F1/F2 (healthstone, health potion) are left as they are, and
-    -- Shift-4, Shift-5, G and R are free for M+ utility. Not buttons
+    -- Shift-4, Shift-5, G and R are free for M+ utility; T (your Death Grip)
+    -- and F11 (your Death and Decay macro) are left alone. Not buttons
     -- of their own (they take over another button): Necrotic Coil (Death
     -- Coil), Festering Scythe (Festering Strike), Blightfall (Dark
     -- Transformation), Graveyard (Epidemic), Vampiric Strike (Scourge Strike).
@@ -102,7 +103,6 @@ OffBeat:RegisterProfile({
         { slot = 56, key = "Shift-`", spellId = 48707,   note = "Anti-Magic Shell: short defensive, top players use it a lot" },
         { slot = 12, key = "X",       spellId = 51052,   note = "Anti-Magic Zone (swap in your macro)" },
         { slot = 62, key = "Shift-2", spellId = 207317,  note = "Epidemic: 3+ targets, becomes Graveyard after Army" },
-        { slot = 68, key = "T",       spellId = 49998,   note = "Death Strike: emergencies" },
     },
 
     -- Coaching: Method says to dump Putrefy inside Dark Transformation (and

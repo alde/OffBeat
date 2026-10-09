@@ -139,7 +139,8 @@ OffBeat:RegisterProfile({
     -- debuff on Shift-1, AoE spender on Shift-2, big summon/channel on
     -- Shift-3, interrupt Shift-E, movement F, combat rez F5, long / short
     -- defensive on ` / Shift-`, Anti-Magic Zone on X. E (potion), F1/F2,
-    -- Shift-4, Shift-5, G, R and T are left alone. Exterminate takes over the
+    -- Shift-4, Shift-5, G and R are left alone, as are T (your Death Grip) and
+    -- F11 (your Death and Decay macro, on a mouse button). Exterminate takes over the
     -- Obliterate button, so it gets no slot. Shift-1 and Shift-3 hold your
     -- cooldown macros and are never touched: Shift-1 = Pillar of Frost +
     -- Reaper's Mark + Raise Dead, Shift-3 = the same plus Berserking and

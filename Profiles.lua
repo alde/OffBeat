@@ -106,6 +106,10 @@ function OffBeat:ValidateProfile(profile)
         end
     end
 
+    if profile.assistedCombat ~= nil and type(profile.assistedCombat) ~= "boolean" then
+        return false, "assistedCombat must be true or false"
+    end
+
     if profile.pet ~= nil then
         if type(profile.pet) ~= "table" then return false, "pet must be a table" end
         if profile.pet.quickSummon ~= nil and type(profile.pet.quickSummon) ~= "number" then

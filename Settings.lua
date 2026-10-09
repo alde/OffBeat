@@ -377,9 +377,20 @@ pageBuilders.rotation = function(parent, y)
 
     if C_AssistedCombat then
         _, h = W:SectionHeader(parent, "NEXT SPELL", y); y = y - h
-        _, h = W:Toggle(parent, "Show Next Spell", y,
-            function() return db.assistedCombat end,
-            function(v) db.assistedCombat = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
+        _, h = W:Toggle(parent, "Show Next Spell (this spec)", y,
+            function() return OffBeat:AssistedCombatOn() end,
+            function(v)
+                local p = OffBeat.activeProfile
+                if p then
+                    db.specSettings = db.specSettings or {}
+                    db.specSettings[p.meta.specId] = db.specSettings[p.meta.specId] or {}
+                    db.specSettings[p.meta.specId].assistedCombat = v
+                else
+                    db.assistedCombat = v
+                end
+                local rd = OffBeat:GetModule("RotationDisplay", true)
+                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
+            end); y = y - h
         _, h = W:Toggle(parent, "Only in Combat", y,
             function() return db.assistedCombatOnly end,
             function(v)

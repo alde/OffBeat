@@ -286,8 +286,21 @@ end
 
 -- Assisted Combat (Next Spell)
 
+-- Blizzard's next-spell suggestion, per spec: your choice on the Rotation
+-- page wins; otherwise a profile can turn it off where Blizzard's
+-- suggestion is unreliable (profile.assistedCombat = false); otherwise the
+-- global default.
+function OffBeat:AssistedCombatOn()
+    local profile = self.activeProfile
+    local specs = self.db.profile.specSettings
+    local ss = profile and specs and specs[profile.meta.specId]
+    if ss and ss.assistedCombat ~= nil then return ss.assistedCombat end
+    if profile and profile.assistedCombat == false then return false end
+    return self.db.profile.assistedCombat
+end
+
 function RotationDisplay:ShouldShowAssisted()
-    return OffBeat.db.profile.assistedCombat
+    return OffBeat:AssistedCombatOn()
         and C_AssistedCombat ~= nil
         and C_AssistedCombat.GetNextCastSpell ~= nil
 end
@@ -353,7 +366,7 @@ function RotationDisplay:UpdateAssistedVisibility()
     local af = self.assistedFrame
     if not af then return end
     local db = OffBeat.db.profile
-    if not db.assistedCombat then
+    if not OffBeat:AssistedCombatOn() then
         af:SetAlpha(0)
     elseif db.assistedCombatOnly and not UnitAffectingCombat("player") then
         af:SetAlpha(0)

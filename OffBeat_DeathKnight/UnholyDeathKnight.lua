@@ -70,6 +70,11 @@ OffBeat:RegisterProfile({
         },
     },
 
+    -- Blizzard's next-spell suggestion recommends Outbreak nearly all the
+    -- time for reworked 12.1 Unholy, so the icon starts off (the Rotation
+    -- page can turn it back on).
+    assistedCombat = false,
+
     -- /ob bars: puts these on your bars, mapped role for role onto how the
     -- warlock is organised (binds are account-wide): spender on 1, short
     -- cooldown on 2, filler on 3, big cooldown on Q, debuffs on Shift-1/2,

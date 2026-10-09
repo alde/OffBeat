@@ -13,8 +13,9 @@ OffBeat:RegisterProfile({
     },
 
     -- Pet died / missing / low warnings, and pet deaths in training.
-    -- Fel Domination makes the next summon instant. Every one of the top 30
-    -- heroic Ula'tek parses (Oct 2026) kept a pet out (Imp or Sayaad mostly).
+    -- Fel Domination makes the next summon instant. All of the top 82
+    -- heroic Ula'tek parses we could read (Oct 2026) kept a pet out, mostly
+    -- the Imp or the Sayaad; none played without one.
     pet = { quickSummon = 333889 },
 
     rotationSpells = {
@@ -93,8 +94,8 @@ OffBeat:RegisterProfile({
     -- Across the top 40 heroic parses per boss (Oct 2026) the median Infernal
     -- window holds 7 Chaos Bolts (12.6 a minute vs 8.8 outside it). They don't
     -- pool shards for it: median 1.6 shards when they press Infernal, since
-    -- the Infernal itself generates them. Malevolence lands inside 65% of
-    -- their Infernal windows.
+    -- the Infernal itself generates them. Method: Malevolence goes on
+    -- cooldown and "does not line up" with Infernal.
     windows = {
         {
             name = "Infernal",

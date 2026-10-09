@@ -110,21 +110,23 @@ OffBeat:RegisterProfile({
     -- Coaching: Tyrant opens Dominion of Argus' window, and the guides say to
     -- pool shards for it and fit as many Hand of Gul'dans in as you can
     -- (Kalamazi: "maximize Hand of Gul'dan casts within the 25-second window").
-    -- Across the top 93 heroic Ula'tek parses the median window holds 8
-    -- Hand of Gul'dans and 90% hold 6 or more.
+    -- Ruination (Diabolist) spends the same way and counts too: across the
+    -- top 25 heroic parses per boss (Oct 2026) the median window holds 10
+    -- Hand of Gul'dan + Ruination (9 on Ula'tek and Nymrissa); 80% of
+    -- windows have a Ruination in them.
     windows = {
         {
             name = "Tyrant",
             trigger = 265187,
             duration = 25,
             note = "Pool shards and Demonic Cores before Tyrant, then spend everything on "
-                .. "Hand of Gul'dan inside the 25s Dominion of Argus window. Top 100 median: "
-                .. "8 per window, 90% get 6+.",
+                .. "Hand of Gul'dan (and Ruination) inside the 25s Dominion of Argus window. "
+                .. "Top players' median: 9 on Ula'tek, 10 on most bosses.",
             setup = {
                 { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } },
             },
             goals = {
-                { name = "Hand of Gul'dan", spells = { 105174 }, min = 8 },
+                { name = "Hand of Gul'dan + Ruination", spells = { 105174, 434635 }, min = 9 },
             },
         },
     },
@@ -134,7 +136,7 @@ OffBeat:RegisterProfile({
     -- training mode.
     -- Per-boss top-parse cast rates (casts per minute), {low, median, high}
     -- across the top 40 heroic parses; values follow the order of rates.
-    -- window = top players' median Hand of Gul'dan count per Tyrant window.
+    -- window = top players' median Hand of Gul'dan + Ruination per Tyrant window.
     benchmarks = {
         source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
         rates = {
@@ -147,26 +149,26 @@ OffBeat:RegisterProfile({
             { name = "Ruination",            spells = { 434635 } },
         },
         encounters = {
-            [3492] = { name = "Ula'tek", window = 8, values = {
+            [3492] = { name = "Ula'tek", window = 9, values = {
                 { 41.2, 42.5, 43.5 }, { 12.9, 13.4, 14.0 }, { 9.5, 9.9, 10.2 }, { 9.8, 10.2, 10.6 }, { 2.7, 2.8, 2.8 }, { 3.0, 3.2, 3.3 }, { 1.4, 1.5, 1.5 } } },
-            [3470] = { name = "Nek'zali the Soulcoiler", window = 9, values = {
+            [3470] = { name = "Nek'zali the Soulcoiler", window = 10, values = {
                 { 47.6, 48.8, 50.5 }, { 15.0, 15.6, 16.3 }, { 10.2, 10.8, 11.1 }, { 11.8, 12.8, 13.4 }, { 2.9, 2.9, 3.0 }, { 3.3, 3.5, 3.7 }, { 1.5, 1.6, 1.6 } } },
-            [3445] = { name = "Entombed Sentinels", window = 8, values = {
+            [3445] = { name = "Entombed Sentinels", window = 10, values = {
                 { 46.0, 47.1, 48.7 }, { 14.6, 15.0, 15.7 }, { 10.1, 10.7, 11.3 }, { 11.6, 12.5, 13.3 }, { 2.9, 2.9, 3.0 }, { 3.1, 3.3, 3.5 }, { 1.5, 1.6, 1.6 } } },
-            [3455] = { name = "Vashnik the Malignant", window = 9, values = {
+            [3455] = { name = "Vashnik the Malignant", window = 10, values = {
                 { 47.0, 49.3, 50.8 }, { 14.9, 15.5, 16.2 }, { 10.2, 10.7, 11.2 }, { 12.3, 14.0, 14.4 }, { 2.8, 2.9, 3.0 }, { 3.1, 3.4, 3.5 }, { 1.5, 1.6, 1.6 } } },
-            [3497] = { name = "The Lost Explorers", window = 9, values = {
+            [3497] = { name = "The Lost Explorers", window = 10, values = {
                 { 49.5, 50.4, 51.6 }, { 15.7, 16.1, 16.6 }, { 10.1, 10.8, 11.4 }, { 12.3, 13.3, 14.6 }, { 2.9, 3.0, 3.1 }, { 3.4, 3.6, 3.8 }, { 1.4, 1.5, 1.6 } } },
-            [3420] = { name = "Sszorak", window = 9, values = {
+            [3420] = { name = "Sszorak", window = 10, values = {
                 { 46.4, 47.5, 48.6 }, { 14.8, 15.2, 15.7 }, { 10.0, 10.6, 11.2 }, { 11.3, 12.1, 12.8 }, { 2.9, 3.0, 3.0 }, { 3.2, 3.4, 3.6 }, { 1.5, 1.5, 1.6 } } },
-            [3421] = { name = "The Twin Fangs", window = 9, values = {
+            [3421] = { name = "The Twin Fangs", window = 10, values = {
                 { 46.9, 47.6, 49.0 }, { 14.9, 15.3, 15.8 }, { 10.3, 10.9, 11.4 }, { 11.3, 11.8, 12.6 }, { 2.9, 3.0, 3.0 }, { 3.5, 3.6, 3.6 }, { 1.5, 1.6, 1.6 } } },
-            [3429] = { name = "The Coiled Altar", window = 9, values = {
+            [3429] = { name = "The Coiled Altar", window = 10, values = {
                 { 46.6, 47.6, 48.2 }, { 15.2, 15.4, 15.8 }, { 10.7, 11.0, 11.3 }, { 11.0, 12.0, 12.6 }, { 2.8, 2.9, 3.0 }, { 3.3, 3.4, 3.6 }, { 1.5, 1.6, 1.7 } } },
-            [3379] = { name = "Nymrissa Wavecaller", window = 8, values = {
+            [3379] = { name = "Nymrissa Wavecaller", window = 9, values = {
                 { 44.9, 46.7, 48.1 }, { 14.0, 14.8, 15.4 }, { 9.7, 10.3, 11.0 }, { 10.6, 11.6, 13.0 }, { 2.8, 2.9, 3.0 }, { 3.2, 3.4, 3.5 }, { 1.4, 1.5, 1.6 } } },
         },
-        overall = { name = "all heroic bosses", window = 9, values = {
+        overall = { name = "all heroic bosses", window = 10, values = {
             { 46.0, 47.6, 49.6 }, { 14.6, 15.3, 15.9 }, { 10.1, 10.7, 11.2 }, { 10.9, 12.3, 13.2 }, { 2.8, 2.9, 3.0 }, { 3.2, 3.4, 3.6 }, { 1.5, 1.5, 1.6 } } },
     },
 

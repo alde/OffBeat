@@ -19,6 +19,7 @@ OffBeat:RegisterProfile({
         { spellId = 55090 },   -- Scourge Strike
         { spellId = 433895 },  -- Vampiric Strike (San'layn)
         { spellId = 455397 },  -- Festering Scythe
+        { spellId = 458128 },  -- Festering Scythe (the ID top logs show)
         { spellId = 1247378 }, -- Putrefy
         { spellId = 1242174 }, -- Necrotic Coil
         { spellId = 47541 },   -- Death Coil
@@ -28,6 +29,7 @@ OffBeat:RegisterProfile({
         { spellId = 343294 },  -- Soul Reaper
         { spellId = 383269 },  -- Graveyard
         { spellId = 1271974 }, -- Blightfall (San'layn)
+        { spellId = 1271967 }, -- Blightfall (the ID top logs show)
         { spellId = 1233448 }, -- Dark Transformation
         { spellId = 42650 },   -- Army of the Dead
         { spellId = 49998 },   -- Death Strike
@@ -68,6 +70,63 @@ OffBeat:RegisterProfile({
         },
     },
 
+    -- Coaching: Method says to dump Putrefy inside Dark Transformation (and
+    -- not to cap its charges). Across the top 40 heroic parses per boss
+    -- (Oct 2026) the median 15s Dark Transformation holds 2 Putrefy on
+    -- every boss: 7.3 a minute inside it vs 3.9 overall.
+    windows = {
+        {
+            name = "Dark Transformation",
+            trigger = 1233448,
+            duration = 15,
+            note = "Save Putrefy charges for Dark Transformation and spend them inside it. "
+                .. "Top players' median: 2 per window.",
+            goals = {
+                { name = "Putrefy", spells = { 1247378 } , min = 2 },
+            },
+        },
+    },
+
+    -- Per-boss top-parse cast rates (casts per minute), { low, median, high }
+    -- across the top 40 heroic parses; values follow the order of rates.
+    -- window = top players' median Putrefy count per Dark Transformation.
+    -- All 360 of those parses play San'layn (Vampiric Strike).
+    benchmarks = {
+        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        rates = {
+            { name = "Rotation casts",   all = true },
+            { name = "Vampiric Strike",  spells = { 433895 } },
+            { name = "Death Coil",       spells = { 47541 } },
+            { name = "Necrotic Coil",    spells = { 1242174 } },
+            { name = "Scourge Strike",   spells = { 55090 } },
+            { name = "Putrefy",          spells = { 1247378 } },
+            { name = "Festering Strike", spells = { 85948 } },
+            { name = "Soul Reaper",      spells = { 343294 } },
+        },
+        encounters = {
+            [3492] = { name = "Ula'tek", window = 2, values = {
+                { 51.5, 52.7, 54.9 }, { 12.3, 12.7, 13.5 }, { 8.7, 9.4, 10.2 }, { 5.6, 5.9, 6.4 }, { 5.9, 6.5, 6.9 }, { 3.0, 3.3, 3.5 }, { 2.8, 3.1, 3.2 }, { 1.9, 2.1, 2.4 } } },
+            [3470] = { name = "Nek'zali the Soulcoiler", window = 2, values = {
+                { 60.9, 62.6, 63.8 }, { 14.9, 15.7, 16.1 }, { 11.0, 11.6, 12.2 }, { 8.0, 8.7, 9.1 }, { 7.1, 7.7, 8.4 }, { 3.6, 3.8, 4.2 }, { 3.3, 3.5, 3.7 }, { 2.2, 2.4, 2.5 } } },
+            [3445] = { name = "Entombed Sentinels", window = 2, values = {
+                { 59.3, 61.2, 62.6 }, { 14.4, 14.9, 16.0 }, { 11.0, 11.6, 12.2 }, { 7.8, 8.4, 9.0 }, { 7.6, 8.2, 9.1 }, { 3.5, 3.9, 4.1 }, { 3.1, 3.5, 3.8 }, { 1.9, 2.1, 2.3 } } },
+            [3455] = { name = "Vashnik the Malignant", window = 2, values = {
+                { 59.4, 61.3, 62.7 }, { 14.4, 15.4, 16.1 }, { 11.6, 11.9, 12.6 }, { 4.8, 5.4, 6.6 }, { 7.3, 8.1, 8.4 }, { 3.4, 4.0, 4.3 }, { 3.2, 3.4, 3.7 }, { 2.1, 2.3, 2.4 } } },
+            [3497] = { name = "The Lost Explorers", window = 2, values = {
+                { 60.8, 62.3, 63.7 }, { 14.6, 15.9, 16.6 }, { 10.6, 11.5, 11.8 }, { 8.0, 8.8, 9.2 }, { 7.1, 7.8, 8.5 }, { 3.5, 3.9, 4.4 }, { 3.3, 3.6, 3.9 }, { 2.3, 2.5, 2.8 } } },
+            [3420] = { name = "Sszorak", window = 2, values = {
+                { 61.7, 62.8, 64.4 }, { 14.8, 15.6, 16.1 }, { 12.1, 12.6, 13.4 }, { 8.1, 8.5, 9.3 }, { 7.7, 8.4, 9.0 }, { 3.3, 3.9, 4.3 }, { 3.4, 3.6, 3.8 }, { 2.1, 2.3, 2.4 } } },
+            [3421] = { name = "The Twin Fangs", window = 2, values = {
+                { 60.3, 62.2, 63.0 }, { 14.4, 14.8, 16.1 }, { 11.9, 12.3, 12.9 }, { 8.0, 8.3, 8.8 }, { 7.7, 8.3, 8.8 }, { 3.2, 3.9, 4.1 }, { 3.4, 3.6, 3.8 }, { 2.1, 2.3, 2.4 } } },
+            [3429] = { name = "The Coiled Altar", window = 2, values = {
+                { 58.2, 60.3, 61.2 }, { 13.3, 13.8, 14.5 }, { 11.3, 12.0, 12.7 }, { 7.3, 7.9, 8.4 }, { 7.0, 7.6, 8.4 }, { 3.4, 3.8, 4.1 }, { 3.5, 3.6, 3.9 }, { 2.7, 2.9, 3.0 } } },
+            [3379] = { name = "Nymrissa Wavecaller", window = 2, values = {
+                { 61.1, 62.3, 63.9 }, { 14.9, 15.6, 16.4 }, { 10.6, 11.4, 12.1 }, { 8.2, 8.8, 9.2 }, { 7.7, 8.3, 8.7 }, { 3.5, 4.0, 4.3 }, { 3.3, 3.6, 3.8 }, { 2.2, 2.4, 2.5 } } },
+        },
+        overall = { name = "all heroic bosses", window = 2, values = {
+            { 59.3, 61.4, 63.3 }, { 14.1, 15.0, 16.0 }, { 10.9, 11.8, 12.4 }, { 7.0, 8.2, 9.0 }, { 7.2, 7.9, 8.6 }, { 3.4, 3.8, 4.2 }, { 3.2, 3.5, 3.8 }, { 2.1, 2.3, 2.5 } } },
+    },
+
     -- Method 12.1 (same for both hero trees): Crit > Mastery >= Haste > Vers
     statPriority = { CRIT = 1, MASTERY = 2, HASTE = 2.5, VERS = 3.5 },
 
@@ -81,13 +140,13 @@ OffBeat:RegisterProfile({
         { spellId = 207317,           aoe = 1, note = "3+ targets" },
         { spellId = 1247378, st = 2, aoe = 1, note = "Don't cap charges, dump in Dark Transformation" },
         { spellId = 1242174, st = 2, aoe = 2, note = "3 targets or fewer" },
-        { spellId = 455397,  st = 2, aoe = 2, note = "Refresh the debuff" },
+        { spellId = 455397,  alt = { 458128 }, st = 2, aoe = 2, note = "Refresh the debuff" },
         { spellId = 77575,   st = 2, aoe = 2, note = "When Virulent Plague is missing" },
         { spellId = 343294,  st = 2, aoe = 2, note = "On cooldown" },
         { spellId = 43265,            aoe = 2, note = "2+ targets" },
         { spellId = 1233448, st = 3, aoe = 3, note = "Main cooldown" },
         { spellId = 42650,   st = 3, aoe = 3, note = "On cooldown" },
         { spellId = 383269,           aoe = 3, note = "4+ targets" },
-        { spellId = 1271974, st = 3,          note = "San'layn: before Soul Reaper expires" },
+        { spellId = 1271974, alt = { 1271967 }, st = 3, note = "San'layn: before Soul Reaper expires" },
     },
 })

@@ -139,20 +139,19 @@ OffBeat:RegisterProfile({
     -- debuff on Shift-1, AoE spender on Shift-2, big summon/channel on
     -- Shift-3, interrupt Shift-E, movement F, combat rez F5, long / short
     -- defensive on ` / Shift-`, Anti-Magic Zone on X. E (potion), F1/F2,
-    -- Shift-4, Shift-5 and G are left alone. Exterminate takes over the
-    -- Obliterate button, so it gets no slot.
+    -- Shift-4, Shift-5, G, R and T are left alone. Exterminate takes over the
+    -- Obliterate button, so it gets no slot. Shift-1 and Shift-3 hold your
+    -- cooldown macros and are never touched: Shift-1 = Pillar of Frost +
+    -- Reaper's Mark + Raise Dead, Shift-3 = the same plus Berserking and
+    -- Breath of Sindragosa (every other Pillar).
     barLayout = {
         { slot = 1,  key = "1",       spellId = 49143,   note = "Frost Strike: Runic Power spender (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 47568,   note = "Empower Rune Weapon: ~5 a minute, twice per Pillar (Dreadstalkers' spot)" },
         { slot = 3,  key = "3",       spellId = 49020,   note = "Obliterate: most pressed, Exterminate shows up here (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 49184,   note = "Howling Blast: only on Rime" },
         { slot = 5,  key = "5",       spellId = 207230,  note = "Frostscythe: Obliterate's 3+ target version" },
-        { slot = 6,  key = "Q",       spellId = 51271,   note = "Pillar of Frost: big cooldown (Tyrant's spot)" },
-        { slot = 61, key = "Shift-1", spellId = 439843,  note = "Reaper's Mark: with every Pillar (curse spot)" },
+        { slot = 6,  key = "Q",       spellId = 279302,  note = "Frostwyrm's Fury: right after Pillar starts, when it's off cooldown" },
         { slot = 62, key = "Shift-2", spellId = 194913,  note = "Glacial Advance: AoE spender (Epidemic's spot)" },
-        { slot = 63, key = "Shift-3", spellId = 1249658, note = "Breath of Sindragosa: every other Pillar (Imp Lord's spot)" },
-        { slot = 67, key = "R",       spellId = 279302,  note = "Frostwyrm's Fury: with Breath, every other Pillar" },
-        { slot = 68, key = "T",       spellId = 46585,   note = "Raise Dead: with Pillar (96% use it)" },
         { slot = 50, key = "Shift-E", spellId = 47528,   note = "Mind Freeze: interrupt" },
         { slot = 70, key = "F",       spellId = 48265,   note = "Death's Advance: movement (every top player uses it)" },
         { slot = 25, key = "F5",      spellId = 61999,   note = "Raise Ally: combat rez (soulstone's spot)" },

@@ -113,13 +113,15 @@ OffBeat:RegisterProfile({
     -- Q, second cooldown on Shift-3, the other DoT on G, interrupt Shift-E,
     -- movement F, soulstone F5, long / short defensive on ` / Shift-`. Your
     -- curses (Shift-1, Shift-2), Shadowfury (Shift-4), Drain Life (Shift-5),
-    -- potion (E), F1/F2, R and Shift-Q are left alone. Malefic Grasp and
-    -- Drain Soul take over the Shadow Bolt button, Wither the Corruption one.
+    -- potion (E), F1/F2, R and Shift-Q are left alone. Drain Soul (Kalamazi's
+    -- builds take it) replaces Shadow Bolt, so key 3 gets whichever you
+    -- have; Malefic Grasp takes over that button, Wither the Corruption one.
+    -- None of the 36 top parses we read cast Drain Soul: all Shadow Bolt.
     -- Every Affliction AoE here is cast on a target: no cursor macros.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 1259790, alt = { 316099 }, note = "Unstable Affliction: main shard spender (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 48181,   note = "Haunt: on cooldown (Dreadstalkers' spot)" },
-        { slot = 3,  key = "3",       spellId = 686,     alt = { 198590 }, note = "Shadow Bolt: filler, Malefic Grasp shows up here (Shadow Bolt's spot)" },
+        { slot = 3,  key = "3",       spellId = 198590,  alt = { 686 }, note = "Drain Soul (or Shadow Bolt): filler, Malefic Grasp shows up here (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 27243,   note = "Seed of Corruption: shard spender on 3+ (Implosion's spot)" },
         { slot = 5,  key = "5",       spellId = 980,     note = "Agony: never let it drop, your only shard source (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 205180,  note = "Summon Darkglare: big cooldown (Tyrant's spot)" },
@@ -147,7 +149,7 @@ OffBeat:RegisterProfile({
             { spellId = 1257052, text = "Dark Harvest: with Darkglare" },
             { spellId = 442726,  text = "Malevolence: on cooldown" },
             { spellId = 1259790, alt = { 316099 }, text = "Unstable Affliction: spend shards, never sit at 5; free on Shard Instability" },
-            { spellId = 686,     alt = { 198590 }, text = "Shadow Bolt: filler, becomes Malefic Grasp (cast that whenever it shows). Instant on Nightfall: use it while moving" },
+            { spellId = 198590,  alt = { 686 }, text = "Drain Soul / Shadow Bolt: filler, becomes Malefic Grasp (cast that whenever it shows). Drain Soul is a channel: on the move, cast the instants" },
         } },
         { title = "Packs and adds (3+)", lines = {
             { spellId = 27243,   text = "Seed of Corruption: spend shards on it, it spreads Corruption" },

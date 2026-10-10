@@ -113,10 +113,11 @@ OffBeat:RegisterProfile({
 
     -- /ob bars: role for role on your warlock keys. Spender on 1, short
     -- cooldown on 2, filler on 3, AoE spender on 4, DoT on 5, big cooldown on
-    -- Q, second cooldown on Shift-3, the other DoT on G, interrupt Shift-E,
+    -- Q, second cooldown on Shift-3, the other DoT on E (your pick: G is a
+    -- stretch), interrupt Shift-E,
     -- movement F, soulstone F5, long / short defensive on ` / Shift-`. Your
     -- curses (Shift-1, Shift-2), Shadowfury (Shift-4), Drain Life (Shift-5),
-    -- potion (E), F1/F2, R and Shift-Q are left alone. Drain Soul (Kalamazi's
+    -- F1/F2, G, R and Shift-Q are left alone. Drain Soul (Kalamazi's
     -- builds take it) replaces Shadow Bolt, so key 3 gets whichever you
     -- have; Malefic Grasp takes over that button, Wither the Corruption one.
     -- None of the 36 top parses we read cast Drain Soul: all Shadow Bolt.
@@ -134,7 +135,7 @@ OffBeat:RegisterProfile({
         { slot = 5,  key = "5",       spellId = 980,     note = "Agony: never let it drop, your only shard source (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 205180,  note = "Summon Darkglare: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 1257052, note = "Dark Harvest: on cooldown, every other one with Darkglare (Imp Lord's spot)" },
-        { slot = 7,  key = "G",       spellId = 172,     note = "Corruption: keep it up (Seed spreads it on packs)" },
+        { slot = 8,  key = "E",       spellId = 172,     note = "Corruption: keep it up (Seed spreads it on packs)" },
         { slot = 50, key = "Shift-E", spellId = 119898,  note = "Command Demon: Spell Lock (interrupt)" },
         { slot = 70, key = "F",       spellId = 111400,  note = "Burning Rush: movement" },
         { slot = 25, key = "F5",      spellId = 20707,   note = "Soulstone: combat rez" },

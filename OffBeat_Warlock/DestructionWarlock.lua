@@ -42,7 +42,7 @@ OffBeat:RegisterProfile({
         -- Conflagrate charge -> faster Soul Fire / Incinerate / Chaos Bolt
         { spellId = 117828,  name = "Backdraft",        baseDuration = 10, stacks = true },
         -- Free / instant Shadowburn; Method: spend it for movement or to avoid overcapping
-        { spellId = 1245633, name = "Fiendish Cruelty", baseDuration = 0,  stacks = false },
+        { spellId = 1245664, name = "Fiendish Cruelty", baseDuration = 0,  stacks = false },
         -- Hellcaller cooldown window: spend Soul Shards inside it
         { spellId = 442726,  name = "Malevolence",      baseDuration = 0,  stacks = false },
         -- Diabolist: Diabolic Ritual finishes -> next Chaos Bolt summons the demon
@@ -65,7 +65,7 @@ OffBeat:RegisterProfile({
     -- Each proc is flagged as wasted if it drops without its consumer being cast.
     -- Backdraft is left out: Soul Fire, Incinerate and Chaos Bolt all consume it.
     procTracking = {
-        { procAura = 1245633, consumeSpells = { 17877 },  window = 0.5, name = "Fiendish Cruelty" },
+        { procAura = 1245664, consumeSpells = { 17877 },  window = 0.5, name = "Fiendish Cruelty" },
         { procAura = 428524,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Overlord" },
         { procAura = 432794,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Mother of Chaos" },
         { procAura = 432795,  consumeSpells = { 116858 }, window = 0.5, name = "Demonic Art: Pit Lord" },

@@ -123,17 +123,6 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 
 `/ob bars` shows a profile's `barLayout` (which spell goes on which key) and `/ob bars apply` puts them on your bars. An entry can be a macro that picks between spells two builds don't share, so one key works for both: `{ slot = 67, key = "R", macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } } }` becomes a per-character macro `/cast [known:Havoc] Havoc; Cataclysm`. Add `cursor = true` to cast at the mouse (`[@cursor]`), e.g. `macro = { name = "OB Rain", spells = { 5740 }, cursor = true }`.
 
-## Shards / DoT panel
-
-Profiles with a `tracker` get a small panel in combat for specs whose feedback is mostly invisible: your secondary resource as pips (gold with "SPEND: ..." from `spendAt`, "hold for ..." while the `prep` countdown runs), and a countdown bar per DoT on your current target, started from your own casts (an estimate: the game hides debuffs from addons in combat). Refreshing inside `pandemic` carries the rest over. Move it while frames are unlocked; on/off on the Spec page. Filled in for Affliction (Soul Shards, Agony).
-
-```lua
-tracker = {
-    power = { type = "SoulShards", max = 5, spendAt = 4, spend = "Unstable Affliction" },
-    dots = { { spellId = 980, name = "Agony", duration = 18, pandemic = 5.4 } },
-}
-```
-
 ## Rotation sheet
 
 Profiles with a `rotationSheet` get a movable cheat sheet panel: sections (e.g. single target, AoE) of lines, each with the spell's icon, your keybind for it (read from your bars, `--` when it isn't on one) and a short instruction. Lines for spells you don't know are hidden.

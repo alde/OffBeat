@@ -173,15 +173,6 @@ OffBeat:RegisterProfile({
         },
     },
 
-    -- Shards and Agony in combat (the Tracker panel). Agony lasts 18s
-    -- (Corruption has no duration); refreshing in the last 5.4s carries the
-    -- rest over. The timer starts from your casts: an estimate, since the
-    -- game hides debuffs from addons in combat.
-    tracker = {
-        power = { type = "SoulShards", max = 5, spendAt = 4, spend = "Unstable Affliction (Seed on 3+)" },
-        dots = { { spellId = 980, name = "Agony", duration = 18, pandemic = 5.4 } },
-    },
-
     -- No statPriority here: the guides disagree (Method 12.1: Crit > Haste =
     -- Mastery > Vers single target, Haste = Crit > Mastery > Vers AoE; Icy
     -- Veins: Haste > Crit > Mastery > Vers; Kalamazi: Haste > Crit > Vers >

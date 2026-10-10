@@ -599,18 +599,6 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.failNudge = v end); y = y - h
     end
 
-    -- Shards / DoT panel
-    if profile.tracker then
-        _, h = W:SectionHeader(parent, "SHARDS / DOTS PANEL", y); y = y - h
-        _, h = W:Toggle(parent, "Show in Combat (move it while unlocked)", y,
-            function()
-                local v = ss.trackerEnabled
-                if v == nil then return db.trackerEnabled end
-                return v
-            end,
-            function(v) ss.trackerEnabled = v end); y = y - h
-    end
-
     -- Cooldown prep countdown
     if profile.prep then
         _, h = W:SectionHeader(parent, "COUNTDOWN — " .. string.upper(profile.prep.name or "COOLDOWN"), y); y = y - h

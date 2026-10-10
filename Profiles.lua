@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges", "tracker",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges",
 }
 
 
@@ -81,21 +81,6 @@ function OffBeat:ValidateProfile(profile)
             if n.error ~= "runes" and n.error ~= "range" then return false, where .. ".error must be \"runes\" or \"range\"" end
             if type(n.spells) ~= "table" or #n.spells == 0 then return false, where .. ".spells must be a non-empty list" end
             if type(n.text) ~= "string" then return false, where .. ".text must be a string" end
-        end
-    end
-
-    if profile.tracker ~= nil then
-        local t = profile.tracker
-        if type(t) ~= "table" then return false, "tracker must be a table" end
-        if t.power ~= nil then
-            if type(t.power) ~= "table" or type(t.power.type) ~= "string" or type(t.power.max) ~= "number" then
-                return false, "tracker.power needs a type (power name) and max"
-            end
-        end
-        for i, d in ipairs(t.dots or {}) do
-            if type(d) ~= "table" or type(d.spellId) ~= "number" or type(d.duration) ~= "number" then
-                return false, "tracker.dots[" .. i .. "] needs a spellId and duration"
-            end
         end
     end
 

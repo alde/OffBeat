@@ -11,7 +11,9 @@ local Prep = OffBeat:NewModule("Prep", "AceEvent-3.0")
 --           { name = "Runes", power = "Runes", min = 3 },
 --           -- only when this other cooldown comes up with it (Breath turns)
 --           { name = "Runic Power", power = "RunicPower", min = 60,
---             with = { spellId = 1249658, name = "Breath", cooldown = 90 } },
+--             with = { spellId = 1249658, name = "Breath", cooldown = 90 },
+--             -- the macro casts Reaper's Mark (+20) before Breath
+--             credit = { spellId = 439843, amount = 20, cooldown = 45 } },
 --       },
 --   }
 --
@@ -170,9 +172,17 @@ function Prep:Build(prep, lead)
         if applies then
             local v = Power(c.power)
             local label = (c.with and c.with.name and (c.with.name .. ": ") or "") .. (c.name or c.power)
-            local color = v == nil and GREY or (v >= c.min and GREEN or RED)
-            parts[#parts + 1] = color .. label .. " " .. (v and string.format("%d", v) or "?")
-                .. "/" .. c.min .. "|r"
+            -- a spell the same press casts first adds to it (Reaper's Mark
+            -- in the cooldown macro gives 20 Runic Power before Breath)
+            local bonus = 0
+            if c.credit then
+                local cl = self:Remaining(c.credit.spellId, c.credit.cooldown)
+                if cl ~= nil and cl <= left + 1 then bonus = c.credit.amount or 0 end
+            end
+            local color = v == nil and GREY or (v + bonus >= c.min and GREEN or RED)
+            local shown = v and string.format("%d", v) or "?"
+            if bonus > 0 then shown = shown .. "+" .. bonus end
+            parts[#parts + 1] = color .. label .. " " .. shown .. "/" .. c.min .. "|r"
         end
     end
     return table.concat(parts, "   "), prep.hint

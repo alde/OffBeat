@@ -54,16 +54,6 @@ OffBeat:RegisterProfile({
             spells = { 1249658 },
             when = { recent = 51271, within = 12, absent = true },
         },
-        -- Method 12.1: Empower Rune Weapon "when Breath is off cooldown and
-        -- you don't have 60 Runic Power". Breath is pressed by the cooldown
-        -- macro, so this is judged at the press, with what you had then.
-        {
-            type = "bad_cast",
-            name = "Breath under 60 Runic Power",
-            description = "Breath of Sindragosa with under 60 Runic Power: Empower Rune Weapon (or Frost Strike less) before the macro",
-            spells = { 1249658 },
-            when = { power = "RunicPower", max = 59 },
-        },
     },
 
     trackedAuras = {
@@ -90,13 +80,19 @@ OffBeat:RegisterProfile({
     -- them is just not spending: Frost Strike instead of Obliterate.
     -- Breath's cooldown is only used when the game hides it: 90s, from your
     -- log (Breaths 91s+ apart, top players Breath every other Pillar).
+    -- Breath needs 60 Runic Power to start (it failed "Not enough runic
+    -- power" at 56 and went out at 65). The macro casts Reaper's Mark
+    -- first, which gives 20 (every one in the log), so 40 before the press
+    -- is enough when Reaper's Mark comes with it (45s cooldown, like Pillar).
+    -- Empower Rune Weapon gives ~40, so on the pull: Empower, then macro.
     prep = {
         spellId = 51271, name = "Pillar", cooldown = 45, lead = 5,
         hint = "Hold runes: Frost Strike, Obliterate only on Killing Machine",
         checks = {
             { name = "Runes", power = "Runes", min = 3 },
             { name = "Runic Power", power = "RunicPower", min = 60,
-              with = { spellId = 1249658, name = "Breath", cooldown = 90 } },
+              with = { spellId = 1249658, name = "Breath", cooldown = 90 },
+              credit = { spellId = 439843, amount = 20, cooldown = 45 } },
         },
     },
 
@@ -214,7 +210,8 @@ OffBeat:RegisterProfile({
     rotationSheet = {
         { title = "Cooldowns", lines = {
             { spellId = 51271,  text = "Cooldown macro when Pillar is ready, with 3-4 runes pooled" },
-            { spellId = 1249658, text = "Breath turn: 60+ Runic Power first (Empower Rune Weapon if short)" },
+            { spellId = 1249658, text = "Breath needs 60 Runic Power (Reaper's Mark in the macro gives 20): Empower Rune Weapon if short" },
+            { spellId = 47568,  text = "Pull: Empower Rune Weapon, then the macro, so Breath goes with the first Pillar" },
             { spellId = 439843, text = "Reaper's Mark: press again if no mark landed with Pillar" },
             { spellId = 279302, text = "Frostwyrm's Fury: right after Pillar starts" },
             { spellId = 47568,  text = "Empower Rune Weapon: twice per Pillar (~5 a minute)" },

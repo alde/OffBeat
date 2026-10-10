@@ -345,6 +345,10 @@ function OffBeat:ValidatePrep(prep)
         if c.with ~= nil and (type(c.with) ~= "table" or type(c.with.spellId) ~= "number") then
             return false, where .. ".with must be { spellId = ... }"
         end
+        if c.credit ~= nil and (type(c.credit) ~= "table" or type(c.credit.spellId) ~= "number"
+                or type(c.credit.amount) ~= "number") then
+            return false, where .. ".credit must be { spellId = ..., amount = n }"
+        end
     end
     return true
 end

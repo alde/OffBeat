@@ -60,6 +60,10 @@ OffBeat:RegisterProfile({
     idleCooldowns = {
         { spellId = 1122,   name = "Summon Infernal" },
         { spellId = 442726, name = "Malevolence" }, -- Method: cast on cooldown, don't hold it
+        -- Slow cast that never lights up, so it's easy to forget (1 cast in
+        -- a 4-minute dummy session); top raid players cast it 1.3 a minute.
+        { spellId = 6353,   name = "Soul Fire" },
+        { spellId = 152108, name = "Cataclysm" },   -- M+ build: every pack
     },
 
     -- Each proc is flagged as wasted if it drops without its consumer being cast.

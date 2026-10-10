@@ -19,9 +19,7 @@ local OffBeat = _G.OffBeat
 -- the fallback. `cursor = true` casts them at the mouse cursor
 -- ([@cursor]), for ground-targeted spells, or `cursor = { ids }` only those
 -- (Havoc on your target, Cataclysm at the cursor). A macro with cursor can
--- hold just one spell. `notWhileChanneling = { ids }` makes the key do
--- nothing while you channel one of those (so it can't cut a channel short);
--- such a macro can also hold just one spell. Spell names come from the game, so it works in any client
+-- hold just one spell. Spell names come from the game, so it works in any client
 -- language. /ob bars apply creates the macro, or rewrites it if it exists.
 --
 -- Slots are Blizzard's: 1-12 main bar, 61-72 bottom left, 49-60 bottom right,
@@ -55,13 +53,7 @@ local function MacroBody(m)
         if i < #m.spells then cond[#cond + 1] = "known:" .. name end
         parts[#parts + 1] = (#cond > 0 and ("[" .. table.concat(cond, ",") .. "] ") or "") .. name
     end
-    local stop = ""
-    if m.notWhileChanneling then
-        for _, id in ipairs(m.notWhileChanneling) do
-            stop = stop .. "/stopmacro [channeling:" .. SpellName(id) .. "]\n"
-        end
-    end
-    return "#showtooltip\n" .. stop .. "/cast " .. table.concat(parts, "; ")
+    return "#showtooltip\n/cast " .. table.concat(parts, "; ")
 end
 OffBeat.BarLayoutMacroBody = MacroBody
 

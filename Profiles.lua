@@ -138,7 +138,7 @@ function OffBeat:ValidateProfile(profile)
                 if m.cursor ~= nil and m.cursor ~= true and type(m.cursor) ~= "table" then
                     return false, where .. ".macro.cursor must be true or a list of spell IDs"
                 end
-                local minSpells = (m.cursor == true or m.notWhileChanneling) and 1 or 2
+                local minSpells = m.cursor == true and 1 or 2
                 if type(m.spells) ~= "table" or #m.spells < minSpells then
                     return false, where .. ".macro needs at least " .. minSpells .. " spell(s)"
                 end

@@ -121,7 +121,7 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 
 ## Bar layout
 
-`/ob bars` shows a profile's `barLayout` (which spell goes on which key) and `/ob bars apply` puts them on your bars. An entry can be a macro that picks between spells two builds don't share, so one key works for both: `{ slot = 67, key = "R", macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } } }` becomes a per-character macro `/cast [known:Havoc] Havoc; Cataclysm`. Add `notWhileChanneling = { ids }` to make the key do nothing while you channel one of those (Affliction: Unstable Affliction and Seed wait for Malefic Grasp). Add `cursor = true` to cast at the mouse (`[@cursor]`), e.g. `macro = { name = "OB Rain", spells = { 5740 }, cursor = true }`.
+`/ob bars` shows a profile's `barLayout` (which spell goes on which key) and `/ob bars apply` puts them on your bars. An entry can be a macro that picks between spells two builds don't share, so one key works for both: `{ slot = 67, key = "R", macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } } }` becomes a per-character macro `/cast [known:Havoc] Havoc; Cataclysm`. Add `cursor = true` to cast at the mouse (`[@cursor]`), e.g. `macro = { name = "OB Rain", spells = { 5740 }, cursor = true }`.
 
 ## Shards / DoT panel
 

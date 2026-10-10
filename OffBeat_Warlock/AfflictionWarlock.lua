@@ -121,17 +121,12 @@ OffBeat:RegisterProfile({
     -- builds take it) replaces Shadow Bolt, so key 3 gets whichever you
     -- have; Malefic Grasp takes over that button, Wither the Corruption one.
     -- None of the 36 top parses we read cast Drain Soul: all Shadow Bolt.
-    -- Keys 1 and 4 are macros that do nothing while Malefic Grasp channels:
-    -- in your first dummy session every Malefic Grasp (a 4s channel) was cut
-    -- after 1-2s by an Unstable Affliction.
     -- Every Affliction AoE here is cast on a target: no cursor macros.
     barLayout = {
-        { slot = 1,  key = "1",       macro = { name = "OB UA", spells = { 1259790 }, notWhileChanneling = { 1261153 } },
-          note = "Unstable Affliction: main shard spender, does nothing while Malefic Grasp channels (Hand of Gul'dan's spot)" },
+        { slot = 1,  key = "1",       spellId = 1259790, alt = { 316099 }, note = "Unstable Affliction: main shard spender (Hand of Gul'dan's spot)" },
         { slot = 2,  key = "2",       spellId = 48181,   note = "Haunt: on cooldown (Dreadstalkers' spot)" },
         { slot = 3,  key = "3",       spellId = 198590,  alt = { 686 }, note = "Drain Soul (or Shadow Bolt): filler, Malefic Grasp shows up here (Shadow Bolt's spot)" },
-        { slot = 4,  key = "4",       macro = { name = "OB Seed", spells = { 27243 }, notWhileChanneling = { 1261153 } },
-          note = "Seed of Corruption: shard spender on 3+, waits for Malefic Grasp too (Implosion's spot)" },
+        { slot = 4,  key = "4",       spellId = 27243,   note = "Seed of Corruption: shard spender on 3+ (Implosion's spot)" },
         { slot = 5,  key = "5",       spellId = 980,     note = "Agony: never let it drop, your only shard source (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 205180,  note = "Summon Darkglare: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 1257052, note = "Dark Harvest: on cooldown, every other one with Darkglare (Imp Lord's spot)" },

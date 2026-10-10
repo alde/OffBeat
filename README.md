@@ -31,7 +31,7 @@ A profile can use any combination.
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
-| OffBeat_DeathKnight | Frost Death Knight | Rotation (KM waste, Rime), Key Layout |
+| OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar and 60+ Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
 | OffBeat_DeathKnight | Unholy Death Knight | Rotation (Dark Transformation, Sudden Doom), Key Layout |
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |

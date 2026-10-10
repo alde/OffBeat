@@ -54,6 +54,16 @@ OffBeat:RegisterProfile({
             spells = { 1249658 },
             when = { recent = 51271, within = 12, absent = true },
         },
+        -- Method 12.1: Empower Rune Weapon "when Breath is off cooldown and
+        -- you don't have 60 Runic Power". Breath is pressed by the cooldown
+        -- macro, so this is judged at the press, with what you had then.
+        {
+            type = "bad_cast",
+            name = "Breath under 60 Runic Power",
+            description = "Breath of Sindragosa with under 60 Runic Power: Empower Rune Weapon (or Frost Strike less) before the macro",
+            spells = { 1249658 },
+            when = { power = "RunicPower", max = 59 },
+        },
     },
 
     trackedAuras = {
@@ -99,10 +109,17 @@ OffBeat:RegisterProfile({
             name = "Pillar of Frost",
             trigger = 51271,
             duration = 12,
-            note = "Reaper's Mark with Pillar, then Obliterate on every Killing Machine and rune "
-                .. "(Exterminate shows up on Obliterate). Top players' median: 9 per Pillar.",
+            note = "Pool 3-4 runes first. Reaper's Mark with Pillar, then Obliterate (Frostscythe "
+                .. "at 3+ targets) on every Killing Machine and rune. Top players' median: 9 per Pillar.",
+            -- Method 12.1: "pool 3-4 Runes before Pillar of Frost, so you
+            -- are not rune starved". Judged when the macro is pressed.
+            setup = {
+                { name = "3+ runes ready", when = { power = "Runes", min = 3 } },
+            },
+            -- Frostscythe is Obliterate's AoE version (Exterminate empowers
+            -- both), so it counts the same; before, AoE Pillars read 0.
             goals = {
-                { name = "Obliterate + Exterminate", spells = { 49020, 441424 }, min = 9 },
+                { name = "Obliterate / Frostscythe", spells = { 49020, 441424, 207230 }, min = 9 },
             },
         },
     },
@@ -179,16 +196,17 @@ OffBeat:RegisterProfile({
     -- top 40 heroic parses per boss.
     rotationSheet = {
         { title = "Cooldowns", lines = {
-            { spellId = 51271,  text = "Cooldown macro when Pillar is ready (Breath comes along every other one)" },
+            { spellId = 51271,  text = "Cooldown macro when Pillar is ready, with 3-4 runes pooled" },
+            { spellId = 1249658, text = "Breath turn: 60+ Runic Power first (Empower Rune Weapon if short)" },
             { spellId = 439843, text = "Reaper's Mark: press again if no mark landed with Pillar" },
             { spellId = 279302, text = "Frostwyrm's Fury: right after Pillar starts" },
             { spellId = 47568,  text = "Empower Rune Weapon: twice per Pillar (~5 a minute)" },
-            { text = "In Pillar: Obliterate on every Killing Machine and rune (top: 9 per Pillar)" },
+            { text = "In Pillar: Obliterate (Frostscythe at 3+) on every Killing Machine and rune (top: 9 per Pillar)" },
         } },
         { title = "Single target", lines = {
             { spellId = 49020,  text = "Obliterate: on Killing Machine, and to spend runes" },
             { spellId = 49184,  text = "Howling Blast: only on Rime (it has range, save it for running)" },
-            { spellId = 49143,  text = "Frost Strike: spend Runic Power, don't cap it" },
+            { spellId = 49143,  text = "Frost Strike at 75+ Runic Power, at 0-1 runes, and in Pillar when nothing else is up" },
         } },
         { title = "AoE (3+)", lines = {
             { spellId = 207230, text = "Frostscythe instead of Obliterate" },

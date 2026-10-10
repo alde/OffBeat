@@ -155,20 +155,21 @@ OffBeat:RegisterProfile({
     -- cooldown on 2, filler on 3, second spender on 4, DoT on 5, big
     -- cooldown on Q, second cooldown on Shift-3, interrupt Shift-E, movement
     -- F, soulstone F5, long / short defensive on ` / Shift-`. G, R and
-    -- Shift-Q get Soul Fire, Havoc / Cataclysm and Rain of Fire. Your curses
+    -- Shift-Q get Soul Fire / Cataclysm, Havoc and Rain of Fire. Your curses
     -- (Shift-1, Shift-2), Shadowfury (Shift-4), Drain Life (Shift-5), potion
     -- (E) and F1/F2 are left alone.
     --
     -- One build for raid and M+, so practice carries over: Hellcaller in
     -- both (Kalamazi 12.1 lists a Hellcaller M+ build). Raid takes Havoc;
     -- M+ takes Mayhem (passive Havoc) and Cataclysm, and spends on Rain of
-    -- Fire at 3+. R is a macro that casts whichever of Havoc and Cataclysm
-    -- the loadout has. Top raid parses (31 heroic, Oct 2026): all Hellcaller,
+    -- Fire at 3+. The raid build takes Soul Fire, the M+ build Cataclysm
+    -- instead (top M+ runs: Cataclysm 48 of 48, Soul Fire 13 of 48), so G is
+    -- a macro that casts whichever the loadout has. Top raid parses (31 heroic, Oct 2026): all Hellcaller,
     -- Shadowburn ~9 a minute, no Cataclysm or Rain of Fire. Top M+ runs (48,
     -- Season 2): all Diabolist, every one casts Cataclysm (~1.2 a minute)
     -- and Rain of Fire (~5). Immolate is placed as the base spell; with
     -- Hellcaller the button shows Wither.
-    -- Infernal, Rain of Fire and Cataclysm (in the R macro) cast at the
+    -- Infernal, Rain of Fire and Cataclysm (in the G macro) cast at the
     -- cursor ([@cursor]): they land where the
     -- mouse points, no targeting circle.
     -- Command Demon is Spell Lock with a Felhunter out, or sacrificed with
@@ -182,9 +183,9 @@ OffBeat:RegisterProfile({
         { slot = 6,  key = "Q",       macro = { name = "OB Infernal", spells = { 1122 }, cursor = true },
           note = "Summon Infernal at your cursor: big cooldown (Tyrant's spot)" },
         { slot = 63, key = "Shift-3", spellId = 442726, note = "Malevolence: on cooldown (Imp Lord's spot)" },
-        { slot = 7,  key = "G",       spellId = 6353,   alt = { 265321 }, note = "Soul Fire: on cooldown, with Backdraft" },
-        { slot = 67, key = "R",       macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 }, cursor = { 152108 } },
-          note = "Havoc in raid (second target), Cataclysm in M+ (every pack)" },
+        { slot = 7,  key = "G",       macro = { name = "OB SoulFire/Cata", spells = { 6353, 152108 }, cursor = { 152108 } },
+          note = "Soul Fire in raid (on cooldown, with Backdraft), Cataclysm in M+ (every pack, at the cursor)" },
+        { slot = 67, key = "R",       spellId = 80240,  note = "Havoc: cleave fights, if you take it over Mayhem" },
         { slot = 66, key = "Shift-Q", macro = { name = "OB Rain", spells = { 5740 }, cursor = true },
           note = "Rain of Fire at your cursor: M+ spender at 3+ targets" },
         { slot = 50, key = "Shift-E", spellId = 119898, note = "Command Demon: Spell Lock (interrupt)" },

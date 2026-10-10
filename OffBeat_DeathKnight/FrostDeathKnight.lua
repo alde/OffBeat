@@ -164,8 +164,8 @@ OffBeat:RegisterProfile({
     },
 
     -- /ob bars: role for role on the warlock's keys (binds are account-wide):
-    -- spender on 1, short cooldown on 2, filler on 3, big cooldown on Q,
-    -- debuff on Shift-1, AoE spender on Shift-2, big summon/channel on
+    -- spender on 1, AoE spender on 2, filler on 3, big cooldown on Q,
+    -- debuff on Shift-1, short cooldown on Shift-2, big summon/channel on
     -- Shift-3, interrupt Shift-E, movement F, combat rez F5, long / short
     -- defensive on ` / Shift-`, Anti-Magic Zone on X. E (potion), F1/F2,
     -- Shift-4, Shift-5, G and R are left alone, as are T (your Death Grip) and
@@ -177,13 +177,13 @@ OffBeat:RegisterProfile({
     -- when the macro's Reaper's Mark hits the global cooldown.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 49143,   note = "Frost Strike: Runic Power spender (Hand of Gul'dan's spot)" },
-        { slot = 2,  key = "2",       spellId = 47568,   note = "Empower Rune Weapon: ~5 a minute, twice per Pillar (Dreadstalkers' spot)" },
+        { slot = 2,  key = "2",       spellId = 194913,  note = "Glacial Advance: AoE Runic Power spender (single target: 1 3 5, AoE: 2 4 5)" },
         { slot = 3,  key = "3",       spellId = 49020,   note = "Obliterate: most pressed, Exterminate shows up here (Shadow Bolt's spot)" },
         { slot = 4,  key = "4",       spellId = 207230,  note = "Frostscythe: Obliterate's 3+ target version, next to it" },
         { slot = 5,  key = "5",       spellId = 49184,   note = "Howling Blast: only on Rime" },
         { slot = 6,  key = "Q",       spellId = 279302,  note = "Frostwyrm's Fury: right after Pillar starts, when it's off cooldown" },
         { slot = 63, key = "Shift-3", spellId = 439843,  note = "Reaper's Mark: again if the macro's one didn't land" },
-        { slot = 62, key = "Shift-2", spellId = 194913,  note = "Glacial Advance: AoE spender (Epidemic's spot)" },
+        { slot = 62, key = "Shift-2", spellId = 47568,   note = "Empower Rune Weapon: ~5 a minute, twice per Pillar" },
         { slot = 50, key = "Shift-E", spellId = 47528,   note = "Mind Freeze: interrupt" },
         { slot = 70, key = "F",       spellId = 48265,   note = "Death's Advance: movement (every top player uses it)" },
         { slot = 25, key = "F5",      spellId = 61999,   note = "Raise Ally: combat rez (soulstone's spot)" },
@@ -225,7 +225,7 @@ OffBeat:RegisterProfile({
         { spellId = 207230,           aoe = 1, note = "Replaces Obliterate at 3+ targets" },
         { spellId = 49143,   st = 1, aoe = 1, note = "RP spender. AoE: on Frostbane" },
         { spellId = 49184,   st = 1, aoe = 1, note = "Only on Rime" },
-        { spellId = 194913,           aoe = 2, note = "At 75+ RP or in Pillar, 3+ targets" },
+        { spellId = 194913,           aoe = 1, note = "At 75+ RP or in Pillar, 3+ targets" },
         { spellId = 47568,   st = 2, aoe = 2, note = "~5 a minute, twice per Pillar" },
         { spellId = 51271,   st = 3, aoe = 3, note = "Main cooldown" },
         { spellId = 439843,  st = 3, aoe = 3, note = "Deathbringer: with every Pillar" },

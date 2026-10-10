@@ -18,7 +18,7 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Key Layout**: a settings page that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
-**Rotation sheet** (Destruction Warlock, Frost DK): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
+**Rotation sheet** (Affliction and Destruction Warlock, Frost DK): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
 
 **Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
 
@@ -36,7 +36,7 @@ A profile can use any combination.
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
-| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout, pet warnings; Training (Demonology, Destruction) |
+| OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout, pet warnings; Training (Affliction, Demonology, Destruction) |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
 | OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns |
 
@@ -138,7 +138,7 @@ rotationSheet = {
 
 A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only in that kind of instance (outside instances every section shows). Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs.
 
-`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Destruction Warlock and Frost Death Knight.
+`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock and Frost Death Knight.
 
 ## Key Layout
 

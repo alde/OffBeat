@@ -43,6 +43,7 @@ Rotation.lua
 Windows.lua
 Pet.lua
 Moving.lua
+Prep.lua
 BarLayout.lua
 Sheet.lua
 Gear.lua

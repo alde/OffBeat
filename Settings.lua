@@ -587,6 +587,21 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.sheetHideInCombat = v; refresh() end); y = y - h
     end
 
+    -- Cooldown prep countdown
+    if profile.prep then
+        _, h = W:SectionHeader(parent, "COUNTDOWN — " .. string.upper(profile.prep.name or "COOLDOWN"), y); y = y - h
+        _, h = W:Toggle(parent, "Show What to Hold Before It's Ready", y,
+            function()
+                local v = ss.prepEnabled
+                if v == nil then return db.prepEnabled end
+                return v
+            end,
+            function(v) ss.prepEnabled = v end); y = y - h
+        _, h = W:Slider(parent, "Seconds Before", y, 3, 10, 1,
+            function() return ss.prepLead or db.prepLead or profile.prep.lead or 5 end,
+            function(v) ss.prepLead = v end); y = y - h
+    end
+
     -- Moving nudge
     if profile.movingCasts then
         local names = {}

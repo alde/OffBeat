@@ -96,6 +96,8 @@ function OffBeat:GetDefaults()
             movingNudgeDelay = 1.5,
             movingNudgeSound = "map_ping",
             movingNudgeSoundCustomId = "",
+            prepEnabled = true,          -- countdown to the main cooldown with what to hold (profiles with prep)
+            prepLead = nil,              -- seconds before; nil = the profile's lead
             showSheet = true,            -- rotation cheat sheet (profiles with rotationSheet)
             sheetHideInCombat = false,
             sheetPosition = nil,

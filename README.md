@@ -31,7 +31,7 @@ A profile can use any combination.
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
-| OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar and 60+ Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
+| OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar and 60+ Runic Power), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
 | OffBeat_DeathKnight | Unholy Death Knight | Rotation (Dark Transformation, Sudden Doom), Key Layout |
 | OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
@@ -205,6 +205,25 @@ Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when
 ### While moving
 
 A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on the Spec page.
+
+### Countdown
+
+A profile with `prep` gets a small panel in combat that counts down to its main cooldown and shows what you should be holding when it comes up, green when you have it, red when you don't (? when the game won't say):
+
+```lua
+prep = {
+    spellId = 51271, name = "Pillar", cooldown = 45, lead = 5,
+    hint = "Hold runes: Frost Strike, Obliterate only on Killing Machine",
+    checks = {
+        { name = "Runes", power = "Runes", min = 3 },
+        -- only shown when this cooldown comes up with it (Breath turns)
+        { name = "Runic Power", power = "RunicPower", min = 60,
+          with = { spellId = 1249658, name = "Breath", cooldown = 90 } },
+    },
+}
+```
+
+It shows from `lead` seconds before the spell is ready until you cast it. Time left comes from the cooldown when the game reveals it, otherwise from your last cast plus `cooldown`. On/off and the number of seconds are on the Spec page; unlock frames to move it. Filled in for Frost Death Knight (Pillar of Frost).
 
 ## Gear
 

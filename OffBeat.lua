@@ -29,6 +29,7 @@ local FEATURE_MODULES = {
     benchmarks     = { "Windows" },
     pet            = { "Pet" },
     movingCasts    = { "Moving" },
+    prep           = { "Prep" },
     rotationSheet  = { "Sheet" },
 }
 

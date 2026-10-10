@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep",
 }
 
 
@@ -71,6 +71,11 @@ function OffBeat:ValidateProfile(profile)
 
     if profile.windows then
         local ok, err = self:ValidateWindows(profile.windows)
+        if not ok then return false, err end
+    end
+
+    if profile.prep then
+        local ok, err = self:ValidatePrep(profile.prep)
         if not ok then return false, err end
     end
 
@@ -323,6 +328,22 @@ function OffBeat:ValidateWindows(windows)
             if type(s.name) ~= "string" then return false, sw .. ".name must be a string" end
             local ok, err = ValidateWhen(s.when, sw .. ".when")
             if not ok then return false, err end
+        end
+    end
+    return true
+end
+
+function OffBeat:ValidatePrep(prep)
+    if type(prep) ~= "table" then return false, "prep must be a table" end
+    if type(prep.spellId) ~= "number" then return false, "prep.spellId must be a spell ID" end
+    if prep.cooldown ~= nil and type(prep.cooldown) ~= "number" then return false, "prep.cooldown must be a number" end
+    if prep.lead ~= nil and type(prep.lead) ~= "number" then return false, "prep.lead must be a number" end
+    for i, c in ipairs(prep.checks or {}) do
+        local where = "prep.checks[" .. i .. "]"
+        if type(c.power) ~= "string" then return false, where .. ".power must be a power type name" end
+        if type(c.min) ~= "number" then return false, where .. ".min must be a number" end
+        if c.with ~= nil and (type(c.with) ~= "table" or type(c.with.spellId) ~= "number") then
+            return false, where .. ".with must be { spellId = ... }"
         end
     end
     return true

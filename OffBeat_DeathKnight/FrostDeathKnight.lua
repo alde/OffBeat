@@ -83,6 +83,23 @@ OffBeat:RegisterProfile({
         duration = 12,
     },
 
+    -- Countdown to Pillar (Method 12.1): pool 3-4 runes before Pillar, and
+    -- start Breath with 60+ Runic Power. On Nek'zali (normal, Oct 10) 3 of 7
+    -- Pillars went out on 2 runes, each after an Obliterate in the last 2s,
+    -- and 3 went out 7-13s late. Runes come back by themselves, so holding
+    -- them is just not spending: Frost Strike instead of Obliterate.
+    -- Breath's cooldown is only used when the game hides it: 90s, from your
+    -- log (Breaths 91s+ apart, top players Breath every other Pillar).
+    prep = {
+        spellId = 51271, name = "Pillar", cooldown = 45, lead = 5,
+        hint = "Hold runes: Frost Strike, Obliterate only on Killing Machine",
+        checks = {
+            { name = "Runes", power = "Runes", min = 3 },
+            { name = "Runic Power", power = "RunicPower", min = 60,
+              with = { spellId = 1249658, name = "Breath", cooldown = 90 } },
+        },
+    },
+
     idleCooldowns = {
         { spellId = 51271,  name = "Pillar of Frost" },
         { spellId = 47568,  name = "Empower Rune Weapon" },

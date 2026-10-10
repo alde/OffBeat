@@ -53,6 +53,9 @@ OffBeat:RegisterProfile({
         },
     },
 
+    -- Dark Harvest (1 min) isn't held for Darkglare (2 min): top players cast
+    -- it on cooldown, 1.1 a minute; 72% of their casts fall outside
+    -- Darkglare, and 56% of Darkglares get one.
     -- Coaching: shards go out during Darkglare. Top players' median per
     -- 20s Darkglare: 7-10 Unstable Affliction + Seed of Corruption (Seed on
     -- the multi-target bosses, Unstable Affliction on single target).
@@ -62,7 +65,7 @@ OffBeat:RegisterProfile({
             trigger = 205180,
             duration = 20,
             note = "Pool shards before it, then spend them all: Unstable Affliction on 1-2 "
-                .. "targets, Seed of Corruption on 3+. Dark Harvest with it. Top players' median: 8.",
+                .. "targets, Seed of Corruption on 3+. Dark Harvest with it when it's up. Top players' median: 8.",
             goals = {
                 { name = "Unstable Affliction + Seed", spells = { 1259790, 316099, 27243 }, min = 8 },
             },
@@ -130,7 +133,7 @@ OffBeat:RegisterProfile({
           note = "Seed of Corruption: shard spender on 3+, waits for Malefic Grasp too (Implosion's spot)" },
         { slot = 5,  key = "5",       spellId = 980,     note = "Agony: never let it drop, your only shard source (Demonbolt's spot)" },
         { slot = 6,  key = "Q",       spellId = 205180,  note = "Summon Darkglare: big cooldown (Tyrant's spot)" },
-        { slot = 63, key = "Shift-3", spellId = 1257052, note = "Dark Harvest: with Darkglare (Imp Lord's spot)" },
+        { slot = 63, key = "Shift-3", spellId = 1257052, note = "Dark Harvest: on cooldown, every other one with Darkglare (Imp Lord's spot)" },
         { slot = 7,  key = "G",       spellId = 172,     note = "Corruption: keep it up (Seed spreads it on packs)" },
         { slot = 50, key = "Shift-E", spellId = 119898,  note = "Command Demon: Spell Lock (interrupt)" },
         { slot = 70, key = "F",       spellId = 111400,  note = "Burning Rush: movement" },
@@ -151,7 +154,7 @@ OffBeat:RegisterProfile({
             { spellId = 172,     text = "Corruption: keep it up" },
             { spellId = 48181,   text = "Haunt: on cooldown" },
             { spellId = 205180,  text = "Summon Darkglare: pool shards, then spend them all in it (top players: 8)" },
-            { spellId = 1257052, text = "Dark Harvest: with Darkglare" },
+            { spellId = 1257052, text = "Dark Harvest: on cooldown (every other one lands with Darkglare); spend down to 2 shards first" },
             { spellId = 442726,  text = "Malevolence: on cooldown" },
             { spellId = 1259790, alt = { 316099 }, text = "Unstable Affliction: spend shards, never sit at 5; free on Shard Instability" },
             { spellId = 198590,  alt = { 686 }, text = "Drain Soul / Shadow Bolt: filler, becomes Malefic Grasp (cast that whenever it shows). Drain Soul is a channel: on the move, cast the instants" },

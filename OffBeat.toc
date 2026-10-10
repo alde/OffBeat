@@ -44,6 +44,7 @@ Windows.lua
 Pet.lua
 Moving.lua
 Prep.lua
+FailNudge.lua
 BarLayout.lua
 Sheet.lua
 Gear.lua

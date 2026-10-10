@@ -47,6 +47,7 @@ function RotationDisplay:OnEnable()
     self:RegisterMessage("OFFBEAT_MISTAKE", "OnMistake")
     self:RegisterMessage("OFFBEAT_PROC_EXPIRED", "OnProcExpired")
     self:RegisterMessage("OFFBEAT_MOVING_INSTANT", "OnMovingInstant")
+    self:RegisterMessage("OFFBEAT_FAIL_NUDGE", "OnFailNudge")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "OnLockChanged")
     self:RegisterEvent("PLAYER_ENTERING_WORLD")
     self:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -593,6 +594,10 @@ function RotationDisplay:OnMovingInstant(_, spellId, name)
         name = info and info.name or "?"
     end
     self:ShowWarning("Moving: " .. name .. " is instant", "info", 1.5)
+end
+
+function RotationDisplay:OnFailNudge(_, text)
+    self:ShowWarning(text, "warning", 1.5)
 end
 
 function RotationDisplay:OnProcExpired(_, spellId, procName)

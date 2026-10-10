@@ -106,6 +106,7 @@ function Windows:OnEnable()
     self:RegisterMessage("OFFBEAT_PET_LOST", "OnPetLost")
     self:RegisterMessage("OFFBEAT_PET_BACK", "OnPetBack")
     self:RegisterMessage("OFFBEAT_MISTAKE", "OnMistake")
+    self:RegisterMessage("OFFBEAT_FAIL_STRETCH", "OnMistake") -- counted like a mistake, no red flash
     self:ApplyLock()
 end
 

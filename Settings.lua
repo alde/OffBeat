@@ -587,6 +587,18 @@ pageBuilders.specConfig = function(parent, y)
             function(v) ss.sheetHideInCombat = v; refresh() end); y = y - h
     end
 
+    -- Failed press hints
+    if profile.failNudges then
+        _, h = W:SectionHeader(parent, "FAILED PRESSES", y); y = y - h
+        _, h = W:Toggle(parent, "Say What to Press Instead", y,
+            function()
+                local v = ss.failNudge
+                if v == nil then return db.failNudge end
+                return v
+            end,
+            function(v) ss.failNudge = v end); y = y - h
+    end
+
     -- Cooldown prep countdown
     if profile.prep then
         _, h = W:SectionHeader(parent, "COUNTDOWN — " .. string.upper(profile.prep.name or "COOLDOWN"), y); y = y - h

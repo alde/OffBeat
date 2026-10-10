@@ -206,6 +206,21 @@ Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when
 
 A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on the Spec page.
 
+### Failed presses
+
+A profile with `failNudges` says what to press instead when a press fails, e.g. Obliterate with no runes:
+
+```lua
+failNudges = {
+    { error = "runes", spells = { 49020, 207230 }, name = "Obliterate with no runes",
+      text = "No runes: Howling Blast on Rime, else Frost Strike" },
+    { error = "range", spells = { 49020, 49143 }, name = "Melee out of range",
+      text = "Out of range: Howling Blast on Rime, Glacial Advance" },
+}
+```
+
+`error` is `"runes"` (Not enough runes) or `"range"` (Out of range). The hint flashes in the text warning frame at most every few seconds while you keep pressing, and each stretch of failed presses counts once (as `name`) in the training report. It reads the game's own error message, so it works while combat information is hidden. On/off is on the Spec page.
+
 ### Countdown
 
 A profile with `prep` gets a small panel in combat that counts down to its main cooldown and shows what you should be holding when it comes up, green when you have it, red when you don't (? when the game won't say):

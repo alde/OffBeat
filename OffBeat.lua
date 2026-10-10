@@ -30,6 +30,7 @@ local FEATURE_MODULES = {
     pet            = { "Pet" },
     movingCasts    = { "Moving" },
     prep           = { "Prep" },
+    failNudges     = { "FailNudge" },
     rotationSheet  = { "Sheet" },
 }
 

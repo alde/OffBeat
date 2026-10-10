@@ -96,6 +96,7 @@ function OffBeat:GetDefaults()
             movingNudgeDelay = 1.5,
             movingNudgeSound = "map_ping",
             movingNudgeSoundCustomId = "",
+            failNudge = true,            -- "No runes: ..." when a press fails (profiles with failNudges)
             prepEnabled = true,          -- countdown to the main cooldown with what to hold (profiles with prep)
             prepLead = nil,              -- seconds before; nil = the profile's lead
             showSheet = true,            -- rotation cheat sheet (profiles with rotationSheet)

@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges",
 }
 
 
@@ -72,6 +72,16 @@ function OffBeat:ValidateProfile(profile)
     if profile.windows then
         local ok, err = self:ValidateWindows(profile.windows)
         if not ok then return false, err end
+    end
+
+    if profile.failNudges then
+        if type(profile.failNudges) ~= "table" then return false, "failNudges must be a list" end
+        for i, n in ipairs(profile.failNudges) do
+            local where = "failNudges[" .. i .. "]"
+            if n.error ~= "runes" and n.error ~= "range" then return false, where .. ".error must be \"runes\" or \"range\"" end
+            if type(n.spells) ~= "table" or #n.spells == 0 then return false, where .. ".spells must be a non-empty list" end
+            if type(n.text) ~= "string" then return false, where .. ".text must be a string" end
+        end
     end
 
     if profile.prep then

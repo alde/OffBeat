@@ -73,6 +73,18 @@ OffBeat:RegisterProfile({
         duration = 12,
     },
 
+    -- What to press when a press fails. Every overwritten Rime in your
+    -- normal raid (Oct 10: 22, 12, 14, 26 per boss) happened while you
+    -- pressed Obliterate with no runes (79-194 failed presses a fight), and
+    -- on The Lost Explorers 193 Obliterates and 92 Frost Strikes failed out
+    -- of range. Howling Blast (on Rime) and Glacial Advance both have range.
+    failNudges = {
+        { error = "runes", spells = { 49020, 207230 }, name = "Obliterate with no runes",
+          text = "No runes: Howling Blast on Rime, else Frost Strike" },
+        { error = "range", spells = { 49020, 207230, 49143, 439843 }, name = "Melee out of range",
+          text = "Out of range: Howling Blast on Rime, Glacial Advance" },
+    },
+
     -- Countdown to Pillar (Method 12.1): pool 3-4 runes before Pillar, and
     -- start Breath with 60+ Runic Power. On Nek'zali (normal, Oct 10) 3 of 7
     -- Pillars went out on 2 runes, each after an Obliterate in the last 2s,

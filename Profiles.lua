@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges", "tracker",
 }
 
 
@@ -84,6 +84,21 @@ function OffBeat:ValidateProfile(profile)
         end
     end
 
+    if profile.tracker ~= nil then
+        local t = profile.tracker
+        if type(t) ~= "table" then return false, "tracker must be a table" end
+        if t.power ~= nil then
+            if type(t.power) ~= "table" or type(t.power.type) ~= "string" or type(t.power.max) ~= "number" then
+                return false, "tracker.power needs a type (power name) and max"
+            end
+        end
+        for i, d in ipairs(t.dots or {}) do
+            if type(d) ~= "table" or type(d.spellId) ~= "number" or type(d.duration) ~= "number" then
+                return false, "tracker.dots[" .. i .. "] needs a spellId and duration"
+            end
+        end
+    end
+
     if profile.prep then
         local ok, err = self:ValidatePrep(profile.prep)
         if not ok then return false, err end
@@ -123,7 +138,7 @@ function OffBeat:ValidateProfile(profile)
                 if m.cursor ~= nil and m.cursor ~= true and type(m.cursor) ~= "table" then
                     return false, where .. ".macro.cursor must be true or a list of spell IDs"
                 end
-                local minSpells = m.cursor == true and 1 or 2
+                local minSpells = (m.cursor == true or m.notWhileChanneling) and 1 or 2
                 if type(m.spells) ~= "table" or #m.spells < minSpells then
                     return false, where .. ".macro needs at least " .. minSpells .. " spell(s)"
                 end

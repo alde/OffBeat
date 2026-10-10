@@ -31,6 +31,7 @@ local FEATURE_MODULES = {
     movingCasts    = { "Moving" },
     prep           = { "Prep" },
     failNudges     = { "FailNudge" },
+    tracker        = { "Tracker" },
     rotationSheet  = { "Sheet" },
 }
 

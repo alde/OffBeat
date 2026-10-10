@@ -45,6 +45,7 @@ Pet.lua
 Moving.lua
 Prep.lua
 FailNudge.lua
+Tracker.lua
 BarLayout.lua
 Sheet.lua
 Gear.lua

@@ -183,8 +183,10 @@ OffBeat:RegisterProfile({
         dots = { { spellId = 980, name = "Agony", duration = 18, pandemic = 5.4 } },
     },
 
-    -- Kalamazi 12.1: Intellect > Haste > Crit > Vers > Mastery
-    statPriority = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
+    -- No statPriority here: the guides disagree (Method 12.1: Crit > Haste =
+    -- Mastery > Vers single target, Haste = Crit > Mastery > Vers AoE; Icy
+    -- Veins: Haste > Crit > Mastery > Vers; Kalamazi: Haste > Crit > Vers >
+    -- Mastery) and all call them close, so Statisfaction's own table shows.
 
     keyCooldown = {
         spellId = 205180,

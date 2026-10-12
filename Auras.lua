@@ -98,38 +98,38 @@ function Auras:ScanPlayer()
     if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
         for _, info in ipairs(profile.trackedAuras) do
             local trackedId = info.spellId
-            local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, trackedId)
-            if ok and aura and not IsSecret(aura) then
-                found[trackedId] = ExtractAuraRecord(aura, info)
+            -- alt: other IDs the same aura can have (Ebon Might: 395296 on
+            -- the caster, 395152 on allies)
+            local ids = { trackedId }
+            for _, a in ipairs(info.alt or {}) do ids[#ids + 1] = a end
+            for _, id in ipairs(ids) do
+                local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
+                if ok and aura and not IsSecret(aura) then
+                    found[trackedId] = ExtractAuraRecord(aura, info)
+                    break
+                end
             end
         end
     end
 
-    -- 2. Fallback scan using GetUnitAuraInstanceIDs for any tracked auras not found above
-    -- (e.g. if an aura is applied by a different sub-spell ID or matched by name).
-    -- We skip this if C_Secrets flags that secret auras are active, and guard the call with pcall.
-    local shouldSkip = false
-    if C_Secrets and C_Secrets.ShouldAurasBeSecret then
-        local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
-        if ok and secret then
-            shouldSkip = true
-        end
+    -- 2. Walk your auras one by one, even when the game says auras are
+    -- secret: your own buffs and procs mostly stay readable in combat, and
+    -- the by-ID lookup above returns nothing there. Hidden auras are skipped
+    -- one at a time. `readable` says whether the game let us walk them.
+    local readable = false
+    for _, filter in ipairs(self.auraFilters) do
+        if self:ScanPlayerFilter(found, filter) then readable = true end
     end
-
-    if not shouldSkip then
-        for _, filter in ipairs(self.auraFilters) do
-            self:ScanPlayerFilter(found, filter)
-        end
-    end
+    self.readable = readable
 
     return found
 end
 
 function Auras:ScanPlayerFilter(found, filter)
-    if not C_UnitAuras or not C_UnitAuras.GetUnitAuraInstanceIDs then return end
+    if not C_UnitAuras or not C_UnitAuras.GetUnitAuraInstanceIDs then return false end
 
     local ok, ids = pcall(C_UnitAuras.GetUnitAuraInstanceIDs, "player", filter)
-    if not ok or not ids or IsSecret(ids) then return end
+    if not ok or not ids or IsSecret(ids) then return false end
 
     for _, instanceId in ipairs(ids) do
         if not IsSecret(instanceId) then
@@ -153,6 +153,7 @@ function Auras:ScanPlayerFilter(found, filter)
             end
         end
     end
+    return true
 end
 
 
@@ -161,6 +162,8 @@ function Auras:UNIT_AURA(_, unit)
 
     local previous = OffBeat.state.auras or {}
     local current = self:ScanPlayer()
+    -- the game refused the walk: keep what we had rather than "lose" it
+    if not self.readable and next(previous) and not next(current) then return end
 
     for spellId, aura in pairs(current) do
         if not previous[spellId] then

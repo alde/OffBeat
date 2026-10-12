@@ -32,7 +32,9 @@ function Warnings:BuildLookups()
                 trackedCastNames[name] = rule
             end
         end
-        if rule.requireBuff then
+        if type(rule.requireBuff) == "table" then
+            for _, id in ipairs(rule.requireBuff) do requiredBuffIds[id] = true end
+        elseif rule.requireBuff then
             requiredBuffIds[rule.requireBuff] = true
         end
     end
@@ -48,25 +50,68 @@ function Warnings:OnCastStart(_, unit, _, spellId)
     local rule = trackedCastNames[name]
     if not rule then return end
 
-    local buff = self:GetRequiredBuff(rule.requireBuff)
-    if not buff then
+    -- true = up, false = not up, nil = the game won't say (no warning)
+    local up, buff = self:GetRequiredBuff(rule.requireBuff)
+    if up == false then
         self:Fire(string.format("%s cast — no %s", name, rule.buffName or "required buff"))
         return
     end
+    if not up or not buff then return end
 
+    -- only when the real timer is readable, not a guess
     local castTime = self:GetCastTime()
     local remaining = buff.expirationTime - GetTime()
-    if castTime > remaining then
+    if castTime > 0 and castTime > remaining then
         self:Fire(string.format("%s (%.1fs) > %s (%.1fs)",
             name, castTime, rule.buffName or "buff", remaining))
     end
 end
 
-function Warnings:GetRequiredBuff(spellId)
-    if not spellId then return nil end
+local function IsSecret(v)
+    if v == nil or not _G.issecretvalue then return false end
+    local ok, s = pcall(_G.issecretvalue, v)
+    return ok and s
+end
+
+--- Is the buff up on you right now? Asks the game at cast time (any of
+--- the IDs, e.g. Ebon Might 395296 / 395152), falling back to the buff
+--- panel's state. Returns true/false, or nil when auras are hidden and
+--- nothing says it's up, plus a record with a readable expirationTime.
+function Warnings:GetRequiredBuff(ids)
+    if not ids then return nil end
+    if type(ids) ~= "table" then ids = { ids } end
+    local C = OffBeat.Conditions
+    -- 1. The game says it's up (out of combat, or when it shows it)
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        for _, id in ipairs(ids) do
+            local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, id)
+            if ok and aura ~= nil then
+                if IsSecret(aura) then return true, nil end
+                local okE, e = pcall(tonumber, aura.expirationTime)
+                local okD, d = pcall(tonumber, aura.duration)
+                if okE and okD and e and d and not IsSecret(e) and not IsSecret(d) and d > 0 then
+                    return true, { expirationTime = e }
+                end
+                return true, nil
+            end
+        end
+    end
     local guid = UnitGUID("player")
     local spells = guid and OffBeat.state.buffs[guid]
-    return spells and spells[spellId]
+    if spells then
+        for _, id in ipairs(ids) do
+            local rec = spells[id]
+            if rec and not rec.modeled then return true, (not rec.hiddenTimer) and rec or nil end
+        end
+    end
+    -- 2. Since 12.1 the game hides auras in combat: go by your casts
+    for _, id in ipairs(ids) do
+        local up = C.CastAuraUp(id)
+        if up ~= nil then return up, nil end
+    end
+    -- 3. No model: only trust "not up" when the game isn't hiding auras
+    if C.AurasHidden() then return nil end
+    return false
 end
 
 function Warnings:GetCastTime()

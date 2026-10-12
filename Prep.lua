@@ -14,6 +14,9 @@ local Prep = OffBeat:NewModule("Prep", "AceEvent-3.0")
 --             with = { spellId = 1249658, name = "Breath", cooldown = 90 },
 --             -- the macro casts Reaper's Mark (+20) before Breath
 --             credit = { spellId = 439843, amount = 20, cooldown = 45 } },
+--           -- a spell that should be off cooldown too: green when it will be
+--           -- ready in time, red with how late it will be
+--           { name = "Fire Breath", ready = 357208, cooldown = 30 },
 --       },
 --   }
 --
@@ -169,7 +172,20 @@ function Prep:Build(prep, lead)
             local wl = self:Remaining(c.with.spellId, c.with.cooldown)
             applies = wl ~= nil and wl <= left + 1
         end
-        if applies then
+        if applies and c.ready then
+            -- a spell to have off cooldown when the main one comes up
+            -- (Augmentation: Fire Breath and Upheaval for Breath of Eons);
+            -- left out when you don't know it
+            local rl = self:Remaining(c.ready, c.cooldown)
+            if rl ~= nil then
+                local label = c.name or tostring(c.ready)
+                if rl <= left + 0.5 then
+                    parts[#parts + 1] = GREEN .. label .. "|r"
+                else
+                    parts[#parts + 1] = RED .. label .. " " .. string.format("%d", math.ceil(rl - left)) .. "s late|r"
+                end
+            end
+        elseif applies then
             local v = Power(c.power)
             local label = (c.with and c.with.name and (c.with.name .. ": ") or "") .. (c.name or c.power)
             -- a spell the same press casts first adds to it (Reaper's Mark

@@ -323,6 +323,18 @@ function OffBeat:OnSlashCommand(input)
     elseif cmd == "reset" then
         self:ResetEncounterData()
         self:Print("Encounter data reset.")
+    elseif cmd == "auradebug" then
+        -- what each way of reading your auras sees right now
+        local C = OffBeat.Conditions
+        local okS, secret = pcall(function() return C_Secrets and C_Secrets.ShouldAurasBeSecret() end)
+        self:Print("auras hidden:", tostring(okS and secret), "inCombat:", tostring(UnitAffectingCombat("player")))
+        for _, a in ipairs((self.activeProfile and self.activeProfile.castAuras) or {}) do
+            local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, a.aura)
+            local kind = not ok and "error" or aura == nil and "nil" or (issecretvalue and issecretvalue(aura) and "secret" or "found")
+            local up, untilT = C.CastAuraUp(a.aura)
+            self:Print(C_Spell.GetSpellName(a.aura) or a.aura, "by ID:", kind, "| from casts:",
+                tostring(up), untilT and string.format("%.1fs left", untilT - GetTime()) or "")
+        end
     elseif cmd == "debug" then
         self.db.profile.debug = not self.db.profile.debug
         self:Print("Debug " .. (self.db.profile.debug and "enabled" or "disabled") .. ".")

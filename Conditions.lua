@@ -51,15 +51,69 @@ end
 
 -- Your own successful casts (Rotation feeds this), for `recent`.
 local lastCast = {}
+local NoteModels
 function C.NoteCast(spellId)
     if spellId == nil or IsSecret(spellId) then return end
     lastCast[spellId] = GetTime()
+    if NoteModels then NoteModels(spellId, GetTime()) end
 end
 
+-- Since 12.1 the game hides aura data in combat (C_Secrets.ShouldAurasBeSecret),
+-- for your own buffs too. Treat that, or a walk the game refused, as hidden.
 local function AurasHidden()
-    if not (C_Secrets and C_Secrets.ShouldAurasBeSecret) then return false end
-    local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
-    return ok and secret and true or false
+    if C_Secrets and C_Secrets.ShouldAurasBeSecret then
+        local ok, secret = pcall(C_Secrets.ShouldAurasBeSecret)
+        if not ok or secret then return true end
+    end
+    local auras = OffBeat:GetModule("Auras", true)
+    return not auras or auras.readable == false
+end
+C.AurasHidden = AurasHidden
+
+-- Buffs worked out from your own casts, for when auras are hidden
+-- (profile.castAuras). Your casts are always readable. Each model:
+--   { aura = 395296, cast = 395152, duration = 14, max = 18, grace = 4,
+--     extend = { { spell = 395160, by = 1.4 }, ... } }
+-- Casting `cast` puts the buff up for `duration` (a recast while it's up
+-- adds to what's left, up to `max`); while it's up each `extend` spell adds
+-- `by` seconds. `grace` is how far past the estimate it still counts as up,
+-- so a rough estimate misses a mistake rather than invents one.
+local models = {}      -- aura id -> model
+local modelUntil = {}  -- aura id -> GetTime() the estimate runs out
+
+function C.SetCastAuras(list)
+    wipe(models); wipe(modelUntil)
+    for _, m in ipairs(list or {}) do
+        if type(m.aura) == "number" and type(m.cast) == "number" and type(m.duration) == "number" then
+            models[m.aura] = m
+        end
+    end
+end
+
+NoteModels = function(spellId, now)
+    for aura, m in pairs(models) do
+        local untilT = modelUntil[aura]
+        local up = untilT and untilT > now
+        if spellId == m.cast then
+            local base = up and (untilT + m.duration) or (now + m.duration)
+            modelUntil[aura] = math.min(base, now + (m.max or m.duration))
+        elseif up then
+            for _, e in ipairs(m.extend or {}) do
+                if e.spell == spellId then modelUntil[aura] = untilT + (e.by or 0) end
+            end
+        end
+    end
+end
+
+--- For an aura with a cast model: true when your casts say it's (probably)
+--- up, false when they say it's down, nil when there's no model.
+--- Second value: the estimated time it runs out (GetTime() based).
+function C.CastAuraUp(aura)
+    local m = models[aura]
+    if not m then return nil end
+    local untilT = modelUntil[aura]
+    if not untilT then return false end
+    return GetTime() <= untilT + (m.grace or 0), untilT
 end
 
 -- Each check returns true, false, or nil when the answer can't be known.
@@ -67,8 +121,15 @@ local CHECKS = {
     aura = function(c)
         local auras = OffBeat:GetModule("Auras", true)
         if not auras then return nil end
-        if AurasHidden() and (c.absent or not auras:IsActive(c.aura)) then return nil end
         local active = auras:IsActive(c.aura)
+        -- a cast model (Ebon Might) answers when the aura can't be seen
+        local modelUp = C.CastAuraUp(c.aura)
+        if modelUp ~= nil and not active then
+            if c.minStacks or c.maxStacks then return nil end
+            if c.absent then return not modelUp end
+            return modelUp
+        end
+        if AurasHidden() and (c.absent or not active) then return nil end
         if c.absent then return not active end
         if not active then return false end
         if c.minStacks or c.maxStacks then

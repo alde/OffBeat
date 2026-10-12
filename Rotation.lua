@@ -200,6 +200,7 @@ function Rotation:BuildLookups()
     if not profile then activeSpecId = nil; return end
 
     activeSpecId = profile.meta.specId
+    OffBeat.Conditions.SetCastAuras(profile.castAuras)
     local ss = GetSpecSettings()
     local disabledIdle = ss and ss.disabledIdleCooldowns
 

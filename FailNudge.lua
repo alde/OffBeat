@@ -24,6 +24,8 @@ local BURST = 2.0     -- a gap this long starts a new stretch
 local ERRORS = {
     runes = { "ERR_OUT_OF_RUNES", "SPELL_FAILED_NO_POWER_RUNES", text = { "Not enough runes" } },
     range = { "SPELL_FAILED_OUT_OF_RANGE", "ERR_OUT_OF_RANGE", text = { "Out of range" } },
+    essence = { "ERR_OUT_OF_ESSENCE", "SPELL_FAILED_NO_POWER_ESSENCE", text = { "Not enough essence" } },
+    moving = { "SPELL_FAILED_MOVING", "ERR_CANT_DO_THAT_WHILE_MOVING", text = { "Can't do that while moving" } },
 }
 
 local bySpellKind = {}   -- kind -> spellId -> nudge

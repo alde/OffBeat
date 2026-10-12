@@ -55,7 +55,7 @@ function BuffDisplay:GetFrame()
     OffBeat:SetClickThrough(f) -- ignores the mouse while locked
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", function(self)
-        if not OffBeat.db.profile.locked then self:StartMoving() end
+        if OffBeat:CanDrag() then self:StartMoving() end
     end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -227,7 +227,11 @@ function BuffDisplay:GetMissingBuffAlerts()
     local buffState = OffBeat.state.buffs
 
     for _, alert in ipairs(profile.alerts) do
-        if alert.type == "missing_buff" then
+        -- only for buffs you can cast (Blistering Scales is a talent most
+        -- raid Augmentations skip)
+        local okKnown, known = pcall(IsPlayerSpell, alert.spellId)
+        local skip = okKnown and known == false
+        if alert.type == "missing_buff" and not skip then
             local found = false
             for _, spells in pairs(buffState) do
                 if spells[alert.spellId] then found = true; break end

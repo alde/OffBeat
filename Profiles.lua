@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges",
+    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges", "castAuras",
 }
 
 
@@ -78,7 +78,9 @@ function OffBeat:ValidateProfile(profile)
         if type(profile.failNudges) ~= "table" then return false, "failNudges must be a list" end
         for i, n in ipairs(profile.failNudges) do
             local where = "failNudges[" .. i .. "]"
-            if n.error ~= "runes" and n.error ~= "range" then return false, where .. ".error must be \"runes\" or \"range\"" end
+            if n.error ~= "runes" and n.error ~= "range" and n.error ~= "essence" and n.error ~= "moving" then
+                return false, where .. ".error must be \"runes\", \"range\", \"essence\" or \"moving\""
+            end
             if type(n.spells) ~= "table" or #n.spells == 0 then return false, where .. ".spells must be a non-empty list" end
             if type(n.text) ~= "string" then return false, where .. ".text must be a string" end
         end
@@ -350,8 +352,12 @@ function OffBeat:ValidatePrep(prep)
     if prep.lead ~= nil and type(prep.lead) ~= "number" then return false, "prep.lead must be a number" end
     for i, c in ipairs(prep.checks or {}) do
         local where = "prep.checks[" .. i .. "]"
-        if type(c.power) ~= "string" then return false, where .. ".power must be a power type name" end
-        if type(c.min) ~= "number" then return false, where .. ".min must be a number" end
+        if c.ready ~= nil then
+            if type(c.ready) ~= "number" then return false, where .. ".ready must be a spell ID" end
+        else
+            if type(c.power) ~= "string" then return false, where .. ".power must be a power type name" end
+            if type(c.min) ~= "number" then return false, where .. ".min must be a number" end
+        end
         if c.with ~= nil and (type(c.with) ~= "table" or type(c.with.spellId) ~= "number") then
             return false, where .. ".with must be { spellId = ... }"
         end

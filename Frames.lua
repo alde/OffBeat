@@ -34,17 +34,49 @@ end
 ---@param defaults table { width, height, backdrop, backdropColor, borderColor, strata, defaultPoint, defaultRelPoint, defaultX, defaultY }
 -- Click-through: while OffBeat is locked, panels ignore the mouse so clicks
 -- and camera drags go to the world. Their own buttons (close, < >) still
--- work since those are separate frames. Unlock to drag a panel again.
+-- work since those are separate frames. Unlock to drag a panel again, or
+-- hold Shift (out of combat) and drag it while locked: the panels take the
+-- mouse only while Shift is down. Not in combat, where Shift is held for
+-- Shift-1..5 binds and a camera drag over a panel would grab it.
 local clickThrough = {}
+
+local function ShiftMove()
+    return IsShiftKeyDown() and not InCombatLockdown()
+end
+
+--- May a panel be dragged right now? (unlocked, or Shift held out of combat)
+function OffBeat:CanDrag()
+    return not self.db.profile.locked or ShiftMove()
+end
 
 function OffBeat:SetClickThrough(frame)
     clickThrough[#clickThrough + 1] = frame
-    frame:EnableMouse(not self.db.profile.locked)
+    frame:EnableMouse(self:CanDrag())
+    -- a panel held with the mouse keeps the mouse until it's let go, even if
+    -- Shift is released first (else it would never get the mouse-up)
+    frame:HookScript("OnMouseDown", function(f) f.obHeld = true end)
+    frame:HookScript("OnMouseUp", function(f)
+        f.obHeld = nil
+        if not OffBeat:CanDrag() then f:EnableMouse(false) end
+    end)
 end
 
 function OffBeat:ApplyClickThrough()
-    local locked = self.db.profile.locked
-    for _, f in ipairs(clickThrough) do f:EnableMouse(not locked) end
+    local on = self:CanDrag()
+    for _, f in ipairs(clickThrough) do
+        if on or not f.obHeld then f:EnableMouse(on) end
+    end
+end
+
+do
+    local watcher = CreateFrame("Frame")
+    watcher:RegisterEvent("MODIFIER_STATE_CHANGED")
+    watcher:RegisterEvent("PLAYER_REGEN_DISABLED")
+    watcher:SetScript("OnEvent", function(_, event, key)
+        if not OffBeat.db or not OffBeat.db.profile.locked then return end
+        if event == "MODIFIER_STATE_CHANGED" and key ~= "LSHIFT" and key ~= "RSHIFT" then return end
+        OffBeat:ApplyClickThrough()
+    end)
 end
 
 function OffBeat:CreateMovableFrame(name, positionKey, defaults)
@@ -65,7 +97,7 @@ function OffBeat:CreateMovableFrame(name, positionKey, defaults)
     f:RegisterForDrag("LeftButton")
     OffBeat:SetClickThrough(f)
     f:SetScript("OnDragStart", function(self)
-        if not OffBeat.db.profile.locked then self:StartMoving() end
+        if OffBeat:CanDrag() then self:StartMoving() end
     end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()

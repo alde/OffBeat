@@ -50,7 +50,7 @@ end
 function RotationTimeline:OnLockChanged(_, locked)
     if not self.frame then return end
     self.frame.resizeGrip:SetShown(not locked)
-    self.frame:SetMovable(not locked)
+    -- stays movable while locked: Shift-drag (OffBeat:CanDrag) decides
 end
 
 function RotationTimeline:Toggle()
@@ -89,7 +89,7 @@ function RotationTimeline:GetFrame()
     OffBeat:SetClickThrough(f) -- ignores the mouse while locked
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", function(self)
-        if not OffBeat.db.profile.locked then self:StartMoving() end
+        if OffBeat:CanDrag() then self:StartMoving() end
     end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()

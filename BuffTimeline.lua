@@ -141,7 +141,7 @@ function BuffTimeline:ApplyLockState(f)
     local locked = OffBeat.db.profile.locked
     f.closeButton:SetShown(not locked)
     f.resizeGrip:SetShown(not locked)
-    f:SetMovable(not locked)
+    -- stays movable while locked: Shift-drag (OffBeat:CanDrag) decides
 end
 
 function BuffTimeline:GetFrame()
@@ -158,7 +158,7 @@ function BuffTimeline:GetFrame()
     OffBeat:SetClickThrough(f) -- ignores the mouse while locked
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", function(self)
-        if not OffBeat.db.profile.locked then self:StartMoving() end
+        if OffBeat:CanDrag() then self:StartMoving() end
     end)
     f:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()

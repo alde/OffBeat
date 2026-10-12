@@ -12,13 +12,13 @@
 
 OffBeat is a single addon framework that tracks buffs on party members **or** your own rotation accuracy - depending on the profile loaded for your spec. Profiles are pure data: no code, just spell IDs and rules. Import and export them like WeakAura strings. It's meant to codify the guide from [method.gg](https://method.gg).
 
-**Buff tracking** (e.g. Augmentation Evoker): countdown bars for party buffs, uptime percentages, Gantt-chart timeline, cast warnings.
+**Buff tracking** (e.g. Augmentation Evoker): countdown bars for party buffs, uptime percentages, Gantt-chart timeline, cast warnings. While the game hides other players' auras in combat, the bars keep what they had and your own casts (Prescience) put the buff on its target for its base duration.
 
 **Rotation tracking** (e.g. Windwalker Monk, Frost DK, Ret Paladin): ability history strip, mistake detection, key cooldown alerts, proc tracking, cast log with export.
 
 **Key Layout**: a settings page that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
-**Rotation sheet** (Affliction and Destruction Warlock, Frost DK): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
+**Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation Evoker): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
 
 **Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
 
@@ -28,7 +28,7 @@ A profile can use any combination.
 
 | Addon | Spec | Type |
 |-------|------|------|
-| OffBeat_Evoker | Augmentation Evoker | Buff tracking |
+| OffBeat_Evoker | Augmentation Evoker | Buff tracking, Rotation (Eruption / empowers / Breath of Eons inside Ebon Might), Breath of Eons countdown (Fire Breath, Upheaval ready), Key Layout; Training (Breath of Eons: Fire Breath + Upheaval) |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
@@ -56,7 +56,7 @@ cd Interface/AddOns/OffBeat
 .\dev_install.ps1       # Windows (creates junctions)
 ```
 
-Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go through to the world; their own buttons (close, `<` `>`) still work. Unlock to move them. The training report is the exception: it only opens when you ask for it, so it always takes clicks and can be dragged.
+Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go through to the world; their own buttons (close, `<` `>`) still work. Unlock to move them, or hold Shift and drag one while locked (out of combat only, so Shift keybinds in combat don't grab panels). The training report is the exception: it only opens when you ask for it, so it always takes clicks and can be dragged.
 
 ## Commands
 
@@ -138,7 +138,7 @@ rotationSheet = {
 
 A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only in that kind of instance (outside instances every section shows). Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs.
 
-`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock and Frost Death Knight.
+`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight and Augmentation Evoker.
 
 ## Key Layout
 
@@ -146,7 +146,7 @@ Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`
 
 `keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
 
-Currently filled in for all Warlock and Death Knight specs, and Discipline and Holy Priest.
+Currently filled in for all Warlock and Death Knight specs, Augmentation Evoker, and Discipline and Holy Priest.
 
 ## Training
 
@@ -219,7 +219,7 @@ failNudges = {
 }
 ```
 
-`error` is `"runes"` (Not enough runes) or `"range"` (Out of range). The hint flashes in the text warning frame at most every few seconds while you keep pressing, and each stretch of failed presses counts once (as `name`) in the training report. It reads the game's own error message, so it works while combat information is hidden. On/off is on the Spec page.
+`error` is `"runes"` (Not enough runes), `"range"` (Out of range), `"essence"` (Not enough essence) or `"moving"` (Can't do that while moving). The hint flashes in the text warning frame at most every few seconds while you keep pressing, and each stretch of failed presses counts once (as `name`) in the training report. It reads the game's own error message, so it works while combat information is hidden. On/off is on the Spec page.
 
 ### Countdown
 
@@ -236,15 +236,31 @@ prep = {
           with = { spellId = 1249658, name = "Breath", cooldown = 90 },
           -- the same press casts Reaper's Mark (+20) first, when it's ready
           credit = { spellId = 439843, amount = 20, cooldown = 45 } },
+        -- a spell that should be off cooldown too: green when it will be
+        -- ready in time, red with how many seconds late (hidden if unknown)
+        { name = "Fire Breath", ready = 357208, cooldown = 30 },
     },
 }
 ```
 
-It shows from `lead` seconds before the spell is ready until you cast it. Time left comes from the cooldown when the game reveals it, otherwise from your last cast plus `cooldown`. On/off and the number of seconds are on the Spec page; unlock frames to move it. Filled in for Frost Death Knight (Pillar of Frost).
+It shows from `lead` seconds before the spell is ready until you cast it. Time left comes from the cooldown when the game reveals it, otherwise from your last cast plus `cooldown`. On/off and the number of seconds are on the Spec page; unlock frames to move it. Filled in for Frost Death Knight (Pillar of Frost) and Augmentation Evoker (Breath of Eons, with Fire Breath and Upheaval ready).
 
 ## Gear
 
 The **Gear** settings page (and `/ob gear`) lists, for every spec, the enchants and gems the top 15 heroic Ula'tek players of that spec use (healers ranked by healing), with how many of them use each, and checks them against what you have on: OK, a different enchant, missing, or empty sockets. The data is in `GearData.lua`, generated from Warcraft Logs.
+
+## Buffs from your casts
+
+Since 12.1 the game hides aura data in combat, your own buffs included. A profile can say how a buff follows from your casts, and OffBeat uses that whenever it can't see the real aura (mistake rules, window setup, cast warnings, the buff panel):
+
+```lua
+castAuras = {
+    { aura = 395296, cast = 395152, duration = 14, max = 20, grace = 4,   -- Ebon Might
+      extend = { { spell = 395160, by = 1.4 }, { spell = 357208, by = 1.5 } } },
+}
+```
+
+Casting `cast` puts `aura` up for `duration` seconds (a recast while it's up adds to what's left, at most `max` from now); while it's up each `extend` spell adds `by` seconds. It still counts as up for `grace` seconds past the estimate, so a rough estimate can hide a mistake but not invent one. `/ob auradebug` shows what the game reports and what the estimate says.
 
 ## Mistake types
 

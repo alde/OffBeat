@@ -15,6 +15,29 @@ local FONT_SIZE = 11
 
 local rowCounters = {}
 
+-- A flat 1px border around a frame (replaces the old tooltip-style edges).
+local function FlatBorder(f, r, g, b, a)
+    local t = {}
+    for i, pts in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" },
+                            { "TOPLEFT", "BOTTOMLEFT" }, { "TOPRIGHT", "BOTTOMRIGHT" } }) do
+        local tex = f:CreateTexture(nil, "BORDER")
+        tex:SetPoint(pts[1]); tex:SetPoint(pts[2])
+        if i <= 2 then tex:SetHeight(1) else tex:SetWidth(1) end
+        tex:SetColorTexture(r, g, b, a)
+        t[i] = tex
+    end
+    function f.SetFlatBorderColor(_, cr, cg, cb, ca)
+        for _, tex in ipairs(t) do tex:SetColorTexture(cr, cg, cb, ca) end
+    end
+    return t
+end
+W.FlatBorder = FlatBorder
+
+-- Control widths that fit the row: settings cards can be narrow.
+local function Fit(parent, wanted, share, minimum)
+    return math.max(minimum, math.min(wanted, math.floor(parent:GetWidth() * share)))
+end
+
 local function RowBg(frame, parent)
     rowCounters[parent] = (rowCounters[parent] or 0) + 1
     if rowCounters[parent] % 2 == 0 then
@@ -24,10 +47,13 @@ local function RowBg(frame, parent)
     end
 end
 
-local function MakeLabel(parent, text)
+-- reserve: room kept free on the right for the row's control, so a long
+-- label is cut short instead of running underneath it.
+local function MakeLabel(parent, text, reserve)
     local fs = parent:CreateFontString(nil, "OVERLAY")
     fs:SetFont(FONT, FONT_SIZE, "")
     fs:SetPoint("LEFT", parent, "LEFT", LABEL_PAD, 0)
+    if reserve then fs:SetPoint("RIGHT", parent, "RIGHT", -reserve, 0) end
     fs:SetTextColor(1, 1, 1, 0.9)
     fs:SetText(text)
     fs:SetJustifyH("LEFT")
@@ -72,7 +98,7 @@ end
 
 function W:Toggle(parent, text, y, getValue, setValue, tooltip)
     local f = MakeRow(parent, y)
-    MakeLabel(f, text)
+    MakeLabel(f, text, 34 + CONTROL_PAD + 8)
 
     local TRACK_W, TRACK_H = 34, 18
     local KNOB_PAD = 2
@@ -118,9 +144,8 @@ end
 
 function W:Slider(parent, text, y, minVal, maxVal, step, getValue, setValue, tooltip)
     local f = MakeRow(parent, y)
-    MakeLabel(f, text)
-
-    local TRACK_W, TRACK_H = 140, 4
+    local TRACK_W, TRACK_H = Fit(parent, 140, 0.3, 80), 4
+    MakeLabel(f, text, TRACK_W + 36 + 8 + CONTROL_PAD + 8)
     local THUMB_SZ = 12
 
     local valBox = f:CreateFontString(nil, "OVERLAY")
@@ -203,11 +228,10 @@ end
 
 -- Dropdown
 
-function W:Dropdown(parent, text, y, values, getValue, setValue, order)
+function W:Dropdown(parent, text, y, values, getValue, setValue, order, extraReserve)
     local f = MakeRow(parent, y)
-    MakeLabel(f, text)
-
-    local DD_W, DD_H = 160, 24
+    local DD_W, DD_H = Fit(parent, 160, 0.4, 110), 24
+    MakeLabel(f, text, DD_W + CONTROL_PAD + 8 + (extraReserve or 0))
 
     local btn = CreateFrame("Button", nil, f)
     btn:SetSize(DD_W, DD_H)
@@ -217,14 +241,10 @@ function W:Dropdown(parent, text, y, values, getValue, setValue, order)
     bg:SetAllPoints()
     bg:SetColorTexture(0.08, 0.10, 0.14, 0.9)
 
-    local border = CreateFrame("Frame", nil, btn, "BackdropTemplate")
+    local border = CreateFrame("Frame", nil, btn)
     border:SetAllPoints()
-    border:SetBackdrop({
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    border:SetBackdropBorderColor(1, 1, 1, 0.15)
+    FlatBorder(border, 1, 1, 1, 0.15)
+    border.SetBackdropBorderColor = border.SetFlatBorderColor
 
     local label = btn:CreateFontString(nil, "OVERLAY")
     label:SetFont(FONT, FONT_SIZE, "")
@@ -255,34 +275,42 @@ function W:Dropdown(parent, text, y, values, getValue, setValue, order)
     local menu
 
     local function BuildMenu()
-        menu = CreateFrame("Frame", nil, btn, "BackdropTemplate")
-        menu:SetBackdrop({
-            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 8,
-            insets = { left = 1, right = 1, top = 1, bottom = 1 },
-        })
-        menu:SetBackdropColor(0.08, 0.10, 0.14, 0.95)
-        menu:SetBackdropBorderColor(1, 1, 1, 0.2)
+        menu = CreateFrame("Frame", nil, btn)
+        local menuBg = menu:CreateTexture(nil, "BACKGROUND")
+        menuBg:SetAllPoints()
+        menuBg:SetColorTexture(0.08, 0.10, 0.14, 0.97)
+        FlatBorder(menu, 1, 1, 1, 0.2)
         menu:SetFrameStrata("TOOLTIP")
         menu:SetWidth(DD_W)
         menu:SetClampedToScreen(true)
 
         local itemH = 22
         local totalH = #displayOrder * itemH + 4
-        menu:SetHeight(math.min(totalH, 200))
+        menu:SetHeight(math.min(totalH, 220))
         menu:SetPoint("TOP", btn, "BOTTOM", 0, -2)
+        -- long lists (sounds, fonts) scroll with the mouse wheel
+        local list = CreateFrame("ScrollFrame", nil, menu)
+        list:SetPoint("TOPLEFT", 0, 0); list:SetPoint("BOTTOMRIGHT", 0, 0)
+        local holder = CreateFrame("Frame", nil, list)
+        holder:SetSize(DD_W, totalH)
+        list:SetScrollChild(holder)
+        list:EnableMouseWheel(true)
+        list:SetScript("OnMouseWheel", function(self, delta)
+            local maxScroll = math.max(0, totalH - self:GetHeight())
+            self:SetVerticalScroll(math.max(0, math.min(maxScroll, self:GetVerticalScroll() - delta * itemH * 2)))
+        end)
 
         for i, key in ipairs(displayOrder) do
-            local item = CreateFrame("Button", nil, menu)
+            local item = CreateFrame("Button", nil, holder)
             item:SetSize(DD_W - 4, itemH)
-            item:SetPoint("TOPLEFT", menu, "TOPLEFT", 2, -(2 + (i - 1) * itemH))
+            item:SetPoint("TOPLEFT", holder, "TOPLEFT", 2, -(2 + (i - 1) * itemH))
 
             local itemLabel = item:CreateFontString(nil, "OVERLAY")
             itemLabel:SetFont(FONT, FONT_SIZE, "")
             itemLabel:SetAllPoints()
             itemLabel:SetJustifyH("LEFT")
             itemLabel:SetText("  " .. (values[key] or key))
+            itemLabel:SetWordWrap(false)
             itemLabel:SetTextColor(1, 1, 1, 0.85)
 
             item:SetScript("OnEnter", function()
@@ -318,7 +346,7 @@ end
 
 function W:ColorPicker(parent, text, y, getValue, setValue, resetLabel)
     local f = MakeRow(parent, y)
-    MakeLabel(f, text)
+    MakeLabel(f, text, 18 + CONTROL_PAD + (resetLabel and 76 or 8))
 
     local SWATCH_SZ = 18
 
@@ -383,23 +411,18 @@ end
 
 function W:TextInput(parent, text, y, getValue, setValue)
     local f = MakeRow(parent, y)
-    MakeLabel(f, text)
-
-    local INPUT_W = 200
+    local INPUT_W = Fit(parent, 200, 0.45, 120)
+    MakeLabel(f, text, INPUT_W + CONTROL_PAD + 8)
     local box = CreateFrame("EditBox", nil, f, "BackdropTemplate")
     box:SetSize(INPUT_W, 22)
     box:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
     box:SetAutoFocus(false)
     box:SetFont(FONT, FONT_SIZE, "")
     box:SetTextColor(1, 1, 1, 0.9)
-    box:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    box:SetBackdropColor(0.08, 0.10, 0.14, 0.9)
-    box:SetBackdropBorderColor(1, 1, 1, 0.15)
+    local boxBg = box:CreateTexture(nil, "BACKGROUND")
+    boxBg:SetAllPoints()
+    boxBg:SetColorTexture(0.08, 0.10, 0.14, 0.9)
+    FlatBorder(box, 1, 1, 1, 0.15)
     box:SetTextInsets(6, 6, 0, 0)
     box:SetText(getValue() or "")
 
@@ -430,7 +453,7 @@ function W:SoundPicker(parent, text, y, getOrKey, setter)
         testFn = function() OffBeat:PlayConfigSound(getOrKey) end
     end
 
-    local f, h = W:Dropdown(parent, text, y, OffBeat.SOUND_VALUES, getValue, setValue)
+    local f, h = W:Dropdown(parent, text, y, OffBeat.SOUND_VALUES, getValue, setValue, nil, 42)
 
     local testBtn = CreateFrame("Button", nil, f)
     testBtn:SetSize(36, 20)
@@ -454,6 +477,80 @@ function W:SoundPicker(parent, text, y, getOrKey, setter)
     end
 
     return f, h
+end
+
+-- Button row: a flat button on the left (primary = accent coloured), with
+-- an optional dim note to its right.
+
+function W:Button(parent, text, y, onClick, note, primary)
+    local f = MakeRow(parent, y)
+    local btn = CreateFrame("Button", nil, f)
+    btn:SetHeight(24)
+    btn:SetPoint("LEFT", f, "LEFT", LABEL_PAD, 0)
+    local bg = btn:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    local function Paint(hover)
+        if primary then bg:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], hover and 0.55 or 0.35)
+        else bg:SetColorTexture(1, 1, 1, hover and 0.12 or 0.06) end
+    end
+    Paint(false)
+    FlatBorder(btn, ACCENT[1], ACCENT[2], ACCENT[3], primary and 0.6 or 0.15)
+    local label = btn:CreateFontString(nil, "OVERLAY")
+    label:SetFont(FONT, FONT_SIZE, "")
+    label:SetPoint("CENTER")
+    label:SetText(text)
+    label:SetTextColor(1, 1, 1, 0.95)
+    btn:SetWidth(math.ceil(label:GetStringWidth()) + 28)
+    btn:SetScript("OnClick", onClick)
+    btn:SetScript("OnEnter", function() Paint(true) end)
+    btn:SetScript("OnLeave", function() Paint(false) end)
+    if note then
+        local n = f:CreateFontString(nil, "OVERLAY")
+        n:SetFont(FONT, 10, "")
+        n:SetPoint("LEFT", btn, "RIGHT", 10, 0)
+        n:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
+        n:SetJustifyH("LEFT")
+        n:SetWordWrap(false)
+        n:SetTextColor(1, 1, 1, 0.5)
+        n:SetText(note)
+    end
+    f.button = btn
+    return f, ROW_H
+end
+
+-- Key / text row (read-only): a short gold key on the left, text after it,
+-- an optional spell icon. Used for the bar layout plan and summaries.
+
+function W:InfoRow(parent, y, key, text, iconId, dim)
+    local ROW = 26
+    local f = MakeRow(parent, y, ROW)
+    local x = LABEL_PAD
+    if iconId then
+        local icon = f:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(18, 18)
+        icon:SetPoint("LEFT", f, "LEFT", x, 0)
+        icon:SetTexture(iconId)
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        icon:SetDesaturated(dim and true or false)
+        icon:SetAlpha(dim and 0.4 or 1)
+        x = x + 24
+    end
+    local k = f:CreateFontString(nil, "OVERLAY")
+    k:SetFont(FONT, 10, "OUTLINE")
+    k:SetPoint("LEFT", f, "LEFT", x, 0)
+    k:SetWidth(54)
+    k:SetJustifyH("LEFT")
+    k:SetTextColor(1, 0.82, 0.2, dim and 0.4 or 1)
+    k:SetText(key or "")
+    local t = f:CreateFontString(nil, "OVERLAY")
+    t:SetFont(FONT, 10, "")
+    t:SetPoint("LEFT", k, "RIGHT", 6, 0)
+    t:SetPoint("RIGHT", f, "RIGHT", -CONTROL_PAD, 0)
+    t:SetJustifyH("LEFT")
+    t:SetWordWrap(false)
+    t:SetTextColor(1, 1, 1, dim and 0.35 or 0.85)
+    t:SetText(text or "")
+    return f, ROW
 end
 
 -- Spacer

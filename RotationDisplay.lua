@@ -31,12 +31,7 @@ local function MasqueRegister(group, frame, icon, extras)
     group:AddButton(frame, regions)
 end
 
-local ICON_BACKDROP = {
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = 12,
-    insets = { left = 2, right = 2, top = 2, bottom = 2 },
-}
+local ICON_BACKDROP = OffBeat.FLAT_BACKDROP
 
 function RotationDisplay:OnEnable()
     self:RegisterMessage("OFFBEAT_HISTORY_UPDATED", "Refresh")
@@ -323,7 +318,7 @@ function RotationDisplay:GetAssistedFrame()
 
     local icon = af:CreateTexture(nil, "ARTWORK")
     if MSQ then icon:SetAllPoints()
-    else icon:SetPoint("TOPLEFT", 3, -3); icon:SetPoint("BOTTOMRIGHT", -3, 3) end
+    else icon:SetPoint("TOPLEFT", 1, -1); icon:SetPoint("BOTTOMRIGHT", -1, 1) end
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     af.icon = icon
 
@@ -417,7 +412,7 @@ function RotationDisplay:GetKeyCdIcon()
 
     local icon = f:CreateTexture(nil, "ARTWORK")
     if MSQ then icon:SetAllPoints()
-    else icon:SetPoint("TOPLEFT", 3, -3); icon:SetPoint("BOTTOMRIGHT", -3, 3) end
+    else icon:SetPoint("TOPLEFT", 1, -1); icon:SetPoint("BOTTOMRIGHT", -1, 1) end
     icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     f.icon = icon
 
@@ -530,12 +525,20 @@ function RotationDisplay:GetWarningFrame()
     return wf
 end
 
+-- The box grows with its text (never narrower than the default 250).
+function RotationDisplay:FitWarning()
+    local wf = self.warningFrame
+    if not wf then return end
+    wf:SetWidth(math.max(250, OffBeat:TextWidth(wf.label) + 28))
+end
+
 function RotationDisplay:ShowWarning(text, severity, duration, onUpdate)
     local wf = self:GetWarningFrame()
     local colors = WARNING_COLORS[severity] or WARNING_COLORS.warning
 
     wf:SetHeight(WARNING_BASE_HEIGHT)
     wf.label:SetText(text)
+    self:FitWarning()
     wf.label:SetTextColor(unpack(colors.text))
     wf:SetBackdropBorderColor(colors.border[1], colors.border[2], colors.border[3],
         OffBeat.db.profile.warningBorderAlpha)
@@ -657,6 +660,7 @@ function RotationDisplay:UpdateIdleWarningText()
         lines[#lines + 1] = string.format("%s available for %ds", entry.name, now - entry.since)
     end
     wf.label:SetText(table.concat(lines, "\n"))
+    self:FitWarning()
     wf:SetHeight(WARNING_BASE_HEIGHT + WARNING_LINE_HEIGHT * (#lines - 1))
 end
 

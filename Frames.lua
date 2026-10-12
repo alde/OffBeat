@@ -79,6 +79,31 @@ do
     end)
 end
 
+-- Flat panel look: solid fill, 1px border.
+OffBeat.FLAT_BACKDROP = {
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    edgeFile = "Interface\\Buttons\\WHITE8X8",
+    edgeSize = 1,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 },
+}
+
+-- Widest line of a font string's current text (GetStringWidth on text with
+-- line breaks isn't reliable), measured with a hidden copy of its font.
+local measure
+function OffBeat:TextWidth(fs)
+    local text = fs:GetText()
+    if not text or text == "" then return 0 end
+    measure = measure or UIParent:CreateFontString(nil, "OVERLAY")
+    measure:SetFont(fs:GetFont())
+    local widest = 0
+    for line in (text .. "\n"):gmatch("(.-)\n") do
+        measure:SetText(line)
+        widest = math.max(widest, measure:GetStringWidth())
+    end
+    measure:SetText("")
+    return math.ceil(widest)
+end
+
 function OffBeat:CreateMovableFrame(name, positionKey, defaults)
     local f = CreateFrame("Frame", name, UIParent, "BackdropTemplate")
     f:SetSize(defaults.width or 48, defaults.height or 48)

@@ -16,7 +16,7 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Rotation tracking** (e.g. Windwalker Monk, Frost DK, Ret Paladin): ability history strip, mistake detection, key cooldown alerts, proc tracking, cast log with export.
 
-**Key Layout**: a settings page that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
+**Key Layout**: a settings tab that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
 **Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation Evoker): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
 
@@ -138,11 +138,19 @@ rotationSheet = {
 
 A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only in that kind of instance (outside instances every section shows). Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs.
 
-`/ob sheet` (or the Spec settings page) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight and Augmentation Evoker.
+`/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight and Augmentation Evoker.
+
+## Settings
+
+`/ob` opens the settings window. The sidebar has three entries:
+
+- **Your current spec**, with tabs: **Overview** (profile, what OffBeat does for this spec, rotation sheet, Blizzard's next-spell icon), **Alerts** (main cooldown and countdown, mistakes and procs, idle cooldowns, moving and pet warnings), **Training**, **Keys & Bars** (the bar layout with a button that puts it on your bars, and the key layout) and **Gear**. A spec only gets the tabs its profile uses.
+- **Panels**: how each on-screen element looks, shared by every spec: ability history, main cooldown icon, warning text, next spell icon, timelines, buff panel, and the border and background of all panels (a flat 1px line by default).
+- **General**: behaviour, slash commands, profile import / export.
 
 ## Key Layout
 
-Profiles with a `keyLayout` section get a **Key Layout** page in settings (`/ob`). It lists the guide's rotation spells grouped by how often you press them (core, regular, cooldown), marks whether each is used in single target, AoE or both, and shows your current keybind so you can see what's on a bad key: red means a core or regular spell is unbound, amber means a core spell sits behind a modifier. Spells you haven't talented are hidden by default, and hero-tree replacements (Immolate -> Wither) collapse into one row. `alt` lists fallback IDs for spells that have changed ID.
+Profiles with a `keyLayout` section get a key layout on the **Keys & Bars** tab in settings (`/ob`). It lists the guide's rotation spells grouped by how often you press them (core, regular, cooldown), marks whether each is used in single target, AoE or both, and shows your current keybind so you can see what's on a bad key: red means a core or regular spell is unbound, amber means a core spell sits behind a modifier. Spells you haven't talented are hidden by default, and hero-tree replacements (Immolate -> Wither) collapse into one row. `alt` lists fallback IDs for spells that have changed ID.
 
 `keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
 
@@ -150,9 +158,9 @@ Currently filled in for all Warlock and Death Knight specs, Augmentation Evoker,
 
 ## Training
 
-Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on the **Training** settings page) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
+Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on your spec's **Training** tab) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
 
-Only combat counts, and in a raid only boss encounters count (setting on the Training page), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned (there are no top-parse numbers for dungeons).
+Only combat counts, and in a raid only boss encounters count (setting on the Training tab), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned (there are no top-parse numbers for dungeons).
 
 How to use it:
 
@@ -161,13 +169,13 @@ How to use it:
 3. Each window ends with a scorecard in chat; each fight ends with a summary and your casts per minute against the profile's benchmarks.
 4. Turn training off and a **report panel** sums up the session, one page per pull (marked kill or wipe). `<` and `>` step through them, and clicking the page counter lists every pull to jump to. Each page has one bar per window against its goal (with the top players' median for that boss) and one bar per benchmark spell over that boss's top players' middle half. `/ob report` shows the session so far while training is on (opening on the latest pull), otherwise the last report.
 
-Goals can be adjusted per spec on the Training page, so you can start with one you can reach and raise it as you improve.
+Goals can be adjusted per spec on the Training tab, so you can start with one you can reach and raise it as you improve.
 
-Training also turns on combat logging for the session (setting on the Training page), so it can be uploaded to Warcraft Logs and compared afterwards. It only turns off a log it started itself, and warns if Advanced Combat Logging is off, which Warcraft Logs needs.
+Training also turns on combat logging for the session (setting on the Training tab), so it can be uploaded to Warcraft Logs and compared afterwards. It only turns off a log it started itself, and warns if Advanced Combat Logging is off, which Warcraft Logs needs.
 
 ### Windows
 
-Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); a check the game won't let OffBeat read shows as `?`, never as a miss. `goals` count casts inside the window. `note` is shown on the Training page. If combat ends before the window runs out (the boss dies), the window only counts when you had already reached the goal; otherwise it's left out of the score and shown greyed out as "early".
+Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); a check the game won't let OffBeat read shows as `?`, never as a miss. `goals` count casts inside the window. `note` is shown on the Training tab. If combat ends before the window runs out (the boss dies), the window only counts when you had already reached the goal; otherwise it's left out of the score and shown greyed out as "early".
 
 ```lua
 windows = { {
@@ -200,11 +208,11 @@ Demonology's goals and benchmarks come from the top Demonology parses for every 
 
 ### Pet
 
-Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when the pet dies in combat, when a pull starts without one, and when it drops under 35% health, with a reminder to use the quick-summon spell (Fel Domination) first if you know it. Each can be turned off on the Spec page. While training, every fight's report page shows how many times the pet died and how long you were without one.
+Specs with a permanent pet (`pet = { quickSummon = 333889 }`) get a warning when the pet dies in combat, when a pull starts without one, and when it drops under 35% health, with a reminder to use the quick-summon spell (Fel Domination) first if you know it. Each can be turned off on your spec's Alerts tab. While training, every fight's report page shows how many times the pet died and how long you were without one.
 
 ### While moving
 
-A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on the Spec page.
+A profile can list spells that are worth casting on the move (`movingCasts = { { spellId = 264178, name = "Demonbolt" } }`). When you've been moving for 1.5 seconds without casting and one of them is instant and usable right now (Demonbolt with a Demonic Core), OffBeat flashes "Moving: Demonbolt is instant", once per stretch of movement. Delay, sound and on/off are on your spec's Alerts tab.
 
 ### Failed presses
 
@@ -219,7 +227,7 @@ failNudges = {
 }
 ```
 
-`error` is `"runes"` (Not enough runes), `"range"` (Out of range), `"essence"` (Not enough essence) or `"moving"` (Can't do that while moving). The hint flashes in the text warning frame at most every few seconds while you keep pressing, and each stretch of failed presses counts once (as `name`) in the training report. It reads the game's own error message, so it works while combat information is hidden. On/off is on the Spec page.
+`error` is `"runes"` (Not enough runes), `"range"` (Out of range), `"essence"` (Not enough essence) or `"moving"` (Can't do that while moving). The hint flashes in the text warning frame at most every few seconds while you keep pressing, and each stretch of failed presses counts once (as `name`) in the training report. It reads the game's own error message, so it works while combat information is hidden. On/off is on your spec's Alerts tab.
 
 ### Countdown
 
@@ -243,11 +251,11 @@ prep = {
 }
 ```
 
-It shows from `lead` seconds before the spell is ready until you cast it. Time left comes from the cooldown when the game reveals it, otherwise from your last cast plus `cooldown`. On/off and the number of seconds are on the Spec page; unlock frames to move it. Filled in for Frost Death Knight (Pillar of Frost) and Augmentation Evoker (Breath of Eons, with Fire Breath and Upheaval ready).
+It shows from `lead` seconds before the spell is ready until you cast it. Time left comes from the cooldown when the game reveals it, otherwise from your last cast plus `cooldown`. On/off and the number of seconds are on your spec's Alerts tab; unlock frames to move it. Filled in for Frost Death Knight (Pillar of Frost) and Augmentation Evoker (Breath of Eons, with Fire Breath and Upheaval ready).
 
 ## Gear
 
-The **Gear** settings page (and `/ob gear`) lists, for every spec, the enchants and gems the top 15 heroic Ula'tek players of that spec use (healers ranked by healing), with how many of them use each, and checks them against what you have on: OK, a different enchant, missing, or empty sockets. The data is in `GearData.lua`, generated from Warcraft Logs.
+The **Gear** tab in settings (and `/ob gear`) lists, for every spec, the enchants and gems the top 15 heroic Ula'tek players of that spec use (healers ranked by healing), with how many of them use each, and checks them against what you have on: OK, a different enchant, missing, or empty sockets. The data is in `GearData.lua`, generated from Warcraft Logs.
 
 ## Buffs from your casts
 

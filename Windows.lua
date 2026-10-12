@@ -696,7 +696,7 @@ end
 -- a label column on the left and horizontal bars on the right. One section
 -- per boss.
 
-local R_PAD, R_LABEL, R_ROW, R_WIDTH = 10, 120, 14, 460
+local R_PAD, R_LABEL, R_ROW, R_WIDTH = 12, 165, 15, 580
 local NAV_NORMAL = { 0.85, 0.85, 0.85 }
 local NAV_HOVER  = { 1.00, 0.82, 0.30 }
 local C_GOOD = { 0.30, 0.85, 0.45 }
@@ -806,7 +806,10 @@ function Windows:ShowReport(report, page)
     local nText, nTex, y = 0, 0, 0
     local barW = R_WIDTH - R_PAD * 2 - R_LABEL - 70 -- room for the value column
 
-    local function text(str, x, yy, color, offset, width, justify)
+    local contentW = R_WIDTH - R_PAD * 2
+    -- width: nil = to the right edge. wrap: long text breaks onto more lines
+    -- (use the returned font string's height to move down).
+    local function text(str, x, yy, color, offset, width, justify, wrap)
         nText = nText + 1
         local fs = f.texts[nText]
         if not fs then fs = c:CreateFontString(nil, "OVERLAY"); f.texts[nText] = fs end
@@ -814,9 +817,9 @@ function Windows:ShowReport(report, page)
         fs:SetTextColor(unpack(color or { 0.85, 0.85, 0.85 }))
         fs:ClearAllPoints()
         fs:SetPoint("TOPLEFT", c, "TOPLEFT", x, yy)
-        fs:SetWidth(width or 0)
+        fs:SetWidth((width and width > 0) and width or (contentW - x))
         fs:SetJustifyH(justify or "LEFT")
-        fs:SetWordWrap(false)
+        fs:SetWordWrap(wrap and true or false)
         fs:SetText(str)
         fs:Show()
         return fs
@@ -833,8 +836,13 @@ function Windows:ShowReport(report, page)
         return t
     end
     local function header(str)
-        text(str, 0, y, { 0.55, 0.55, 0.55 }, -1)
-        y = y - 16
+        local fs = text(str, 0, y, { 0.55, 0.55, 0.55 }, -1, nil, nil, true)
+        y = y - math.max(16, math.ceil(fs:GetStringHeight()) + 4)
+    end
+    -- a line that wraps when long, moving y down by its height
+    local function line(str, color)
+        local fs = text(str, 0, y, color, -1, nil, nil, true)
+        y = y - math.max(14, math.ceil(fs:GetStringHeight()) + 4)
     end
 
     f.title:SetFont(OffBeat:GetFont(2))
@@ -858,16 +866,12 @@ function Windows:ShowReport(report, page)
         text(string.format("%s  ·  %s", grp.name, grp.subtitle), 0, y, C_BOSS, 1)
         y = y - 20
         if grp.pet then
-            local line = PetLine(grp.pet.deaths, grp.pet.down)
-            text(line and ("PET  ·  " .. line) or "PET  ·  alive the whole time", 0, y,
-                line and C_BAD or C_GOOD, -1)
-            y = y - 18
+            local petLine = PetLine(grp.pet.deaths, grp.pet.down)
+            line(petLine and ("PET  ·  " .. petLine) or "PET  ·  alive the whole time", petLine and C_BAD or C_GOOD)
         end
         if grp.mistakes then
-            local line = MistakeLine(grp.mistakes)
-            text(line and ("MISTAKES  ·  " .. line) or "MISTAKES  ·  none", 0, y,
-                line and C_BAD or C_GOOD, -1)
-            y = y - 18
+            local mLine = MistakeLine(grp.mistakes)
+            line(mLine and ("MISTAKES  ·  " .. mLine) or "MISTAKES  ·  none", mLine and C_BAD or C_GOOD)
         end
 
         -- Cooldown windows: one bar per window, tick = goal
@@ -909,8 +913,7 @@ function Windows:ShowReport(report, page)
             end
             for _, st in ipairs(agg.setupOk) do
                 if agg.n > 0 then
-                    text(SetupLine(st, agg.n), 0, y, { 0.7, 0.7, 0.7 }, -1)
-                    y = y - 14
+                    line(SetupLine(st, agg.n), { 0.7, 0.7, 0.7 })
                 end
             end
             y = y - 8
@@ -937,8 +940,7 @@ function Windows:ShowReport(report, page)
         elseif grp.hasBenchmarks then
             local why = grp.benchName and "Fight at least a minute for the casts-per-minute comparison."
                 or string.format("No top-parse numbers for %s yet.", grp.name)
-            text(why, 0, y, { 0.6, 0.6, 0.6 }, -1)
-            y = y - 14
+            line(why, { 0.6, 0.6, 0.6 })
         end
         y = y - 6
     end
@@ -980,11 +982,7 @@ function Windows:GetFrame()
     if self.frame then return self.frame end
     local f = OffBeat:CreateMovableFrame("OffBeatWindow", "windowPosition", {
         width = 200, height = 46,
-        backdrop = {
-            bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-            edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-            edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 },
-        },
+        backdrop = OffBeat.FLAT_BACKDROP,
         backdropColor = { 0.05, 0.05, 0.05, 0.8 },
         borderColor = { 0.5, 0.5, 0.5, 0.6 },
         defaultY = 200,
@@ -1030,6 +1028,8 @@ function Windows:RefreshFrame()
     end
     f.body:SetText(table.concat(lines, "\n"))
     f:SetHeight(30 + 15 * #lines)
+    f:SetWidth(math.max(200, OffBeat:TextWidth(f.body) + 18,
+        OffBeat:TextWidth(f.title) + OffBeat:TextWidth(f.timerText) + 30))
     f:SetAlpha(1)
     f:Show()
 end
@@ -1039,6 +1039,7 @@ function Windows:ShowResult(result)
     local f = self.frame
     f.timerText:SetText("")
     f.title:SetText(string.upper(result.name) .. (result.met and "  ON TARGET" or "  MISSED"))
+    f:SetWidth(math.max(f:GetWidth(), OffBeat:TextWidth(f.title) + 24))
     if result.met then
         f.title:SetTextColor(0.2, 1, 0.4)
         f:SetBackdropBorderColor(0.2, 0.8, 0.4, 0.8)

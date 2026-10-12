@@ -1,747 +1,409 @@
 local OffBeat = _G.OffBeat
 
-local PANEL_W = 620
-local PANEL_H = 500
-local SIDEBAR_W = 160
-local HEADER_H = 36
-local CONTENT_PAD = 12
+-- The settings window (/ob). Three places in the sidebar:
+--
+--   <your spec>  tabs: Overview, Alerts, Training, Keys & Bars, Gear
+--                (only the tabs this spec's profile uses)
+--   Panels       how each on-screen element looks, shared by every spec
+--   General      behaviour, profile import / export
+--
+-- Pages are built from cards laid out in two columns (masonry: each card
+-- goes into the shorter column); a full-width card spans both.
+
+local PANEL_W, PANEL_H = 940, 680
+local SIDEBAR_W = 200
+local HEADER_H = 44
+local TABS_H = 30
+local PAD = 16
+local GAP = 12
+local SCROLLBAR = 22
+local CARD_HEAD = 30
+local CARD_PAD = 8
 
 local ACCENT = { 0.35, 0.70, 1.0 }
-local BG_COLOR = { 0.05, 0.07, 0.09, 0.95 }
-local SIDEBAR_BG = { 0.04, 0.05, 0.07, 0.95 }
+local BG_COLOR = { 0.05, 0.07, 0.09, 0.97 }
+local SIDEBAR_BG = { 0.035, 0.045, 0.06, 1 }
 local FONT = "Fonts\\FRIZQT__.TTF"
 
-local mainFrame, sidebar, scrollFrame, scrollChild
-local sidebarButtons = {}
-local activeCategory = nil
-local pageBuilders = {}
-
--- Category definitions (order matters for sidebar)
-
-local CATEGORIES = {
-    { key = "general",    label = "General" },
-    { key = "buffPanel",  label = "Buff Panel",   requires = "trackedBuffs" },
-    { key = "rotation",   label = "Rotation",     requires = "rotationSpells" },
-    { key = "alerts",     label = "Alerts" },
-    { key = "appearance", label = "Appearance" },
-    { key = "specConfig", label = "Spec",        requires = "rotationSpells" },
-    { key = "keyLayout",  label = "Key Layout",  requires = "keyLayout" },
-    { key = "training",   label = "Training",    requires = "windows" },
-    { key = "gear",       label = "Gear",        requires = "gearRecs" },
-    { key = "profiles",   label = "Profiles" },
-}
-
-
--- Sidebar button
-
-local BUTTON_H = 28
-local BUTTON_PAD = 2
-
-local function CreateSidebarButton(parent, catDef, index)
-    local btn = CreateFrame("Button", nil, parent)
-    btn:SetSize(SIDEBAR_W - 8, BUTTON_H)
-    btn:SetPoint("TOPLEFT", parent, "TOPLEFT", 4, -(HEADER_H + 8 + (index - 1) * (BUTTON_H + BUTTON_PAD)))
-
-    local label = btn:CreateFontString(nil, "OVERLAY")
-    label:SetFont(FONT, 11, "")
-    label:SetPoint("LEFT", btn, "LEFT", 12, 0)
-    label:SetText(catDef.label)
-    label:SetTextColor(1, 1, 1, 0.7)
-    btn.label = label
-
-    local indicator = btn:CreateTexture(nil, "OVERLAY")
-    indicator:SetSize(3, BUTTON_H - 4)
-    indicator:SetPoint("LEFT", btn, "LEFT", 0, 0)
-    indicator:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 0)
-    btn.indicator = indicator
-
-    local hover = btn:CreateTexture(nil, "BACKGROUND")
-    hover:SetAllPoints()
-    hover:SetColorTexture(1, 1, 1, 0)
-    btn.hover = hover
-
-    btn:SetScript("OnEnter", function()
-        if activeCategory ~= catDef.key then
-            hover:SetColorTexture(1, 1, 1, 0.04)
-        end
-    end)
-    btn:SetScript("OnLeave", function()
-        if activeCategory ~= catDef.key then
-            hover:SetColorTexture(1, 1, 1, 0)
-        end
-    end)
-
-    btn:SetScript("OnClick", function()
-        SelectCategory(catDef.key)
-    end)
-
-    btn.catKey = catDef.key
-    btn.requires = catDef.requires
-    return btn
-end
-
-local function UpdateSidebarHighlight()
-    for _, btn in ipairs(sidebarButtons) do
-        if btn.catKey == activeCategory then
-            btn.label:SetTextColor(1, 1, 1, 1)
-            btn.indicator:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 1)
-            btn.hover:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 0.08)
-        else
-            btn.label:SetTextColor(1, 1, 1, 0.7)
-            btn.indicator:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], 0)
-            btn.hover:SetColorTexture(1, 1, 1, 0)
-        end
-    end
-end
-
-local function UpdateSidebarVisibility()
-    local profile = OffBeat.activeProfile
-    local visibleIndex = 0
-    for _, btn in ipairs(sidebarButtons) do
-        local visible = true
-        if btn.requires == "gearRecs" then
-            visible = OffBeat:GetGearRecs() ~= nil -- every spec, profile or not
-        elseif btn.requires then
-            visible = profile and profile[btn.requires] ~= nil
-        end
-        if visible then
-            btn:Show()
-            btn:ClearAllPoints()
-            btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 4,
-                -(HEADER_H + 8 + visibleIndex * (BUTTON_H + BUTTON_PAD)))
-            visibleIndex = visibleIndex + 1
-        else
-            btn:Hide()
-        end
-    end
-end
-
--- Content area
-
-local function ClearContent()
-    if not scrollChild then return end
-    for _, child in ipairs({ scrollChild:GetChildren() }) do
-        child:Hide()
-        child:ClearAllPoints()
-    end
-    OffBeat.Widgets:ResetRowCounters()
-end
-
-function SelectCategory(key)
-    if not pageBuilders[key] then return end
-
-    activeCategory = key
-    ClearContent()
-    UpdateSidebarHighlight()
-
-    local contentW = PANEL_W - SIDEBAR_W - CONTENT_PAD * 2
-    scrollChild:SetWidth(contentW)
-
-    local y = -CONTENT_PAD
-    y = pageBuilders[key](scrollChild, y)
-
-    scrollChild:SetHeight(math.abs(y) + CONTENT_PAD)
-    scrollFrame:SetVerticalScroll(0)
-end
-
--- Main panel creation
-
-local function CreatePanel()
-    if mainFrame then return mainFrame end
-
-    mainFrame = CreateFrame("Frame", "OffBeatSettings", UIParent, "BackdropTemplate")
-    mainFrame:SetSize(PANEL_W, PANEL_H)
-    mainFrame:SetPoint("CENTER")
-    mainFrame:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 12,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 },
-    })
-    mainFrame:SetBackdropColor(unpack(BG_COLOR))
-    mainFrame:SetBackdropBorderColor(0.2, 0.2, 0.2, 0.8)
-    mainFrame:SetFrameStrata("DIALOG")
-    mainFrame:SetFrameLevel(100)
-    mainFrame:SetClampedToScreen(true)
-    mainFrame:SetMovable(true)
-    mainFrame:EnableMouse(true)
-    mainFrame:RegisterForDrag("LeftButton")
-    mainFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    mainFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
-    mainFrame:Hide()
-
-    tinsert(UISpecialFrames, "OffBeatSettings")
-
-    -- Title bar
-    local title = mainFrame:CreateFontString(nil, "OVERLAY")
-    title:SetFont(FONT, 14, "")
-    title:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", SIDEBAR_W + CONTENT_PAD, -10)
-    title:SetText("OffBeat Settings")
-    title:SetTextColor(ACCENT[1], ACCENT[2], ACCENT[3])
-
-    -- Close button
-    local close = CreateFrame("Button", nil, mainFrame)
-    close:SetSize(18, 18)
-    close:SetPoint("TOPRIGHT", mainFrame, "TOPRIGHT", -8, -8)
-    local closeText = close:CreateFontString(nil, "OVERLAY")
-    closeText:SetFont(FONT, 14, "")
-    closeText:SetPoint("CENTER")
-    closeText:SetText("x")
-    closeText:SetTextColor(1, 1, 1, 0.5)
-    close:SetScript("OnClick", function() mainFrame:Hide() end)
-    close:SetScript("OnEnter", function() closeText:SetTextColor(1, 0.3, 0.3) end)
-    close:SetScript("OnLeave", function() closeText:SetTextColor(1, 1, 1, 0.5) end)
-
-    -- Sidebar
-    sidebar = CreateFrame("Frame", nil, mainFrame)
-    sidebar:SetSize(SIDEBAR_W, PANEL_H)
-    sidebar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
-
-    local sidebarBg = sidebar:CreateTexture(nil, "BACKGROUND")
-    sidebarBg:SetAllPoints()
-    sidebarBg:SetColorTexture(unpack(SIDEBAR_BG))
-
-    local sidebarTitle = sidebar:CreateFontString(nil, "OVERLAY")
-    sidebarTitle:SetFont(FONT, 13, "")
-    sidebarTitle:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 16, -12)
-    sidebarTitle:SetText("OffBeat")
-    sidebarTitle:SetTextColor(1, 1, 1, 0.9)
-
-    local version = sidebar:CreateFontString(nil, "OVERLAY")
-    version:SetFont(FONT, 9, "")
-    version:SetPoint("LEFT", sidebarTitle, "RIGHT", 6, -1)
-    version:SetText("v" .. OffBeat.VERSION)
-    version:SetTextColor(1, 1, 1, 0.3)
-
-    -- Sidebar separator
-    local sidebarSep = sidebar:CreateTexture(nil, "ARTWORK")
-    sidebarSep:SetSize(1, PANEL_H)
-    sidebarSep:SetPoint("TOPRIGHT", sidebar, "TOPRIGHT", 0, 0)
-    sidebarSep:SetColorTexture(1, 1, 1, 0.06)
-
-    -- Sidebar buttons
-    for i, catDef in ipairs(CATEGORIES) do
-        sidebarButtons[i] = CreateSidebarButton(sidebar, catDef, i)
-    end
-
-    -- Scroll frame (content area)
-    scrollFrame = CreateFrame("ScrollFrame", "OffBeatSettingsScroll", mainFrame, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", SIDEBAR_W + 1, -(HEADER_H + 2))
-    scrollFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -22, 6)
-    scrollFrame:EnableMouseWheel(true)
-
-    scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    local contentW = PANEL_W - SIDEBAR_W - CONTENT_PAD * 2
-    scrollChild:SetSize(contentW, 1)
-    scrollFrame:SetScrollChild(scrollChild)
-
-    return mainFrame
-end
-
--- Page builders
-
-pageBuilders.general = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local _, h
-
-    _, h = W:SectionHeader(parent, "BEHAVIOUR", y); y = y - h
-    _, h = W:Toggle(parent, "Lock Frames", y,
-        function() return db.locked end,
-        function(v) OffBeat:SetLocked(v) end); y = y - h
-    _, h = W:Toggle(parent, "Combat Report", y,
-        function() return db.combatReport end,
-        function(v) db.combatReport = v end); y = y - h
-    _, h = W:Toggle(parent, "Clear on Combat End", y,
-        function() return db.clearOnCombatEnd end,
-        function(v) db.clearOnCombatEnd = v end); y = y - h
-    _, h = W:Toggle(parent, "Debug Logging", y,
-        function() return db.debug end,
-        function(v) db.debug = v end); y = y - h
-
-    return y
-end
-
-pageBuilders.buffPanel = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local _, h
-
-    _, h = W:SectionHeader(parent, "DISPLAY", y); y = y - h
-    _, h = W:Toggle(parent, "Show Panel", y,
-        function() return db.buffPanelShown end,
-        function(v)
-            db.buffPanelShown = v
-            local bd = OffBeat:GetModule("BuffDisplay", true)
-            if bd and bd:IsEnabled() then
-                if v then bd:GetFrame():Show(); bd:Refresh()
-                else bd:GetFrame():Hide() end
-            end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Chat Output", y,
-        function() return db.chatOutput end,
-        function(v) db.chatOutput = v end); y = y - h
-
-    _, h = W:SectionHeader(parent, "TIMELINE", y); y = y - h
-    _, h = W:Dropdown(parent, "Auto-show", y,
-        { both = "Both", encounter = "Encounters", keystone = "Keystones", never = "Never" },
-        function() return db.timelineShow end,
-        function(v) db.timelineShow = v end,
-        { "both", "encounter", "keystone", "never" }); y = y - h
-    _, h = W:Toggle(parent, "Keystone Tracking", y,
-        function() return db.keystoneTracking end,
-        function(v) db.keystoneTracking = v end); y = y - h
-    _, h = W:Slider(parent, "History Size", y, 1, 50, 1,
-        function() return db.historySize end,
-        function(v) db.historySize = v end); y = y - h
-
-    _, h = W:SectionHeader(parent, "CAST WARNINGS", y); y = y - h
-    _, h = W:Toggle(parent, "Enable Cast Warnings", y,
-        function() return db.castWarnings end,
-        function(v) db.castWarnings = v end); y = y - h
-
-    return y
-end
-
-pageBuilders.rotation = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local _, h
-
-    _, h = W:SectionHeader(parent, "ABILITY PANEL", y); y = y - h
-    _, h = W:Toggle(parent, "Show Panel", y,
-        function() return db.rotationShown end,
-        function(v)
-            db.rotationShown = v
-            local rd = OffBeat:GetModule("RotationDisplay", true)
-            if rd and rd:IsEnabled() then rd:UpdatePanelVisibility() end
-        end); y = y - h
-    _, h = W:Toggle(parent, "Only in Combat", y,
-        function() return db.rotationCombatOnly end,
-        function(v)
-            db.rotationCombatOnly = v
-            local rd = OffBeat:GetModule("RotationDisplay", true)
-            if rd and rd:IsEnabled() then rd:UpdatePanelVisibility() end
-        end); y = y - h
-    _, h = W:Slider(parent, "History Length", y, 2, 12, 1,
-        function() return db.historyCount end,
-        function(v) db.historyCount = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
-    _, h = W:Dropdown(parent, "Growth Direction", y,
-        { right = "Right", left = "Left", up = "Up", down = "Down" },
-        function() return db.growDirection end,
-        function(v) db.growDirection = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end,
-        { "right", "left", "up", "down" }); y = y - h
-    _, h = W:Slider(parent, "Icon Size", y, 20, 64, 2,
-        function() return db.iconSize end,
-        function(v) db.iconSize = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
-
-    _, h = W:SectionHeader(parent, "ICON FADING", y); y = y - h
-    _, h = W:Slider(parent, "Base Opacity", y, 0.2, 1.0, 0.05,
-        function() return db.iconAlpha end,
-        function(v) db.iconAlpha = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
-    _, h = W:Slider(parent, "Fade Per Icon", y, 0, 0.3, 0.02,
-        function() return db.opacityStep end,
-        function(v) db.opacityStep = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
-    _, h = W:Slider(parent, "Fade Floor", y, 0.1, 1.0, 0.05,
-        function() return db.minOpacity end,
-        function(v) db.minOpacity = v; OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end); y = y - h
-
-    _, h = W:SectionHeader(parent, "KEY COOLDOWN ICON", y); y = y - h
-    _, h = W:Toggle(parent, "Show Icon", y,
-        function() return db.keyCdIconEnabled end,
-        function(v) db.keyCdIconEnabled = v end); y = y - h
-    _, h = W:Toggle(parent, "Only in Combat (icon and READY flash)", y,
-        function() return db.keyCdCombatOnly end,
-        function(v) db.keyCdCombatOnly = v end); y = y - h
-    _, h = W:Slider(parent, "Icon Size", y, 24, 80, 2,
-        function() return db.keyCdIconSize end,
-        function(v)
-            db.keyCdIconSize = v
-            local rd = OffBeat:GetModule("RotationDisplay", true)
-            if rd and rd:IsEnabled() then rd:ResizeKeyCdIcon() end
-        end); y = y - h
-    _, h = W:Dropdown(parent, "Glow Style", y,
-        { glow = "Pulse", proc = "Proc", ants = "Ants", none = "None" },
-        function() return db.keyCdGlowStyle end,
-        function(v) db.keyCdGlowStyle = v end,
-        { "glow", "proc", "ants", "none" }); y = y - h
-    _, h = W:Slider(parent, "Glow Intensity", y, 0.2, 1.0, 0.05,
-        function() return db.keyCdGlowIntensity end,
-        function(v) db.keyCdGlowIntensity = v end); y = y - h
-    _, h = W:ColorPicker(parent, "Glow Color", y,
-        function() return OffBeat:GetGlowColor() end,
-        function(r, g, b)
-            if r then db.keyCdGlowColor = { r = r, g = g, b = b }
-            else db.keyCdGlowColor = nil end
-        end, "Class Color"); y = y - h
-
-    if C_AssistedCombat then
-        _, h = W:SectionHeader(parent, "NEXT SPELL", y); y = y - h
-        _, h = W:Toggle(parent, "Show Next Spell (this spec)", y,
-            function() return OffBeat:AssistedCombatOn() end,
-            function(v)
-                local p = OffBeat.activeProfile
-                if p then
-                    db.specSettings = db.specSettings or {}
-                    db.specSettings[p.meta.specId] = db.specSettings[p.meta.specId] or {}
-                    db.specSettings[p.meta.specId].assistedCombat = v
-                else
-                    db.assistedCombat = v
-                end
-                local rd = OffBeat:GetModule("RotationDisplay", true)
-                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
-            end); y = y - h
-        _, h = W:Toggle(parent, "Only in Combat", y,
-            function() return db.assistedCombatOnly end,
-            function(v)
-                db.assistedCombatOnly = v
-                local rd = OffBeat:GetModule("RotationDisplay", true)
-                if rd and rd:IsEnabled() then rd:UpdateAssistedVisibility() end
-            end); y = y - h
-        _, h = W:Slider(parent, "Icon Size", y, 24, 80, 2,
-            function() return db.assistedIconSize end,
-            function(v)
-                db.assistedIconSize = v
-                local rd = OffBeat:GetModule("RotationDisplay", true)
-                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
-            end); y = y - h
-        _, h = W:Toggle(parent, "Show Keybind", y,
-            function() return db.assistedKeybindShown end,
-            function(v)
-                db.assistedKeybindShown = v
-                local rd = OffBeat:GetModule("RotationDisplay", true)
-                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
-            end); y = y - h
-        _, h = W:Slider(parent, "Keybind Font Size", y, 8, 20, 1,
-            function() return db.assistedKeybindSize end,
-            function(v)
-                db.assistedKeybindSize = v
-                local rd = OffBeat:GetModule("RotationDisplay", true)
-                if rd and rd:IsEnabled() then rd:RefreshAssisted() end
-            end); y = y - h
-    end
-
-    _, h = W:SectionHeader(parent, "TIMELINE", y); y = y - h
-    _, h = W:Toggle(parent, "Auto-show Timeline", y,
-        function() return db.timelineAutoShow end,
-        function(v) db.timelineAutoShow = v end); y = y - h
-
-    return y
-end
-
-pageBuilders.alerts = function(parent, y)
-
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local _, h
-
-    _, h = W:SectionHeader(parent, "WARNING FRAME", y); y = y - h
-    _, h = W:Slider(parent, "Background Opacity", y, 0, 1.0, 0.05,
-        function() return db.warningBgAlpha end,
-        function(v) db.warningBgAlpha = v end); y = y - h
-    _, h = W:Slider(parent, "Border Opacity", y, 0, 1.0, 0.05,
-        function() return db.warningBorderAlpha end,
-        function(v) db.warningBorderAlpha = v end); y = y - h
-
-    return y
-end
-
-pageBuilders.appearance = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
-    local LSM = LibStub("LibSharedMedia-3.0")
-    local _, h
-
-    _, h = W:SectionHeader(parent, "PANEL", y); y = y - h
-    _, h = W:Slider(parent, "Background Opacity", y, 0, 1.0, 0.05,
-        function() return db.opacity end,
-        function(v) db.opacity = v; OffBeat:ApplyAppearance() end); y = y - h
-
-    local borders = LSM:HashTable("border")
-    _, h = W:Dropdown(parent, "Border", y, borders,
-        function() return db.borderTexture end,
-        function(v) db.borderTexture = v; OffBeat:ApplyAppearance() end); y = y - h
-
-    if OffBeat.activeProfile and OffBeat.activeProfile.trackedBuffs then
-        _, h = W:SectionHeader(parent, "BUFF PANEL", y); y = y - h
-
-        local barTextures = LSM:HashTable("statusbar")
-        _, h = W:Dropdown(parent, "Bar Texture", y, barTextures,
-            function() return db.barTexture end,
-            function(v) db.barTexture = v; OffBeat:SendMessage("OFFBEAT_DISPLAY_REFRESH") end); y = y - h
-
-        local fonts = LSM:HashTable("font")
-        _, h = W:Dropdown(parent, "Font", y, fonts,
-            function() return db.font end,
-            function(v) db.font = v; OffBeat:SendMessage("OFFBEAT_DISPLAY_REFRESH") end); y = y - h
-        _, h = W:Slider(parent, "Font Size", y, 8, 16, 1,
-            function() return db.fontSize end,
-            function(v) db.fontSize = v; OffBeat:SendMessage("OFFBEAT_DISPLAY_REFRESH") end); y = y - h
-
-        _, h = W:Dropdown(parent, "Font Outline", y,
-            { NONE = "None", OUTLINE = "Thin", THICKOUTLINE = "Thick" },
-            function() return db.fontOutline end,
-            function(v) db.fontOutline = v; OffBeat:SendMessage("OFFBEAT_DISPLAY_REFRESH") end,
-            { "NONE", "OUTLINE", "THICKOUTLINE" }); y = y - h
-    end
-
-    _, h = W:SectionHeader(parent, "ROTATION PANEL", y); y = y - h
-    _, h = W:Slider(parent, "Background Opacity", y, 0, 1.0, 0.05,
-        function() return db.bgAlpha end,
-        function(v) db.bgAlpha = v; OffBeat:ApplyAppearance() end); y = y - h
-
-    return y
-end
+local mainFrame, sidebar, tabBar, scrollFrame, scrollChild, titleText
+local navButtons, tabButtons = {}, {}
+local activeNav, activeTab = "spec", "overview"
+local tabBuilders, navBuilders = {}, {}
+local Select -- forward
+
+local function W() return OffBeat.Widgets end
+local function DB() return OffBeat.db.profile end
 
 local function GetSpecSettings(specId)
-    local db = OffBeat.db.profile
-    if not db.specSettings[specId] then db.specSettings[specId] = {} end
+    local db = DB()
+    db.specSettings[specId] = db.specSettings[specId] or {}
     return db.specSettings[specId]
 end
 
-pageBuilders.specConfig = function(parent, y)
-    local W = OffBeat.Widgets
+local function SpecName()
     local profile = OffBeat.activeProfile
-    if not profile then return y end
-
-    local specId = profile.meta.specId
-    local db = OffBeat.db.profile
-    local ss = GetSpecSettings(specId)
-    local _, h
-
-    -- Key Cooldown
-    if profile.keyCooldown then
-        _, h = W:SectionHeader(parent, "KEY COOLDOWN — " .. (profile.keyCooldown.name or ""), y); y = y - h
-        _, h = W:Toggle(parent, "Ready Alert", y,
-            function()
-                local v = ss.keyCdAlert
-                if v == nil then return OffBeat.db.profile.keyCdAlert end
-                return v
-            end,
-            function(v) ss.keyCdAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Ready Sound", y,
-            function() return ss.keyCdSound or OffBeat.db.profile.keyCdSound end,
-            function(v) ss.keyCdSound = v end); y = y - h
-        _, h = W:Toggle(parent, "Waste Warning", y,
-            function()
-                local v = ss.keyCdWasteAlert
-                if v == nil then return OffBeat.db.profile.keyCdWasteAlert end
-                return v
-            end,
-            function(v) ss.keyCdWasteAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Waste Sound", y,
-            function() return ss.keyCdWasteSound or OffBeat.db.profile.keyCdWasteSound end,
-            function(v) ss.keyCdWasteSound = v end); y = y - h
+    if profile then return profile.meta.name end
+    local spec = GetSpecialization and GetSpecialization()
+    if spec then
+        local _, name = GetSpecializationInfo(spec)
+        local className = UnitClass("player")
+        if name then return name .. " " .. (className or "") end
     end
-
-    -- Mistake Sound
-    if profile.mistakes and #profile.mistakes > 0 then
-        _, h = W:SectionHeader(parent, "MISTAKE SOUND", y); y = y - h
-        _, h = W:Toggle(parent, "Enable Sound", y,
-            function()
-                local v = ss.soundEnabled
-                if v == nil then return db.soundEnabled end
-                return v
-            end,
-            function(v) ss.soundEnabled = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Sound", y,
-            function() return ss.mistakeSound or db.mistakeSound end,
-            function(v) ss.mistakeSound = v end); y = y - h
-    end
-
-    -- Proc Expiry
-    if profile.procTracking and #profile.procTracking > 0 then
-        _, h = W:SectionHeader(parent, "PROC EXPIRY", y); y = y - h
-        _, h = W:Toggle(parent, "Expire Warning", y,
-            function()
-                local v = ss.procExpireAlert
-                if v == nil then return db.procExpireAlert end
-                return v
-            end,
-            function(v) ss.procExpireAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Expire Sound", y,
-            function() return ss.procExpireSound or db.procExpireSound end,
-            function(v) ss.procExpireSound = v end); y = y - h
-    end
-
-    -- Rotation cheat sheet
-    if profile.rotationSheet then
-        _, h = W:SectionHeader(parent, "ROTATION SHEET", y); y = y - h
-        local function refresh()
-            local sheet = OffBeat:GetModule("Sheet", true)
-            if sheet and sheet:IsEnabled() then sheet:Render() end
-        end
-        _, h = W:Toggle(parent, "Show Rotation Sheet (/ob sheet)", y,
-            function()
-                local v = ss.showSheet
-                if v == nil then return db.showSheet end
-                return v
-            end,
-            function(v) ss.showSheet = v; refresh() end); y = y - h
-        _, h = W:Toggle(parent, "Hide It in Combat", y,
-            function()
-                local v = ss.sheetHideInCombat
-                if v == nil then return db.sheetHideInCombat end
-                return v
-            end,
-            function(v) ss.sheetHideInCombat = v; refresh() end); y = y - h
-    end
-
-    -- Failed press hints
-    if profile.failNudges then
-        _, h = W:SectionHeader(parent, "FAILED PRESSES", y); y = y - h
-        _, h = W:Toggle(parent, "Say What to Press Instead", y,
-            function()
-                local v = ss.failNudge
-                if v == nil then return db.failNudge end
-                return v
-            end,
-            function(v) ss.failNudge = v end); y = y - h
-    end
-
-    -- Cooldown prep countdown
-    if profile.prep then
-        _, h = W:SectionHeader(parent, "COUNTDOWN — " .. string.upper(profile.prep.name or "COOLDOWN"), y); y = y - h
-        _, h = W:Toggle(parent, "Show What to Hold Before It's Ready", y,
-            function()
-                local v = ss.prepEnabled
-                if v == nil then return db.prepEnabled end
-                return v
-            end,
-            function(v) ss.prepEnabled = v end); y = y - h
-        _, h = W:Slider(parent, "Seconds Before", y, 3, 10, 1,
-            function() return ss.prepLead or db.prepLead or profile.prep.lead or 5 end,
-            function(v) ss.prepLead = v end); y = y - h
-    end
-
-    -- Moving nudge
-    if profile.movingCasts then
-        local names = {}
-        for _, m in ipairs(profile.movingCasts) do names[#names + 1] = m.name or tostring(m.spellId) end
-        _, h = W:SectionHeader(parent, "WHILE MOVING (" .. string.upper(table.concat(names, ", ")) .. ")", y); y = y - h
-        _, h = W:Toggle(parent, "Nudge When It's Instant", y,
-            function()
-                local v = ss.movingNudge
-                if v == nil then return db.movingNudge end
-                return v
-            end,
-            function(v) ss.movingNudge = v end); y = y - h
-        _, h = W:Slider(parent, "After Moving (seconds)", y, 0.5, 4, 0.5,
-            function() return ss.movingNudgeDelay or db.movingNudgeDelay end,
-            function(v) ss.movingNudgeDelay = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Sound", y,
-            function() return ss.movingNudgeSound or db.movingNudgeSound end,
-            function(v) ss.movingNudgeSound = v end); y = y - h
-    end
-
-    -- Pet
-    if profile.pet then
-        _, h = W:SectionHeader(parent, "PET", y); y = y - h
-        _, h = W:Toggle(parent, "Pet Died / Missing Warning", y,
-            function()
-                local v = ss.petAlert
-                if v == nil then return db.petAlert end
-                return v
-            end,
-            function(v) ss.petAlert = v end); y = y - h
-        _, h = W:Toggle(parent, "Pet Low Health Warning", y,
-            function()
-                local v = ss.petLowHealthAlert
-                if v == nil then return db.petLowHealthAlert end
-                return v
-            end,
-            function(v) ss.petLowHealthAlert = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Sound", y,
-            function() return ss.petAlertSound or db.petAlertSound end,
-            function(v) ss.petAlertSound = v end); y = y - h
-    end
-
-    -- Idle Cooldowns
-    if profile.idleCooldowns and #profile.idleCooldowns > 0 then
-        _, h = W:SectionHeader(parent, "IDLE COOLDOWNS", y); y = y - h
-        _, h = W:Toggle(parent, "Idle Warning", y,
-            function()
-                local v = ss.idleCooldownAlert
-                if v == nil then return db.idleCooldownAlert end
-                return v
-            end,
-            function(v) ss.idleCooldownAlert = v end); y = y - h
-        _, h = W:Toggle(parent, "Visual Nag", y,
-            function()
-                local v = ss.idleCooldownNag
-                if v == nil then return db.idleCooldownNag end
-                return v
-            end,
-            function(v) ss.idleCooldownNag = v end); y = y - h
-        _, h = W:Slider(parent, "Delay (seconds)", y, 2, 15, 1,
-            function() return ss.idleCooldownThreshold or db.idleCooldownThreshold end,
-            function(v) ss.idleCooldownThreshold = v end); y = y - h
-        _, h = W:SoundPicker(parent, "Sound", y,
-            function() return ss.idleCooldownSound or db.idleCooldownSound end,
-            function(v) ss.idleCooldownSound = v end); y = y - h
-
-        _, h = W:Spacer(parent, y, 8); y = y - h
-        if not ss.disabledIdleCooldowns then ss.disabledIdleCooldowns = {} end
-        for _, cd in ipairs(profile.idleCooldowns) do
-            _, h = W:Toggle(parent, cd.name, y,
-                function() return not ss.disabledIdleCooldowns[cd.spellId] end,
-                function(v)
-                    ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil
-                    OffBeat:GetModule("Rotation"):BuildLookups()
-                end); y = y - h
-        end
-
-        -- Racial cooldowns (only the ones this character knows)
-        local racials = OffBeat:GetKnownRacials()
-        if #racials > 0 then
-            _, h = W:Spacer(parent, y, 8); y = y - h
-            _, h = W:Toggle(parent, "Track Racial Cooldowns", y,
-                function()
-                    local v = ss.trackRacials
-                    if v == nil then return db.trackRacials end
-                    return v
-                end,
-                function(v)
-                    ss.trackRacials = v
-                    OffBeat:GetModule("Rotation"):BuildLookups()
-                end); y = y - h
-            for _, r in ipairs(racials) do
-                _, h = W:Toggle(parent, r.name .. " (racial)", y,
-                    function() return not ss.disabledIdleCooldowns[r.spellId] end,
-                    function(v)
-                        ss.disabledIdleCooldowns[r.spellId] = (not v) or nil
-                        OffBeat:GetModule("Rotation"):BuildLookups()
-                    end); y = y - h
-            end
-        end
-    end
-
-    return y
+    return "Your Spec"
 end
 
--- Key Layout: which spells deserve your best keys, from profile.keyLayout.
--- Each entry carries a tier per context (st / aoe): 1 = core, 2 = regular,
--- 3 = cooldown, nil = not used there. profile.keyLayoutLabels renames the two
--- contexts (healers: Single / Group).
+local function Module(name)
+    local m = OffBeat:GetModule(name, true)
+    return (m and m:IsEnabled()) and m or nil
+end
+
+-- Spec tabs, in order. `show` decides whether this spec gets the tab.
+local TABS = {
+    { key = "overview", label = "Overview", show = function() return true end },
+    { key = "alerts",   label = "Alerts",   show = function(p)
+        return p and (p.keyCooldown or p.prep or (p.mistakes and #p.mistakes > 0) or p.procTracking
+            or p.failNudges or p.movingCasts or p.pet or (p.idleCooldowns and #p.idleCooldowns > 0)
+            or p.trackedBuffs) and true or false end },
+    { key = "training", label = "Training", show = function(p) return p and p.windows ~= nil end },
+    { key = "keys",     label = "Keys & Bars", show = function(p) return p and (p.keyLayout or p.barLayout) and true or false end },
+    { key = "gear",     label = "Gear",     show = function() return OffBeat:GetGearRecs() ~= nil end },
+}
+
+-- Layout: two columns of cards
+
+local function CreateCard(parent, title, x, y, w)
+    local card = CreateFrame("Frame", nil, parent)
+    card:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    card:SetWidth(w)
+    local bg = card:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(1, 1, 1, 0.025)
+    W().FlatBorder(card, 1, 1, 1, 0.07)
+    local t = card:CreateFontString(nil, "OVERLAY")
+    t:SetFont(FONT, 10, "")
+    t:SetPoint("TOPLEFT", card, "TOPLEFT", 16, -11)
+    t:SetPoint("RIGHT", card, "RIGHT", -16, 0)
+    t:SetJustifyH("LEFT")
+    t:SetWordWrap(false)
+    t:SetTextColor(ACCENT[1], ACCENT[2], ACCENT[3], 0.9)
+    t:SetText(string.upper(title))
+    local inner = CreateFrame("Frame", nil, card)
+    inner:SetPoint("TOPLEFT", card, "TOPLEFT", 0, -CARD_HEAD)
+    inner:SetWidth(w)
+    return card, inner
+end
+
+local function NewLayout(parent, width)
+    local L = { colW = math.floor((width - GAP) / 2), cols = { -PAD, -PAD } }
+    -- build(inner) adds widgets from y = 0 down and returns the final y.
+    function L:Card(title, build, full)
+        local x, y, w, col
+        if full then
+            y, x, w = math.min(self.cols[1], self.cols[2]), 0, width
+        else
+            col = (self.cols[1] >= self.cols[2]) and 1 or 2
+            y, x, w = self.cols[col], (col == 1) and 0 or (self.colW + GAP), self.colW
+        end
+        local card, inner = CreateCard(parent, title, x, y, w)
+        local endY = build(inner, 0) or 0
+        inner:SetHeight(math.max(1, -endY))
+        local h = CARD_HEAD + (-endY) + CARD_PAD
+        card:SetHeight(h)
+        if full then
+            self.cols[1] = y - h - GAP
+            self.cols[2] = self.cols[1]
+        else
+            self.cols[col] = y - h - GAP
+        end
+    end
+    function L:Height() return -math.min(self.cols[1], self.cols[2]) end
+    return L
+end
+
+-- Small builders shared by the pages
+
+-- A per-spec on/off with the global default as fallback.
+local function SpecToggle(parent, y, label, ss, key, onChange)
+    local _, h = W():Toggle(parent, label, y,
+        function()
+            local v = ss[key]
+            if v == nil then return DB()[key] end
+            return v
+        end,
+        function(v) ss[key] = v; if onChange then onChange(v) end end)
+    return y - h
+end
+
+local function SpecSound(parent, y, label, ss, key)
+    local _, h = W():SoundPicker(parent, label, y,
+        function() return ss[key] or DB()[key] end,
+        function(v) ss[key] = v end)
+    return y - h
+end
+
+local function Para(parent, y, text)
+    local _, h = W():Paragraph(parent, text, y)
+    return y - h
+end
+
+-- Spec: Overview
+
+tabBuilders.overview = function(L)
+    local profile = OffBeat.activeProfile
+
+    L:Card("Profile", function(p, y)
+        local specId = OffBeat.activeSpecId
+        local available = specId and OffBeat.profiles[specId]
+        if available and #available > 1 then
+            local vals, order = {}, {}
+            for _, pr in ipairs(available) do vals[pr.meta.name] = pr.meta.name; order[#order + 1] = pr.meta.name end
+            local _, h = W():Dropdown(p, "Profile", y, vals,
+                function() return profile and profile.meta.name or order[1] end,
+                function(name) OffBeat:SwitchProfile(name); Select("spec", "overview") end, order)
+            y = y - h
+        end
+        if profile then
+            y = Para(p, y, profile.meta.name .. (profile.meta.source and (" — " .. profile.meta.source) or ""))
+        else
+            y = Para(p, y, "No OffBeat profile for this spec yet. The Gear tab still works.")
+        end
+        return y
+    end)
+
+    if profile then
+        -- What this profile turns on, so you know where to look.
+        L:Card("What OffBeat does for this spec", function(p, y)
+            local lines = {}
+            local function add(ok, text) if ok then lines[#lines + 1] = "•  " .. text end end
+            add(profile.rotationSpells, "Ability history panel")
+            add(profile.keyCooldown, (profile.keyCooldown and profile.keyCooldown.name or "") .. " ready alert and icon")
+            add(profile.prep, "Countdown before " .. (profile.prep and profile.prep.name or "the cooldown"))
+            add(profile.mistakes and #profile.mistakes > 0, (profile.mistakes and #profile.mistakes or 0) .. " mistake check(s)")
+            add(profile.failNudges, "What to press when a press fails")
+            add(profile.procTracking, "Wasted proc warnings")
+            add(profile.idleCooldowns and #profile.idleCooldowns > 0, "Idle cooldown nag")
+            add(profile.movingCasts, "Instant-while-moving nudge")
+            add(profile.pet, "Pet warnings")
+            add(profile.windows, "Training windows and top-parse benchmarks")
+            add(profile.rotationSheet, "Rotation sheet")
+            add(profile.barLayout, "Bar layout (Keys & Bars)")
+            add(profile.trackedBuffs, "Buff panel and timeline")
+            return Para(p, y, table.concat(lines, "\n"))
+        end)
+    end
+
+    if profile and profile.rotationSheet then
+        L:Card("Rotation sheet", function(p, y)
+            local ss = GetSpecSettings(profile.meta.specId)
+            local function refresh() local m = Module("Sheet"); if m then m:Render() end end
+            y = SpecToggle(p, y, "Show Rotation Sheet", ss, "showSheet", refresh)
+            y = SpecToggle(p, y, "Hide It in Combat", ss, "sheetHideInCombat", refresh)
+            return Para(p, y, "Also /ob sheet. Drag it while frames are unlocked.")
+        end)
+    end
+
+    if C_AssistedCombat and profile and profile.rotationSpells then
+        L:Card("Blizzard's next spell", function(p, y)
+            local _, h = W():Toggle(p, "Show Next Spell (this spec)", y,
+                function() return OffBeat:AssistedCombatOn() end,
+                function(v)
+                    GetSpecSettings(profile.meta.specId).assistedCombat = v
+                    local rd = Module("RotationDisplay"); if rd then rd:RefreshAssisted() end
+                end)
+            y = y - h
+            return Para(p, y, "Size and keybind text are on the Panels page.")
+        end)
+    end
+end
+
+-- Spec: Alerts
+
+tabBuilders.alerts = function(L)
+    local profile = OffBeat.activeProfile
+    if not profile then return end
+    local db = DB()
+    local ss = GetSpecSettings(profile.meta.specId)
+
+    if profile.keyCooldown or profile.prep then
+        L:Card("Main cooldown" .. (profile.keyCooldown and (" — " .. profile.keyCooldown.name) or ""), function(p, y)
+            if profile.keyCooldown then
+                y = SpecToggle(p, y, "Ready Alert", ss, "keyCdAlert")
+                y = SpecSound(p, y, "Ready Sound", ss, "keyCdSound")
+                y = SpecToggle(p, y, "Waste Warning", ss, "keyCdWasteAlert")
+                y = SpecSound(p, y, "Waste Sound", ss, "keyCdWasteSound")
+            end
+            if profile.prep then
+                y = SpecToggle(p, y, "Countdown: What to Hold", ss, "prepEnabled")
+                local _, h = W():Slider(p, "Seconds Before", y, 3, 10, 1,
+                    function() return ss.prepLead or db.prepLead or profile.prep.lead or 5 end,
+                    function(v) ss.prepLead = v end)
+                y = y - h
+            end
+            return y
+        end)
+    end
+
+    local hasMistakes = profile.mistakes and #profile.mistakes > 0
+    if hasMistakes or profile.procTracking or profile.failNudges then
+        L:Card("Mistakes & procs", function(p, y)
+            if hasMistakes then
+                y = SpecToggle(p, y, "Mistake Sound", ss, "soundEnabled")
+                y = SpecSound(p, y, "Sound", ss, "mistakeSound")
+            end
+            if profile.procTracking and #profile.procTracking > 0 then
+                y = SpecToggle(p, y, "Proc Expiring Warning", ss, "procExpireAlert")
+                y = SpecSound(p, y, "Expire Sound", ss, "procExpireSound")
+            end
+            if profile.failNudges then
+                y = SpecToggle(p, y, "Failed Press: What Instead", ss, "failNudge")
+            end
+            return y
+        end)
+    end
+
+    if profile.idleCooldowns and #profile.idleCooldowns > 0 then
+        L:Card("Idle cooldowns", function(p, y)
+            y = SpecToggle(p, y, "Idle Warning", ss, "idleCooldownAlert")
+            y = SpecToggle(p, y, "Visual Nag", ss, "idleCooldownNag")
+            local _, h = W():Slider(p, "After (seconds)", y, 2, 15, 1,
+                function() return ss.idleCooldownThreshold or db.idleCooldownThreshold end,
+                function(v) ss.idleCooldownThreshold = v end)
+            y = y - h
+            y = SpecSound(p, y, "Sound", ss, "idleCooldownSound")
+            ss.disabledIdleCooldowns = ss.disabledIdleCooldowns or {}
+            local function rebuild() local r = OffBeat:GetModule("Rotation", true); if r then r:BuildLookups() end end
+            for _, cd in ipairs(profile.idleCooldowns) do
+                _, h = W():Toggle(p, "   " .. cd.name, y,
+                    function() return not ss.disabledIdleCooldowns[cd.spellId] end,
+                    function(v) ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil; rebuild() end)
+                y = y - h
+            end
+            local racials = OffBeat:GetKnownRacials()
+            if #racials > 0 then
+                y = SpecToggle(p, y, "Racial Cooldowns", ss, "trackRacials", rebuild)
+            end
+            return y
+        end)
+    end
+
+    if profile.movingCasts or profile.pet then
+        L:Card("Situational", function(p, y)
+            if profile.movingCasts then
+                local names = {}
+                for _, m in ipairs(profile.movingCasts) do names[#names + 1] = m.name or tostring(m.spellId) end
+                y = SpecToggle(p, y, "Moving: " .. table.concat(names, ", ") .. " Is Instant", ss, "movingNudge")
+                local _, h = W():Slider(p, "After Moving (s)", y, 0.5, 4, 0.5,
+                    function() return ss.movingNudgeDelay or db.movingNudgeDelay end,
+                    function(v) ss.movingNudgeDelay = v end)
+                y = y - h
+                y = SpecSound(p, y, "Moving Sound", ss, "movingNudgeSound")
+            end
+            if profile.pet then
+                y = SpecToggle(p, y, "Pet Died / Missing", ss, "petAlert")
+                y = SpecToggle(p, y, "Pet Low Health", ss, "petLowHealthAlert")
+                y = SpecSound(p, y, "Pet Sound", ss, "petAlertSound")
+            end
+            return y
+        end)
+    end
+
+    if profile.trackedBuffs then
+        L:Card("Buff tracking", function(p, y)
+            local _, h = W():Toggle(p, "Chat Output", y,
+                function() return db.chatOutput end, function(v) db.chatOutput = v end)
+            y = y - h
+            _, h = W():Toggle(p, "Cast Warnings", y,
+                function() return db.castWarnings end, function(v) db.castWarnings = v end)
+            return y - h
+        end)
+    end
+end
+
+-- Spec: Training
+
+tabBuilders.training = function(L)
+    local profile = OffBeat.activeProfile
+    if not profile or not profile.windows then return end
+    local db = DB()
+    local ss = GetSpecSettings(profile.meta.specId)
+    local win = OffBeat:GetModule("Windows", true)
+
+    L:Card("Training", function(p, y)
+        local _, h = W():Toggle(p, "Training Mode (this session)", y,
+            function() return OffBeat.training end,
+            function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end)
+        y = y - h
+        _, h = W():Toggle(p, "In Raids, Only Count Bosses", y,
+            function() return db.trainingBossOnly end, function(v) db.trainingBossOnly = v end)
+        y = y - h
+        _, h = W():Toggle(p, "Log Combat While Training", y,
+            function() return db.trainingCombatLog end, function(v) db.trainingCombatLog = v end)
+        y = y - h
+        y = SpecToggle(p, y, "Live Counter", ss, "windowLive")
+        y = SpecToggle(p, y, "Chat Scorecard", ss, "windowChat")
+        _, h = W():Button(p, "Last Report", y, function()
+            if win and win:IsEnabled() then win:ShowLastReport() end
+        end, "/ob report")
+        return y - h
+    end)
+
+    L:Card("How it works", function(p, y)
+        return Para(p, y,
+            "Press your big cooldown and OffBeat counts the casts that matter inside the window "
+            .. "against a goal from top parses: a live counter while it runs, a scorecard when it "
+            .. "ends. After each fight your casts per minute are compared with that boss's top "
+            .. "players, and turning training off (or /ob training) opens a report with a page per "
+            .. "pull. It survives a /reload and switches off when you log out.")
+    end)
+
+    for _, w in ipairs(profile.windows) do
+        L:Card(w.name .. " window (" .. w.duration .. "s)", function(p, y)
+            if w.note then y = Para(p, y, w.note) end
+            for _, st in ipairs(w.setup or {}) do y = Para(p, y, "Setup check: " .. st.name) end
+            if win then
+                for _, g in ipairs(w.goals or {}) do
+                    local _, h = W():Slider(p, g.name, y, 1, 20, 1,
+                        function() return win:GetGoalMin(w, g) end,
+                        function(v) win:SetGoalMin(w, g, v) end)
+                    y = y - h
+                end
+            end
+            return y
+        end)
+    end
+
+    local bm = profile.benchmarks
+    if bm then
+        L:Card("Top-parse benchmarks", function(p, y)
+            local names, lines = {}, {}
+            for _, e in pairs(bm.encounters or {}) do names[#names + 1] = e.name end
+            table.sort(names)
+            for _, r in ipairs(bm.rates) do lines[#lines + 1] = r.name end
+            return Para(p, y, "From " .. (bm.source or "top parses") .. ". Measured: "
+                .. table.concat(lines, ", ") .. ".\nBosses: " .. (#names > 0 and table.concat(names, ", ") or "none")
+                .. ". Dummies and other fights use " .. (bm.overall and bm.overall.name or "no benchmark") .. ".")
+        end)
+    end
+end
+
+-- Spec: Keys & Bars
 
 local DEFAULT_LAYOUT_LABELS = { st = "ST", aoe = "AoE", stLong = "Single Target", aoeLong = "AoE" }
 
 local KEY_TIERS = {
-    { tier = 1, label = "CORE - YOUR BEST KEYS",
+    { tier = 1, label = "Core — your best keys",
       hint = "Pressed every few GCDs. Put these on the keys your fingers rest on." },
-    { tier = 2, label = "REGULAR - EASY REACH",
+    { tier = 2, label = "Regular — easy reach",
       hint = "Used every cycle or on procs. Unmodified keys close to home." },
-    { tier = 3, label = "COOLDOWNS - MODIFIERS ARE FINE",
+    { tier = 3, label = "Cooldowns — modifiers are fine",
       hint = "Once every minute or two. Shift/Ctrl binds or a farther key." },
 }
 
 local function ResolveLayoutSpell(entry)
     local ids = { entry.spellId }
-    if entry.alt then
-        for _, id in ipairs(entry.alt) do ids[#ids + 1] = id end
-    end
-    -- Check the override first: a base spell replaced by a talent (Immolate ->
-    -- Wither) is still "known", but the replacement is what sits on your bar.
+    for _, id in ipairs(entry.alt or {}) do ids[#ids + 1] = id end
+    -- A base spell replaced by a talent (Immolate -> Wither) is still known,
+    -- but the replacement is what sits on your bar.
     for _, id in ipairs(ids) do
         local current, known = id, IsPlayerSpell(id)
         if FindSpellOverrideByID then
@@ -756,8 +418,6 @@ local function ResolveLayoutSpell(entry)
     return entry.spellId, false
 end
 
--- Resolve, dedupe by spell name (hero-tree replacements like Immolate -> Wither
--- collapse into one row), merge tiers, keep the profile's order.
 local function BuildLayoutRows(layout)
     local rows, byName = {}, {}
     for _, entry in ipairs(layout) do
@@ -772,10 +432,8 @@ local function BuildLayoutRows(layout)
             if entry.st and (not existing.st or entry.st < existing.st) then existing.st = entry.st end
             if entry.aoe and (not existing.aoe or entry.aoe < existing.aoe) then existing.aoe = entry.aoe end
         else
-            local row = {
-                spellId = id, name = name, icon = info and info.iconID,
-                note = entry.note, st = entry.st, aoe = entry.aoe, known = known,
-            }
+            local row = { spellId = id, name = name, icon = info and info.iconID,
+                          note = entry.note, st = entry.st, aoe = entry.aoe, known = known }
             rows[#rows + 1] = row
             byName[name] = row
         end
@@ -790,333 +448,544 @@ local function RowTier(row, view)
     return row.st or row.aoe
 end
 
-pageBuilders.keyLayout = function(parent, y)
-    local W = OffBeat.Widgets
-    local db = OffBeat.db.profile
+tabBuilders.keys = function(L)
     local profile = OffBeat.activeProfile
-    if not profile or not profile.keyLayout then return y end
-    local _, h
+    if not profile then return end
+    local db = DB()
 
-    if db.keyLayoutView == nil then db.keyLayoutView = "both" end
-    local view = db.keyLayoutView
-    local showUnknown = db.keyLayoutShowUntalented
-    local labels = profile.keyLayoutLabels or DEFAULT_LAYOUT_LABELS
-
-    _, h = W:SectionHeader(parent, "KEY LAYOUT - " .. string.upper(profile.meta.name), y); y = y - h
-    _, h = W:Paragraph(parent,
-        "Rotation spells from the guide, grouped by how often you press them. "
-        .. labels.st .. " / " .. labels.aoe .. " badges show where each spell is used: bright = core, dim = regular, grey = cooldown. "
-        .. "Your current keybind is on the right; amber means a core spell sits behind a modifier.", y); y = y - h
-    _, h = W:Dropdown(parent, "View", y,
-        { both = labels.stLong .. " + " .. labels.aoeLong, st = labels.stLong, aoe = labels.aoeLong },
-        function() return db.keyLayoutView end,
-        function(v) db.keyLayoutView = v; SelectCategory("keyLayout") end,
-        { "both", "st", "aoe" }); y = y - h
-
-    OffBeat:InvalidateKeybindCache() -- binds may have changed since the cache was built
-    local rows = BuildLayoutRows(profile.keyLayout)
-    local unknownCount = 0
-    for _, row in ipairs(rows) do
-        if not row.known and RowTier(row, view) then unknownCount = unknownCount + 1 end
+    if profile.barLayout then
+        L:Card("Bar layout", function(p, y)
+            local plan = OffBeat:GetBarLayoutPlan() or {}
+            for _, r in ipairs(plan) do
+                local info = C_Spell.GetSpellInfo(r.spellId)
+                local _, h = W():InfoRow(p, y, r.key, r.text .. (r.known and "" or "  (not talented, skipped)"),
+                    info and info.iconID, not r.known)
+                y = y - h
+            end
+            local _, h = W():Button(p, "Put These on My Bars", y, function()
+                OffBeat:ShowBarLayout(true)
+                Select("spec", "keys")
+            end, "Replaces only these slots. Out of combat.", true)
+            return y - h
+        end, true)
     end
 
-    _, h = W:Toggle(parent, "Show Untalented (" .. unknownCount .. ")", y,
-        function() return db.keyLayoutShowUntalented end,
-        function(v) db.keyLayoutShowUntalented = v; SelectCategory("keyLayout") end); y = y - h
-
-    for _, t in ipairs(KEY_TIERS) do
-        local list = {}
+    if profile.keyLayout then
+        local labels = profile.keyLayoutLabels or DEFAULT_LAYOUT_LABELS
+        if db.keyLayoutView == nil then db.keyLayoutView = "both" end
+        local view = db.keyLayoutView
+        OffBeat:InvalidateKeybindCache() -- binds may have changed since the cache was built
+        local rows = BuildLayoutRows(profile.keyLayout)
+        local unknownCount = 0
         for _, row in ipairs(rows) do
-            if RowTier(row, view) == t.tier and (row.known or showUnknown) then
-                list[#list + 1] = row
-            end
+            if not row.known and RowTier(row, view) then unknownCount = unknownCount + 1 end
         end
-        -- talented first, guide order otherwise preserved
-        local ordered = {}
-        for _, r in ipairs(list) do if r.known then ordered[#ordered + 1] = r end end
-        for _, r in ipairs(list) do if not r.known then ordered[#ordered + 1] = r end end
 
-        if #ordered > 0 then
-            _, h = W:SectionHeader(parent, t.label, y); y = y - h
-            _, h = W:Paragraph(parent, t.hint, y); y = y - h
-            for _, row in ipairs(ordered) do
-                local key = row.known and OffBeat:GetKeybindForSpell(row.spellId) or nil
-                local warn
-                if row.known and not key and t.tier <= 2 then
-                    warn = "unbound"
-                elseif key and t.tier == 1 and key:match("^[scam]%-") then
-                    warn = "modifier"
+        L:Card("Key layout", function(p, y)
+            y = Para(p, y, "How often you press each spell, from the guide. " .. labels.st .. " / "
+                .. labels.aoe .. " badges: bright = core, dim = regular, grey = cooldown. Amber key = "
+                .. "a core spell behind a modifier, red = not bound.")
+            local _, h = W():Dropdown(p, "View", y,
+                { both = labels.stLong .. " + " .. labels.aoeLong, st = labels.stLong, aoe = labels.aoeLong },
+                function() return db.keyLayoutView end,
+                function(v) db.keyLayoutView = v; Select("spec", "keys") end,
+                { "both", "st", "aoe" })
+            y = y - h
+            _, h = W():Toggle(p, "Show Untalented (" .. unknownCount .. ")", y,
+                function() return db.keyLayoutShowUntalented end,
+                function(v) db.keyLayoutShowUntalented = v; Select("spec", "keys") end)
+            y = y - h
+            for _, t in ipairs(KEY_TIERS) do
+                local ordered = {}
+                for _, row in ipairs(rows) do
+                    if RowTier(row, view) == t.tier and row.known then ordered[#ordered + 1] = row end
                 end
-                row.key, row.keyWarn = key, warn
-                _, h = W:SpellRow(parent, y, row, labels); y = y - h
+                for _, row in ipairs(rows) do
+                    if RowTier(row, view) == t.tier and not row.known and db.keyLayoutShowUntalented then
+                        ordered[#ordered + 1] = row
+                    end
+                end
+                if #ordered > 0 then
+                    _, h = W():SectionHeader(p, string.upper(t.label), y); y = y - h
+                    y = Para(p, y, t.hint)
+                    for _, row in ipairs(ordered) do
+                        local key = row.known and OffBeat:GetKeybindForSpell(row.spellId) or nil
+                        local warn
+                        if row.known and not key and t.tier <= 2 then warn = "unbound"
+                        elseif key and t.tier == 1 and key:match("^[scam]%-") then warn = "modifier" end
+                        row.key, row.keyWarn = key, warn
+                        _, h = W():SpellRow(p, y, row, labels); y = y - h
+                    end
+                end
             end
-        end
+            return y
+        end, true)
     end
-
-    if profile.meta.source then
-        _, h = W:Spacer(parent, y, 6); y = y - h
-        _, h = W:Paragraph(parent, "Source: " .. profile.meta.source, y); y = y - h
-    end
-
-    return y
 end
 
--- Training: cooldown window coaching (Windows.lua). Off by default; turned on
--- per session with /ob training or the toggle below.
+-- Spec: Gear
 
--- Gear: enchants and gems top players use, checked against what you wear.
-pageBuilders.gear = function(parent, y)
-    local W = OffBeat.Widgets
+tabBuilders.gear = function(L)
     local check, recs = OffBeat:CheckGear()
-    if not check then return y end
-    local _, h
+    if not check then return end
     local GOOD, WARN, BAD, DIM = { 0.3, 0.9, 0.45 }, { 1, 0.82, 0.3 }, { 1, 0.35, 0.3 }, { 0.6, 0.6, 0.6 }
 
-    _, h = W:SectionHeader(parent, "ENCHANTS", y); y = y - h
-    _, h = W:Paragraph(parent, "What the top players of your spec use (" .. (recs.source or "")
-        .. "), checked against what you have on. Percentages are how many of them use it.", y); y = y - h
-    for _, e in ipairs(check.enchants) do
-        local opts = {}
-        for i, o in ipairs(e.options) do
-            if i > 3 then break end
-            opts[#opts + 1] = string.format("%s %d%%", OffBeat:GearName("enchant", o[1], recs), o[2])
+    L:Card("Enchants", function(p, y)
+        y = Para(p, y, "What the top players of your spec use (" .. (recs.source or "")
+            .. "), against what you have on. Percentages: how many of them use it.")
+        for _, e in ipairs(check.enchants) do
+            local opts = {}
+            for i, o in ipairs(e.options) do
+                if i > 3 then break end
+                opts[#opts + 1] = string.format("%s %d%%", OffBeat:GearName("enchant", o[1], recs), o[2])
+            end
+            local status, color
+            if e.status == "ok" then status, color = "OK", GOOD
+            elseif e.status == "missing" then status, color = "MISSING", BAD
+            elseif e.status == "empty" then status, color = "no item", DIM
+            else status, color = "other: " .. OffBeat:GearName("enchant", e.have, recs), WARN end
+            local slot
+            for _, s in ipairs(OffBeat.GEAR_SLOTS) do if s[3] == e.label then slot = s[2] end end
+            local _, h = W():GearRow(p, y, {
+                icon = e.icon, title = e.label, sub = table.concat(opts, "  ·  "),
+                status = status, color = color,
+                tooltipLink = slot and GetInventoryItemLink("player", slot),
+            })
+            y = y - h
         end
-        local status, color
-        if e.status == "ok" then status, color = "OK", GOOD
-        elseif e.status == "missing" then status, color = "MISSING", BAD
-        elseif e.status == "empty" then status, color = "no item", DIM
-        else status, color = "other: " .. OffBeat:GearName("enchant", e.have, recs), WARN end
-        _, h = W:GearRow(parent, y, {
-            icon = e.icon, title = e.label, sub = table.concat(opts, "  ·  "),
-            status = status, color = color,
-            tooltipLink = GetInventoryItemLink("player", (function()
-                for _, s in ipairs(OffBeat.GEAR_SLOTS) do if s[3] == e.label then return s[2] end end
-            end)()),
-        }); y = y - h
-    end
+        return y
+    end, true)
 
     local g = check.gems
-    _, h = W:SectionHeader(parent, "GEMS", y); y = y - h
-    for i, r in ipairs(g.recommended) do
-        if i > 6 then break end
-        _, h = W:GearRow(parent, y, {
-            icon = C_Item.GetItemIconByID and C_Item.GetItemIconByID(r[1]),
-            title = OffBeat:GearName("gem", r[1]),
-            sub = string.format("%d%% of top players use it", r[2]),
-            tooltipLink = "item:" .. r[1],
-        }); y = y - h
-    end
-    local socketLine = string.format("Your sockets: %d of %d filled.", g.filled, g.sockets)
-    if #g.empty > 0 then socketLine = socketLine .. " Empty: " .. table.concat(g.empty, ", ") .. "." end
-    if #g.odd > 0 then
-        local odd = {}
-        for _, o in ipairs(g.odd) do odd[#odd + 1] = o[1] .. " (" .. OffBeat:GearName("gem", o[2]) .. ")" end
-        socketLine = socketLine .. " Not a common pick: " .. table.concat(odd, ", ") .. "."
-    end
-    _, h = W:Paragraph(parent, socketLine, y); y = y - h
-    return y
+    L:Card("Gems", function(p, y)
+        for i, r in ipairs(g.recommended) do
+            if i > 6 then break end
+            local _, h = W():GearRow(p, y, {
+                icon = C_Item.GetItemIconByID and C_Item.GetItemIconByID(r[1]),
+                title = OffBeat:GearName("gem", r[1]),
+                sub = string.format("%d%% of top players use it", r[2]),
+                tooltipLink = "item:" .. r[1],
+            })
+            y = y - h
+        end
+        local line = string.format("Your sockets: %d of %d filled.", g.filled, g.sockets)
+        if #g.empty > 0 then line = line .. " Empty: " .. table.concat(g.empty, ", ") .. "." end
+        if #g.odd > 0 then
+            local odd = {}
+            for _, o in ipairs(g.odd) do odd[#odd + 1] = o[1] .. " (" .. OffBeat:GearName("gem", o[2]) .. ")" end
+            line = line .. " Not a common pick: " .. table.concat(odd, ", ") .. "."
+        end
+        return Para(p, y, line)
+    end, true)
 end
 
-pageBuilders.training = function(parent, y)
-    local W = OffBeat.Widgets
+-- Panels: how each on-screen element looks (every spec)
+
+navBuilders.panels = function(L)
+    local db = DB()
     local profile = OffBeat.activeProfile
-    if not profile or not profile.windows then return y end
-    local db = OffBeat.db.profile
-    local ss = GetSpecSettings(profile.meta.specId)
-    local win = OffBeat:GetModule("Windows", true)
-    local _, h
+    local function history() OffBeat:SendMessage("OFFBEAT_HISTORY_UPDATED") end
+    local function rd() return Module("RotationDisplay") end
 
-    _, h = W:SectionHeader(parent, "WHAT TRAINING DOES", y); y = y - h
-    _, h = W:Paragraph(parent,
-        "Training coaches your big cooldown windows. When you press the cooldown, OffBeat "
-        .. "checks your setup (for example, Soul Shards pooled) and then counts the casts "
-        .. "that matter inside the window against a goal taken from top parses.", y); y = y - h
-    _, h = W:Paragraph(parent,
-        "During the window a counter shows your progress. When it ends you get a scorecard "
-        .. "in chat, and after combat a summary: how many windows hit the goal, your average "
-        .. "and your best. Practise on a target dummy, start with a goal you can reach, and "
-        .. "raise it as you improve. After each fight it also compares your casts per minute "
-        .. "with that boss's top parses, and when you turn training off a report sums up the "
-        .. "session boss by boss (reopen it with /ob report). In raids only boss fights count, "
-        .. "so you can leave training on all night.", y); y = y - h
-    _, h = W:Paragraph(parent,
-        "Training is off by default. It stays on through a /reload (the session so far is "
-        .. "kept) and switches off when you log out. Turn it on here or with /ob training.", y); y = y - h
+    L:Card("Ability history", function(p, y)
+        local _, h = W():Toggle(p, "Show Panel", y, function() return db.rotationShown end,
+            function(v) db.rotationShown = v; local m = rd(); if m then m:UpdatePanelVisibility() end end)
+        y = y - h
+        _, h = W():Toggle(p, "Only in Combat", y, function() return db.rotationCombatOnly end,
+            function(v) db.rotationCombatOnly = v; local m = rd(); if m then m:UpdatePanelVisibility() end end)
+        y = y - h
+        _, h = W():Slider(p, "Icons Shown", y, 2, 12, 1, function() return db.historyCount end,
+            function(v) db.historyCount = v; history() end)
+        y = y - h
+        _, h = W():Dropdown(p, "Grows", y, { right = "Right", left = "Left", up = "Up", down = "Down" },
+            function() return db.growDirection end, function(v) db.growDirection = v; history() end,
+            { "right", "left", "up", "down" })
+        y = y - h
+        _, h = W():Slider(p, "Icon Size", y, 20, 64, 2, function() return db.iconSize end,
+            function(v) db.iconSize = v; history() end)
+        y = y - h
+        _, h = W():Slider(p, "Newest Opacity", y, 0.2, 1.0, 0.05, function() return db.iconAlpha end,
+            function(v) db.iconAlpha = v; history() end)
+        y = y - h
+        _, h = W():Slider(p, "Fade Per Icon", y, 0, 0.3, 0.02, function() return db.opacityStep end,
+            function(v) db.opacityStep = v; history() end)
+        y = y - h
+        _, h = W():Slider(p, "Fade Floor", y, 0.1, 1.0, 0.05, function() return db.minOpacity end,
+            function(v) db.minOpacity = v; history() end)
+        y = y - h
+        _, h = W():Slider(p, "Background", y, 0, 1.0, 0.05, function() return db.bgAlpha end,
+            function(v) db.bgAlpha = v; OffBeat:ApplyAppearance() end)
+        return y - h
+    end)
 
-    _, h = W:SectionHeader(parent, "TRAINING MODE", y); y = y - h
-    _, h = W:Toggle(parent, "Training Mode (this session)", y,
-        function() return OffBeat.training end,
-        function(v) if v ~= OffBeat.training then OffBeat:ToggleTraining() end end); y = y - h
-    _, h = W:Toggle(parent, "In Raids, Only Count Bosses", y,
-        function() return db.trainingBossOnly end,
-        function(v) db.trainingBossOnly = v end); y = y - h
-    _, h = W:Toggle(parent, "Log Combat While Training", y,
-        function() return db.trainingCombatLog end,
-        function(v) db.trainingCombatLog = v end); y = y - h
-    _, h = W:Toggle(parent, "Live Counter", y,
-        function()
-            local v = ss.windowLive
-            if v == nil then return db.windowLive end
-            return v
-        end,
-        function(v) ss.windowLive = v end); y = y - h
-    _, h = W:Toggle(parent, "Chat Scorecard", y,
-        function()
-            local v = ss.windowChat
-            if v == nil then return db.windowChat end
-            return v
-        end,
-        function(v) ss.windowChat = v end); y = y - h
+    L:Card("Main cooldown icon", function(p, y)
+        local _, h = W():Toggle(p, "Show Icon", y, function() return db.keyCdIconEnabled end,
+            function(v) db.keyCdIconEnabled = v end)
+        y = y - h
+        _, h = W():Toggle(p, "Only in Combat", y, function() return db.keyCdCombatOnly end,
+            function(v) db.keyCdCombatOnly = v end)
+        y = y - h
+        _, h = W():Slider(p, "Icon Size", y, 24, 80, 2, function() return db.keyCdIconSize end,
+            function(v) db.keyCdIconSize = v; local m = rd(); if m then m:ResizeKeyCdIcon() end end)
+        y = y - h
+        _, h = W():Dropdown(p, "Glow", y, { glow = "Pulse", proc = "Proc", ants = "Ants", none = "None" },
+            function() return db.keyCdGlowStyle end, function(v) db.keyCdGlowStyle = v end,
+            { "glow", "proc", "ants", "none" })
+        y = y - h
+        _, h = W():Slider(p, "Glow Intensity", y, 0.2, 1.0, 0.05, function() return db.keyCdGlowIntensity end,
+            function(v) db.keyCdGlowIntensity = v end)
+        y = y - h
+        _, h = W():ColorPicker(p, "Glow Color", y, function() return OffBeat:GetGlowColor() end,
+            function(r, g, b)
+                if r then db.keyCdGlowColor = { r = r, g = g, b = b } else db.keyCdGlowColor = nil end
+            end, "Class Color")
+        return y - h
+    end)
 
-    for _, w in ipairs(profile.windows) do
-        _, h = W:SectionHeader(parent, string.upper(w.name) .. " WINDOW (" .. w.duration .. "s)", y); y = y - h
-        if w.note then
-            _, h = W:Paragraph(parent, w.note, y); y = y - h
-        end
-        for _, st in ipairs(w.setup or {}) do
-            _, h = W:Paragraph(parent, "Setup check when you press it: " .. st.name, y); y = y - h
-        end
-        if win then
-            for _, g in ipairs(w.goals or {}) do
-                _, h = W:Slider(parent, g.name .. " goal", y, 1, 20, 1,
-                    function() return win:GetGoalMin(w, g) end,
-                    function(v) win:SetGoalMin(w, g, v) end); y = y - h
-            end
-        end
+    L:Card("Warning text", function(p, y)
+        local _, h = W():Slider(p, "Background", y, 0, 1.0, 0.05, function() return db.warningBgAlpha end,
+            function(v) db.warningBgAlpha = v end)
+        y = y - h
+        _, h = W():Slider(p, "Border", y, 0, 1.0, 0.05, function() return db.warningBorderAlpha end,
+            function(v) db.warningBorderAlpha = v end)
+        return y - h
+    end)
+
+    if C_AssistedCombat then
+        L:Card("Next spell icon", function(p, y)
+            local _, h = W():Toggle(p, "Only in Combat", y, function() return db.assistedCombatOnly end,
+                function(v) db.assistedCombatOnly = v; local m = rd(); if m then m:UpdateAssistedVisibility() end end)
+            y = y - h
+            _, h = W():Slider(p, "Icon Size", y, 24, 80, 2, function() return db.assistedIconSize end,
+                function(v) db.assistedIconSize = v; local m = rd(); if m then m:RefreshAssisted() end end)
+            y = y - h
+            _, h = W():Toggle(p, "Show Keybind", y, function() return db.assistedKeybindShown end,
+                function(v) db.assistedKeybindShown = v; local m = rd(); if m then m:RefreshAssisted() end end)
+            y = y - h
+            _, h = W():Slider(p, "Keybind Size", y, 8, 20, 1, function() return db.assistedKeybindSize end,
+                function(v) db.assistedKeybindSize = v; local m = rd(); if m then m:RefreshAssisted() end end)
+            y = y - h
+            return Para(p, y, "On or off per spec: Overview tab.")
+        end)
     end
 
-    local bm = profile.benchmarks
-    if bm then
-        _, h = W:SectionHeader(parent, "TOP-PARSE BENCHMARKS", y); y = y - h
-        local names = {}
-        for _, e in pairs(bm.encounters or {}) do names[#names + 1] = e.name end
-        table.sort(names)
-        local lines = {}
-        for _, r in ipairs(bm.rates) do lines[#lines + 1] = r.name end
-        _, h = W:Paragraph(parent, "Casts per minute measured against " .. (bm.source or "top parses")
-            .. ". Each boss is compared with its own top players; fights outside a boss encounter "
-            .. "(target dummies) use " .. (bm.overall and bm.overall.name or "no benchmark") .. ".\n\n"
-            .. "Measured: " .. table.concat(lines, ", ") .. ".\n\n"
-            .. "Bosses: " .. (#names > 0 and table.concat(names, ", ") or "none"), y); y = y - h
+    L:Card("Timelines", function(p, y)
+        local _, h = W():Toggle(p, "Rotation Timeline After Fights", y, function() return db.timelineAutoShow end,
+            function(v) db.timelineAutoShow = v end)
+        y = y - h
+        _, h = W():Dropdown(p, "Buff Timeline After", y,
+            { both = "Both", encounter = "Encounters", keystone = "Keystones", never = "Never" },
+            function() return db.timelineShow end, function(v) db.timelineShow = v end,
+            { "both", "encounter", "keystone", "never" })
+        y = y - h
+        _, h = W():Toggle(p, "Keystone Tracking", y, function() return db.keystoneTracking end,
+            function(v) db.keystoneTracking = v end)
+        y = y - h
+        _, h = W():Slider(p, "Fights Kept", y, 1, 50, 1, function() return db.historySize end,
+            function(v) db.historySize = v end)
+        return y - h
+    end)
+
+    if profile and profile.trackedBuffs then
+        local LSM = LibStub("LibSharedMedia-3.0")
+        L:Card("Buff panel", function(p, y)
+            local function refresh() OffBeat:SendMessage("OFFBEAT_DISPLAY_REFRESH") end
+            local _, h = W():Toggle(p, "Show Panel", y, function() return db.buffPanelShown end,
+                function(v)
+                    db.buffPanelShown = v
+                    local bd = Module("BuffDisplay")
+                    if bd then if v then bd:GetFrame():Show(); bd:Refresh() else bd:GetFrame():Hide() end end
+                end)
+            y = y - h
+            _, h = W():Dropdown(p, "Bar Texture", y, LSM:HashTable("statusbar"),
+                function() return db.barTexture end, function(v) db.barTexture = v; refresh() end)
+            y = y - h
+            _, h = W():Dropdown(p, "Font", y, LSM:HashTable("font"),
+                function() return db.font end, function(v) db.font = v; refresh() end)
+            y = y - h
+            _, h = W():Slider(p, "Font Size", y, 8, 16, 1, function() return db.fontSize end,
+                function(v) db.fontSize = v; refresh() end)
+            y = y - h
+            _, h = W():Dropdown(p, "Outline", y, { NONE = "None", OUTLINE = "Thin", THICKOUTLINE = "Thick" },
+                function() return db.fontOutline end, function(v) db.fontOutline = v; refresh() end,
+                { "NONE", "OUTLINE", "THICKOUTLINE" })
+            return y - h
+        end)
     end
 
-    return y
+    L:Card("All panels", function(p, y)
+        local LSM = LibStub("LibSharedMedia-3.0")
+        local _, h = W():Slider(p, "Background", y, 0, 1.0, 0.05, function() return db.opacity end,
+            function(v) db.opacity = v; OffBeat:ApplyAppearance() end)
+        y = y - h
+        local borders = { Flat = "Flat (1px line)", None = "None" }
+        for k, v in pairs(LSM:HashTable("border")) do if k ~= "None" then borders[k] = k end end
+        _, h = W():Dropdown(p, "Border", y, borders,
+            function() return db.borderTexture end, function(v) db.borderTexture = v; OffBeat:ApplyAppearance() end)
+        y = y - h
+        _, h = W():Toggle(p, "Lock Frames", y, function() return db.locked end, function(v) OffBeat:SetLocked(v) end)
+        y = y - h
+        return Para(p, y, "Border and background apply to the ability, buff and report panels; "
+            .. "a /reload applies a border change everywhere. Unlock to drag panels "
+            .. "(or shift-drag while locked, out of combat).")
+    end)
 end
 
-pageBuilders.profiles = function(parent, y)
-    local W = OffBeat.Widgets
-    local _, h
+-- General
 
-    _, h = W:SectionHeader(parent, "ACTIVE PROFILE", y); y = y - h
+navBuilders.general = function(L)
+    local db = DB()
+    L:Card("Behaviour", function(p, y)
+        local _, h = W():Toggle(p, "Lock Frames", y, function() return db.locked end,
+            function(v) OffBeat:SetLocked(v) end)
+        y = y - h
+        _, h = W():Toggle(p, "Combat Report in Chat", y, function() return db.combatReport end,
+            function(v) db.combatReport = v end)
+        y = y - h
+        _, h = W():Toggle(p, "Clear History After Combat", y, function() return db.clearOnCombatEnd end,
+            function(v) db.clearOnCombatEnd = v end)
+        y = y - h
+        _, h = W():Toggle(p, "Debug Logging", y, function() return db.debug end, function(v) db.debug = v end)
+        return y - h
+    end)
 
-    local specId = OffBeat.activeSpecId
-    local available = specId and OffBeat.profiles[specId]
-    if available and #available > 0 then
-        local vals, order = {}, {}
-        for _, p in ipairs(available) do
-            vals[p.meta.name] = p.meta.name
-            order[#order + 1] = p.meta.name
-        end
+    L:Card("Slash commands", function(p, y)
+        return Para(p, y, "/ob — this window\n/ob training — coaching on/off\n/ob report — last training report\n"
+            .. "/ob sheet — rotation sheet\n/ob bars [apply] — bar layout\n/ob gear — enchants and gems\n"
+            .. "/ob lock — lock / unlock panels")
+    end)
 
-        _, h = W:Dropdown(parent, "Profile", y, vals,
-            function()
-                return OffBeat.activeProfile and OffBeat.activeProfile.meta.name or order[1]
-            end,
-            function(name) OffBeat:SwitchProfile(name) end,
-            order); y = y - h
-    else
-        local info = parent:CreateFontString(nil, "OVERLAY")
-        info:SetFont(FONT, 11, "")
-        info:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-        info:SetText("No profiles available for current spec.")
-        info:SetTextColor(1, 1, 1, 0.5)
-        y = y - 24
+    L:Card("Import / export a profile", function(p, y)
+        local box = CreateFrame("EditBox", nil, p)
+        box:SetSize(p:GetWidth() - 32, 64)
+        box:SetPoint("TOPLEFT", p, "TOPLEFT", 16, y - 6)
+        box:SetMultiLine(true)
+        box:SetAutoFocus(false)
+        box:SetFont(FONT, 10, "")
+        box:SetTextColor(0.9, 0.9, 0.9)
+        local bg = box:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.08, 0.10, 0.14, 0.9)
+        W().FlatBorder(box, 1, 1, 1, 0.15)
+        box:SetTextInsets(6, 6, 4, 4)
+        box:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+        y = y - 78
+        local _, h = W():Button(p, "Import", y, function()
+            local str = box:GetText()
+            if not str or str == "" then return end
+            local imported, err = OffBeat:ImportProfile(str)
+            if not imported then OffBeat:Print("Import failed: " .. (err or "unknown error")); return end
+            OffBeat:SaveImportedProfile(imported)
+            OffBeat:Print("Imported profile: " .. imported.meta.name)
+            Select("general")
+        end, "Paste a profile string above", true)
+        y = y - h
+        _, h = W():Button(p, "Export Current Profile", y, function()
+            if not OffBeat.activeProfile then OffBeat:Print("No active profile to export."); return end
+            box:SetText(OffBeat:ExportProfile(OffBeat.activeProfile))
+            box:HighlightText()
+            box:SetFocus()
+        end)
+        return y - h
+    end, true)
+end
+
+-- Frame: sidebar, tabs, content
+
+local function ClearContent()
+    for _, child in ipairs({ scrollChild:GetChildren() }) do
+        child:Hide()
+        child:ClearAllPoints()
     end
+    W():ResetRowCounters()
+end
 
-    _, h = W:SectionHeader(parent, "IMPORT", y); y = y - h
+local function NavButton(parent, index, key)
+    local btn = CreateFrame("Button", nil, parent)
+    btn:SetSize(SIDEBAR_W - 16, 34)
+    btn:SetPoint("TOPLEFT", parent, "TOPLEFT", 8, -(HEADER_H + 10 + (index - 1) * 38))
+    btn.hover = btn:CreateTexture(nil, "BACKGROUND")
+    btn.hover:SetAllPoints()
+    btn.indicator = btn:CreateTexture(nil, "OVERLAY")
+    btn.indicator:SetSize(3, 22)
+    btn.indicator:SetPoint("LEFT", btn, "LEFT", 0, 0)
+    btn.label = btn:CreateFontString(nil, "OVERLAY")
+    btn.label:SetFont(FONT, 12, "")
+    btn.label:SetPoint("LEFT", btn, "LEFT", 14, 0)
+    btn.label:SetPoint("RIGHT", btn, "RIGHT", -8, 0)
+    btn.label:SetJustifyH("LEFT")
+    btn.label:SetWordWrap(false)
+    btn.key = key
+    btn:SetScript("OnClick", function() Select(key) end)
+    btn:SetScript("OnEnter", function() if activeNav ~= key then btn.hover:SetColorTexture(1, 1, 1, 0.04) end end)
+    btn:SetScript("OnLeave", function() if activeNav ~= key then btn.hover:SetColorTexture(1, 1, 1, 0) end end)
+    return btn
+end
 
-    local importBox = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
-    importBox:SetSize(parent:GetWidth() - 32, 60)
-    importBox:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    importBox:SetMultiLine(true)
-    importBox:SetAutoFocus(false)
-    importBox:SetFont(FONT, 10, "")
-    importBox:SetTextColor(0.9, 0.9, 0.9)
-    importBox:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 2, right = 2, top = 2, bottom = 2 },
-    })
-    importBox:SetBackdropColor(0.08, 0.10, 0.14, 0.9)
-    importBox:SetBackdropBorderColor(1, 1, 1, 0.15)
-    importBox:SetTextInsets(6, 6, 4, 4)
-    importBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
-    y = y - 68
+local function TabButton()
+    local btn = CreateFrame("Button", nil, tabBar)
+    btn:SetHeight(TABS_H)
+    btn.label = btn:CreateFontString(nil, "OVERLAY")
+    btn.label:SetFont(FONT, 11, "")
+    btn.label:SetPoint("CENTER", 0, 2)
+    btn.underline = btn:CreateTexture(nil, "OVERLAY")
+    btn.underline:SetHeight(2)
+    btn.underline:SetPoint("BOTTOMLEFT", 6, 0)
+    btn.underline:SetPoint("BOTTOMRIGHT", -6, 0)
+    btn:SetScript("OnClick", function() Select("spec", btn.key) end)
+    btn:SetScript("OnEnter", function() if activeTab ~= btn.key then btn.label:SetTextColor(1, 1, 1, 0.9) end end)
+    btn:SetScript("OnLeave", function() if activeTab ~= btn.key then btn.label:SetTextColor(1, 1, 1, 0.55) end end)
+    return btn
+end
 
-    local importBtn = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    importBtn:SetSize(80, 24)
-    importBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    importBtn:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    importBtn:SetBackdropColor(ACCENT[1], ACCENT[2], ACCENT[3], 0.3)
-    importBtn:SetBackdropBorderColor(ACCENT[1], ACCENT[2], ACCENT[3], 0.5)
-    local importLabel = importBtn:CreateFontString(nil, "OVERLAY")
-    importLabel:SetFont(FONT, 11, "")
-    importLabel:SetAllPoints()
-    importLabel:SetText("Import")
-    importLabel:SetTextColor(1, 1, 1, 0.9)
-    importBtn:SetScript("OnClick", function()
-        local str = importBox:GetText()
-        if not str or str == "" then return end
-        local profile, err = OffBeat:ImportProfile(str)
-        if not profile then
-            OffBeat:Print("Import failed: " .. (err or "unknown error"))
-            return
+local function VisibleTabs()
+    local profile = OffBeat.activeProfile
+    local list = {}
+    for _, t in ipairs(TABS) do if t.show(profile) then list[#list + 1] = t end end
+    return list
+end
+
+local function RefreshChrome()
+    navButtons[1].label:SetText(SpecName())
+    for _, btn in ipairs(navButtons) do
+        local on = btn.key == activeNav
+        btn.label:SetTextColor(1, 1, 1, on and 1 or 0.65)
+        btn.indicator:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], on and 1 or 0)
+        btn.hover:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], on and 0.10 or 0)
+    end
+    for _, b in ipairs(tabButtons) do b:Hide() end
+    if activeNav == "spec" then
+        tabBar:Show()
+        local x = 0
+        for i, t in ipairs(VisibleTabs()) do
+            local b = tabButtons[i] or TabButton()
+            tabButtons[i] = b
+            b.key = t.key
+            b.label:SetText(t.label)
+            b:SetWidth(math.ceil(b.label:GetStringWidth()) + 28)
+            b:ClearAllPoints()
+            b:SetPoint("BOTTOMLEFT", tabBar, "BOTTOMLEFT", x, 0)
+            x = x + b:GetWidth()
+            local on = t.key == activeTab
+            b.label:SetTextColor(1, 1, 1, on and 1 or 0.55)
+            b.underline:SetColorTexture(ACCENT[1], ACCENT[2], ACCENT[3], on and 1 or 0)
+            b:Show()
         end
-        OffBeat:SaveImportedProfile(profile)
-        OffBeat:Print("Imported profile: " .. profile.meta.name)
-        importBox:SetText("")
-        importBox:ClearFocus()
-        SelectCategory("profiles")
-    end)
-    y = y - 32
+    else
+        tabBar:Hide()
+    end
+    local titles = { panels = "Panels", general = "General" }
+    titleText:SetText(activeNav == "spec" and SpecName() or titles[activeNav])
+end
 
-    _, h = W:SectionHeader(parent, "EXPORT", y); y = y - h
+Select = function(nav, tab)
+    activeNav = nav or activeNav
+    if activeNav == "spec" then
+        local valid = false
+        tab = tab or activeTab
+        for _, t in ipairs(VisibleTabs()) do if t.key == tab then valid = true end end
+        activeTab = valid and tab or "overview"
+    end
+    RefreshChrome()
+    ClearContent()
 
-    local exportBtn = CreateFrame("Button", nil, parent, "BackdropTemplate")
-    exportBtn:SetSize(120, 24)
-    exportBtn:SetPoint("TOPLEFT", parent, "TOPLEFT", 16, y)
-    exportBtn:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    exportBtn:SetBackdropColor(0.08, 0.10, 0.14, 0.9)
-    exportBtn:SetBackdropBorderColor(1, 1, 1, 0.2)
-    local exportLabel = exportBtn:CreateFontString(nil, "OVERLAY")
-    exportLabel:SetFont(FONT, 11, "")
-    exportLabel:SetAllPoints()
-    exportLabel:SetText("Export Current")
-    exportLabel:SetTextColor(1, 1, 1, 0.9)
-    exportBtn:SetScript("OnClick", function()
-        if not OffBeat.activeProfile then
-            OffBeat:Print("No active profile to export.")
-            return
-        end
-        local str = OffBeat:ExportProfile(OffBeat.activeProfile)
-        importBox:SetText(str)
-        importBox:HighlightText()
-        importBox:SetFocus()
-    end)
-    y = y - 32
+    local top = HEADER_H + (activeNav == "spec" and TABS_H + 6 or 0)
+    scrollFrame:ClearAllPoints()
+    scrollFrame:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", SIDEBAR_W + PAD, -top)
+    scrollFrame:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", -SCROLLBAR - 6, 8)
 
-    return y
+    local width = PANEL_W - SIDEBAR_W - PAD - SCROLLBAR - 10
+    scrollChild:SetWidth(width)
+    local L = NewLayout(scrollChild, width)
+    local build = activeNav == "spec" and tabBuilders[activeTab] or navBuilders[activeNav]
+    build(L)
+    scrollChild:SetHeight(L:Height() + PAD)
+    scrollFrame:SetVerticalScroll(0)
+end
+
+local function CreatePanel()
+    if mainFrame then return mainFrame end
+
+    mainFrame = CreateFrame("Frame", "OffBeatSettings", UIParent)
+    mainFrame:SetSize(PANEL_W, PANEL_H)
+    mainFrame:SetPoint("CENTER")
+    local bg = mainFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(unpack(BG_COLOR))
+    W().FlatBorder(mainFrame, 1, 1, 1, 0.12)
+    mainFrame:SetFrameStrata("DIALOG")
+    mainFrame:SetFrameLevel(100)
+    mainFrame:SetClampedToScreen(true)
+    mainFrame:SetMovable(true)
+    mainFrame:EnableMouse(true)
+    mainFrame:RegisterForDrag("LeftButton")
+    mainFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    mainFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
+    mainFrame:Hide()
+    tinsert(UISpecialFrames, "OffBeatSettings")
+
+    sidebar = CreateFrame("Frame", nil, mainFrame)
+    sidebar:SetPoint("TOPLEFT", 1, -1)
+    sidebar:SetPoint("BOTTOMLEFT", 1, 1)
+    sidebar:SetWidth(SIDEBAR_W)
+    local sbg = sidebar:CreateTexture(nil, "BACKGROUND")
+    sbg:SetAllPoints()
+    sbg:SetColorTexture(unpack(SIDEBAR_BG))
+    local sep = sidebar:CreateTexture(nil, "ARTWORK")
+    sep:SetWidth(1)
+    sep:SetPoint("TOPRIGHT"); sep:SetPoint("BOTTOMRIGHT")
+    sep:SetColorTexture(1, 1, 1, 0.06)
+
+    local brand = sidebar:CreateFontString(nil, "OVERLAY")
+    brand:SetFont(FONT, 15, "")
+    brand:SetPoint("TOPLEFT", 18, -15)
+    brand:SetText("OffBeat")
+    brand:SetTextColor(1, 1, 1, 0.95)
+    local version = sidebar:CreateFontString(nil, "OVERLAY")
+    version:SetFont(FONT, 9, "")
+    version:SetPoint("LEFT", brand, "RIGHT", 6, -1)
+    version:SetText("v" .. OffBeat.VERSION)
+    version:SetTextColor(1, 1, 1, 0.3)
+
+    navButtons[1] = NavButton(sidebar, 1, "spec")
+    navButtons[2] = NavButton(sidebar, 2, "panels")
+    navButtons[2].label:SetText("Panels")
+    navButtons[3] = NavButton(sidebar, 3, "general")
+    navButtons[3].label:SetText("General")
+
+    titleText = mainFrame:CreateFontString(nil, "OVERLAY")
+    titleText:SetFont(FONT, 15, "")
+    titleText:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", SIDEBAR_W + PAD, -15)
+    titleText:SetTextColor(1, 1, 1, 0.95)
+
+    local close = CreateFrame("Button", nil, mainFrame)
+    close:SetSize(24, 24)
+    close:SetPoint("TOPRIGHT", -8, -8)
+    local closeText = close:CreateFontString(nil, "OVERLAY")
+    closeText:SetFont(FONT, 14, "")
+    closeText:SetPoint("CENTER")
+    closeText:SetText("x")
+    closeText:SetTextColor(1, 1, 1, 0.5)
+    close:SetScript("OnClick", function() mainFrame:Hide() end)
+    close:SetScript("OnEnter", function() closeText:SetTextColor(1, 0.35, 0.35) end)
+    close:SetScript("OnLeave", function() closeText:SetTextColor(1, 1, 1, 0.5) end)
+
+    tabBar = CreateFrame("Frame", nil, mainFrame)
+    tabBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", SIDEBAR_W + PAD - 6, -HEADER_H + 2)
+    tabBar:SetPoint("RIGHT", mainFrame, "RIGHT", -PAD, 0)
+    tabBar:SetHeight(TABS_H)
+    local tabLine = tabBar:CreateTexture(nil, "ARTWORK")
+    tabLine:SetHeight(1)
+    tabLine:SetPoint("BOTTOMLEFT", 6, 0); tabLine:SetPoint("BOTTOMRIGHT")
+    tabLine:SetColorTexture(1, 1, 1, 0.08)
+
+    scrollFrame = CreateFrame("ScrollFrame", "OffBeatSettingsScroll", mainFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:EnableMouseWheel(true)
+    scrollChild = CreateFrame("Frame", nil, scrollFrame)
+    scrollChild:SetSize(PANEL_W - SIDEBAR_W - PAD - SCROLLBAR - 10, 1)
+    scrollFrame:SetScrollChild(scrollChild)
+
+    return mainFrame
 end
 
 -- Public API
@@ -1126,19 +995,13 @@ function OffBeat:OpenConfig()
         self:Print("Cannot open settings during combat.")
         return
     end
-
     local panel = CreatePanel()
-    UpdateSidebarVisibility()
-
-    if not activeCategory then
-        SelectCategory("general")
-    end
-
     if panel:IsShown() then
         panel:Hide()
-    else
-        panel:Show()
+        return
     end
+    Select(activeNav, activeTab) -- rebuilt each time: the spec may have changed
+    panel:Show()
 end
 
 -- Register with Blizzard's Settings panel

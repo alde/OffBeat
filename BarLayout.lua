@@ -78,6 +78,28 @@ local function MacroLabel(m)
     return "macro: " .. table.concat(names, " / ") .. (m.cursor == true and " at cursor" or "")
 end
 
+--- The plan as rows for the settings window:
+--- { key, spellId (icon), text, known } in layout order; macros count as known.
+function OffBeat:GetBarLayoutPlan()
+    local layout = self.activeProfile and self.activeProfile.barLayout
+    if not layout then return nil end
+    local rows = {}
+    for _, e in ipairs(layout) do
+        if e.macro then
+            rows[#rows + 1] = { key = e.key or ("slot " .. e.slot), spellId = e.macro.spells[1],
+                text = e.note or MacroLabel(e.macro), known = true, macro = MacroLabel(e.macro) }
+        else
+            local id = e.spellId
+            if not Known(id) and e.alt then
+                for _, a in ipairs(e.alt) do if Known(a) then id = a; break end end
+            end
+            rows[#rows + 1] = { key = e.key or ("slot " .. e.slot), spellId = id,
+                text = e.note or SpellName(id), known = Known(id) }
+        end
+    end
+    return rows
+end
+
 function OffBeat:ShowBarLayout(apply)
     local layout = self.activeProfile and self.activeProfile.barLayout
     if not layout then

@@ -12,7 +12,7 @@ function OffBeat:GetDefaults()
 
             -- Shared display
             opacity = 0.85,
-            borderTexture = "Blizzard Tooltip",
+            borderTexture = "Flat",          -- 1px line; or any SharedMedia border, or "None"
             barTexture = "Blizzard",
             font = "Friz Quadrata TT",
             fontSize = 10,
@@ -140,21 +140,26 @@ end
 
 function OffBeat:GetBorderTexture()
     local name = self.db.profile.borderTexture
-    if name == "None" then return nil end
+    if name == "None" or name == "Flat" then return nil end
     return LSM:Fetch("border", name)
 end
 
+-- Panel backdrop: flat colour fill (callers set it with SetBackdropColor)
+-- with the border from Panels > All panels: a 1px line ("Flat", the
+-- default), a SharedMedia border, or none.
 function OffBeat:BuildBackdrop()
+    local name = self.db.profile.borderTexture
+    if name == "Flat" then return OffBeat.FLAT_BACKDROP end
     local borderPath = self:GetBorderTexture()
     local backdrop = {
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        tile = true,
-        tileSize = 16,
+        bgFile = "Interface\\Buttons\\WHITE8X8",
         insets = { left = 2, right = 2, top = 2, bottom = 2 },
     }
     if borderPath then
         backdrop.edgeFile = borderPath
         backdrop.edgeSize = 12
+    else
+        backdrop.insets = { left = 0, right = 0, top = 0, bottom = 0 }
     end
     return backdrop
 end

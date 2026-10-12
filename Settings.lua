@@ -350,7 +350,7 @@ pageBuilders.rotation = function(parent, y)
     _, h = W:Toggle(parent, "Show Icon", y,
         function() return db.keyCdIconEnabled end,
         function(v) db.keyCdIconEnabled = v end); y = y - h
-    _, h = W:Toggle(parent, "Only in Combat", y,
+    _, h = W:Toggle(parent, "Only in Combat (icon and READY flash)", y,
         function() return db.keyCdCombatOnly end,
         function(v) db.keyCdCombatOnly = v end); y = y - h
     _, h = W:Slider(parent, "Icon Size", y, 24, 80, 2,

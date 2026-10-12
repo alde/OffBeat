@@ -248,7 +248,8 @@ function RotationDisplay:ApplyLock()
         self:RefreshAssisted()
         if self.keyCdIcon then
             local rot = OffBeat:GetModule("Rotation", true)
-            if rot and rot.keyCdReady then
+            local hidden = OffBeat.db.profile.keyCdCombatOnly and not UnitAffectingCombat("player")
+            if rot and rot.keyCdReady and not hidden then
                 self.keyCdIcon:SetAlpha(OffBeat.db.profile.keyCdIconAlpha)
             else
                 self.keyCdIcon:SetAlpha(0)
@@ -271,8 +272,10 @@ function RotationDisplay:PLAYER_REGEN_DISABLED()
     self:UpdatePanelVisibility()
     self:UpdateAssistedVisibility()
     local db = OffBeat.db.profile
-    if db.keyCdCombatOnly and self.keyCdIcon and self.keyCdIcon:IsShown() then
-        self:SetKeyCdIconAlpha(db.keyCdIconAlpha)
+    local rot = OffBeat:GetModule("Rotation", true)
+    local keyCd = OffBeat.activeProfile and OffBeat.activeProfile.keyCooldown
+    if db.keyCdCombatOnly and keyCd and rot and rot.keyCdReady then
+        self:ShowKeyCdIcon(keyCd)
     end
 end
 
@@ -569,7 +572,9 @@ end
 -- Message handlers
 
 function RotationDisplay:OnKeyCdReady(_, keyCd)
-    self:ShowWarning((keyCd.name or "Cooldown") .. " READY", "info", KEY_CD_FLASH_DURATION)
+    if not (OffBeat.db.profile.keyCdCombatOnly and not UnitAffectingCombat("player")) then
+        self:ShowWarning((keyCd.name or "Cooldown") .. " READY", "info", KEY_CD_FLASH_DURATION)
+    end
     self:ShowKeyCdIcon(keyCd)
 end
 

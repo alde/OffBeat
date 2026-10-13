@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120105
 ## Title: OffBeat - Priest
 ## Version: 1.0.0
 ## Notes: Priest spec profiles for OffBeat

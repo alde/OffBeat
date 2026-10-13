@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120105
 ## Title: OffBeat - Monk
 ## Version: 1.0.0
 ## Notes: Monk spec profiles for OffBeat

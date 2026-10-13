@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120105
 ## Title: OffBeat - Demon Hunter
 ## Version: 1.0.0
 ## Notes: Demon Hunter spec profiles for OffBeat

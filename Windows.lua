@@ -30,12 +30,17 @@ local Windows = OffBeat:NewModule("Windows", "AceEvent-3.0")
 --                      values = { { 40.5, 41.5, 42.7 }, { 12.7, 13.1, 13.6 } } },
 --       },
 --       overall = { name = "all heroic bosses", values = { ... } }, -- dummies etc.
+--       dungeons = {                         -- instance ID (GetInstanceInfo)
+--           [2993] = { name = "Altar of Fangs", window = 3, values = { ... } },
+--       },
 --   }
 --
 -- `values` follow `rates` order as { low, median, high } (low/high = middle
 -- half); `window` is the top players' median goal count per window on that
 -- boss. A boss without data gets no comparison rather than another boss's.
--- `all = true` counts every rotationSpells cast.
+-- `all = true` counts every rotationSpells cast. A Mythic+ run is compared
+-- with its dungeon's numbers (casts per minute in combat); a dungeon without
+-- data gets none.
 --
 -- In a raid, only boss encounters count (setting, on by default), so training
 -- can stay on all night; trash is ignored. Outside raids (dummies) every fight
@@ -227,7 +232,8 @@ end
 --
 -- A keystone run counts as one fight: every pull (trash and bosses) folds
 -- into it, its length is time in combat, and it ends timed, over time or
--- abandoned. There are no top-parse numbers for dungeons.
+-- abandoned. Profiles with `benchmarks.dungeons` compare it with the top
+-- runs of that dungeon, per minute in combat.
 
 local function KeyActive()
     if not (C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive) then return false end
@@ -248,9 +254,14 @@ local function KeyName()
     return (level and level > 0) and string.format("%s +%d", name, level) or name
 end
 
+local function InstanceId()
+    local ok, _, _, _, _, _, _, _, id = pcall(GetInstanceInfo)
+    return ok and id or nil
+end
+
 local function StartRun()
     run = { start = GetTime(), inRaid = false, casts = {}, rotation = 0, results = {}, petWanted = PetWanted(),
-            run = true, encounterName = KeyName(), minutes = 0 }
+            run = true, encounterName = KeyName(), instanceId = InstanceId(), minutes = 0 }
 end
 
 -- Add the current stretch of combat to the run's length.
@@ -270,6 +281,7 @@ function Windows:FinishRun(outcome)
     run = nil
     if fight == r then fight = nil end
     self:PrintSummary(r)
+    self:PrintBenchmarks(r)
     self:FoldFight(r)
 end
 
@@ -401,12 +413,13 @@ end
 
 -- Benchmarks
 
---- The benchmark for a fight: its boss's numbers, or the all-boss numbers
---- for fights that aren't a boss encounter (dummies). nil when the boss has
---- no data.
+--- The benchmark for a fight: its boss's numbers, its dungeon's for a
+--- Mythic+ run, or the all-boss numbers for fights that aren't a boss
+--- encounter (dummies). nil when the boss or dungeon has no data.
 function Windows:BenchmarkFor(f)
     local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
-    if not bm or f.run then return nil end
+    if not bm then return nil end
+    if f.run then return bm.dungeons and f.instanceId and bm.dungeons[f.instanceId] end
     if f.encounterId then return bm.encounters and bm.encounters[f.encounterId] end
     return bm.overall
 end
@@ -436,8 +449,9 @@ end
 function Windows:PrintBenchmarks(f)
     local bm = OffBeat.activeProfile and OffBeat.activeProfile.benchmarks
     if not bm then return end
-    local minutes = (GetTime() - f.start) / 60
+    local minutes = f.run and f.minutes or (GetTime() - f.start) / 60 -- a run: time in combat
     if minutes < 1 then return end
+    if f.run and not bm.dungeons then return end
     local bench = self:BenchmarkFor(f)
     if not bench then
         OffBeat:Print(string.format("No top-parse numbers for %s yet.", f.encounterName or "this fight"))
@@ -490,7 +504,8 @@ function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
         for _, res in ipairs(f.results) do results[#results + 1] = res end
     end
     local profile = OffBeat.activeProfile
-    local bench = self:BenchmarkFor({ encounterId = encounterId, run = isRun })
+    local bench = self:BenchmarkFor({ encounterId = encounterId, run = isRun,
+        instanceId = fights[1] and fights[1].instanceId })
     return {
         name = name, subtitle = subtitle, minutes = minutes,
         pet = petWanted and { deaths = petDeaths, down = petDown } or nil,
@@ -498,7 +513,7 @@ function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
         windows = self:Aggregate(results),
         detail = results, -- each window's goals/setup, drawn as bars
         benchName = bench and bench.name, topWindow = bench and bench.window,
-        hasBenchmarks = not isRun and profile and profile.benchmarks ~= nil,
+        hasBenchmarks = profile and profile.benchmarks ~= nil and (not isRun or profile.benchmarks.dungeons ~= nil),
         rates = (bench and minutes >= 1) and self:BenchmarkRows(bench, minutes, casts, rotation) or nil,
     }
 end

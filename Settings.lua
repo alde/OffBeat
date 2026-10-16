@@ -379,9 +379,13 @@ tabBuilders.training = function(L)
             for _, e in pairs(bm.encounters or {}) do names[#names + 1] = e.name end
             table.sort(names)
             for _, r in ipairs(bm.rates) do lines[#lines + 1] = r.name end
+            local dungeons = {}
+            for _, e in pairs(bm.dungeons or {}) do dungeons[#dungeons + 1] = e.name end
+            table.sort(dungeons)
             return Para(p, y, "From " .. (bm.source or "top parses") .. ". Measured: "
                 .. table.concat(lines, ", ") .. ".\nBosses: " .. (#names > 0 and table.concat(names, ", ") or "none")
-                .. ". Dummies and other fights use " .. (bm.overall and bm.overall.name or "no benchmark") .. ".")
+                .. ". Dummies and other fights use " .. (bm.overall and bm.overall.name or "no benchmark") .. "."
+                .. (#dungeons > 0 and ("\nMythic+ (per minute in combat): " .. table.concat(dungeons, ", ") .. ".") or ""))
         end)
     end
 end

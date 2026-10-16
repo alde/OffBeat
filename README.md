@@ -30,7 +30,7 @@ A profile can use any combination.
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking, Rotation (Eruption / empowers / Breath of Eons inside Ebon Might), Breath of Eons countdown (Fire Breath, Upheaval ready), Key Layout; Training (Breath of Eons: Fire Breath + Upheaval) |
 | OffBeat_Evoker | Preservation Evoker | Rotation (Flameshaper raid), idle Temporal Anomaly / Dream Breath / Fire Breath, Key Layout; Training (Dream Breath loop: Temporal Anomaly + Echo / Emerald Blossom) |
-| OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, M+ cheat sheet), idle Rushing Wind Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick) |
+| OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, Conduit / Chi-Ji M+), idle Rushing Wind Kick / Rising Sun Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick; Chi-Ji: Rising Sun Kick + Blackout Kick; per-dungeon M+ benchmarks) |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
@@ -162,7 +162,7 @@ Currently filled in for all Warlock and Death Knight specs, Augmentation and Pre
 
 Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on your spec's **Training** tab) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
 
-Only combat counts, and in a raid only boss encounters count (setting on the Training tab), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned (there are no top-parse numbers for dungeons).
+Only combat counts, and in a raid only boss encounters count (setting on the Training tab), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned. Profiles with dungeon benchmarks (Mistweaver Monk) compare the run with that dungeon's top runs; others have no top-parse numbers for dungeons.
 
 How to use it:
 
@@ -191,6 +191,8 @@ windows = { {
 ### Benchmarks
 
 Casts per minute from top parses, per boss. `rates` says what is measured; each encounter (keyed by its encounter ID, the boss ID Warcraft Logs uses) lists `{ low, median, high }` per rate, where low/high are the middle half. `window` is the top players' median goal count per window on that boss. `overall` covers fights that aren't a boss encounter, like target dummies. A boss without data gets no comparison rather than another boss's numbers. `all = true` counts every `rotationSpells` cast; a fight reaches a benchmark when your rate is at least `low`.
+
+`dungeons` does the same for Mythic+ runs, keyed by instance ID (the 8th return of `GetInstanceInfo`, which is also Warcraft Logs' zone ID for the dungeon), with rates per minute in combat. A rate with no number (`nil` in its place) is left out for that boss or dungeon, so one profile can measure raid and M+ spells.
 
 ```lua
 benchmarks = {

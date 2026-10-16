@@ -4,27 +4,36 @@ local OffBeat = _G.OffBeat
 -- (14 Oct 2026), checked against the top 40 heroic parses (by healing) on
 -- every Venomous Abyss boss (Warcraft Logs, Oct 2026). All 360 of them
 -- play Conduit of the Celestials (Method: best in all content) and 94%
--- take Invoke Yu'lon, so this is a Conduit / Yu'lon raid profile. The cheat
--- sheet has an M+ section from Way of the Crane (Megasett plays mostly M+).
+-- take Invoke Yu'lon, so raid is Conduit / Yu'lon.
+--
+-- M+ is a different spec in practice, checked against the top 40 timed
+-- runs per Season 2 dungeon (+20 to +22, 320 runs, 73 players): 98%
+-- Conduit, all Chi-Ji, Rising Sun Kick (97%, not Rushing Wind Kick) and
+-- Sheilun's Gift. They heal through damage (Rising Sun Kick ~16 a minute,
+-- Spinning Crane Kick 9, Tiger Palm 7, Blackout Kick 6) and hardly cast
+-- Vivify (under 8% of them) or Renewing Mist (1 a minute). Way of the Crane
+-- says the same: Ancient Teachings through Rising Sun Kick is your heal.
+-- Both builds share the profile: what you know decides which sheet, window
+-- and idle alerts apply.
 --
 -- Healing is reactive, so there are no mistake rules. Even Thunder Focus
 -- Tea on Renewing Mist, which both guides ask for, is only 80% of the top
 -- players' Teas (a tenth of them use it on Renewing Mist under a third of
--- the time). What's here is what they all do the same way: Rushing Wind
--- Kick on cooldown, Renewing Mist kept rolling, the Yu'lon ramp, and
--- casts per minute to compare against.
+-- the time). In M+ Tea goes on Rising Sun Kick (84%). What's here is what
+-- they all do the same way: the kick on cooldown, the Yu'lon ramp in raid,
+-- the Chi-Ji window in M+, and casts per minute to compare against.
 OffBeat:RegisterProfile({
     meta = {
         name = "Mistweaver Monk",
         specId = 270,
         version = 1,
         author = "OffBeat Defaults",
-        source = "Way of the Crane 12.1 + Method 12.1.5 + top 40 heroic parses per boss (Oct 2026)",
+        source = "Way of the Crane 12.1 + Method 12.1.5 + top 40 heroic parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     -- Raid: pressed by 64%+ of the top players (Soothing Mist is the
-    -- lowest). Chi-Ji, Restoral, Sheilun's Gift and the damage buttons are
-    -- in for M+ and the builds that take them (Restoral: 33%, Chi-Ji: 6%).
+    -- lowest); Restoral by 33%. M+: Rising Sun Kick, Chi-Ji, Sheilun's Gift
+    -- and the damage buttons, pressed by 97%+ of the top players.
     rotationSpells = {
         { spellId = 116670 },  -- Vivify
         { spellId = 467307 },  -- Rushing Wind Kick
@@ -56,6 +65,11 @@ OffBeat:RegisterProfile({
         { spellId = 1260565, name = "Spiritfont",              baseDuration = 0,  stacks = true },
         { spellId = 443421,  name = "Heart of the Jade Serpent", baseDuration = 8, stacks = false },
         { spellId = 115867,  name = "Mana Tea",                baseDuration = 0,  stacks = true },
+        -- M+: Blackout Kick stacks (Rising Sun Kick resets), free Spinning
+        -- Crane Kick, Sheilun's Gift charge
+        { spellId = 202090,  name = "Teachings of the Monastery", baseDuration = 0, stacks = true },
+        { spellId = 438443,  name = "Dance of Chi-Ji",         baseDuration = 0,  stacks = false },
+        { spellId = 399497,  name = "Sheilun's Gift",          baseDuration = 0,  stacks = true },
     },
 
     keyCooldown = {
@@ -71,12 +85,15 @@ OffBeat:RegisterProfile({
     },
 
     -- On cooldown for every top player: Rushing Wind Kick every ~3.8s
-    -- (median gap; 10s cooldown, reset by Rising Mist), Celestial Conduit
-    -- every ~96s (90s cooldown), Yu'lon every ~127s (2 min). Renewing Mist
-    -- and Thunder Focus Tea have charges (they'd nag at one charge); Life
-    -- Cocoon and Revival are held for damage.
+    -- (median gap; 10s cooldown, reset by Rising Mist), Rising Sun Kick in
+    -- M+ every ~2.6s, Celestial Conduit every ~96s in raid (90s cooldown),
+    -- Yu'lon every ~127s (2 min). In M+ Conduit is held for damage (~127s
+    -- apart): turn its alert off on the Alerts tab if it nags there. Renewing
+    -- Mist and Thunder Focus Tea have charges (they'd nag at one charge);
+    -- Chi-Ji, Life Cocoon and Revival are held for damage.
     idleCooldowns = {
         { spellId = 467307, name = "Rushing Wind Kick" },
+        { spellId = 107428, name = "Rising Sun Kick" },
         { spellId = 443028, name = "Celestial Conduit" },
         { spellId = 322118, name = "Invoke Yu'lon" },
     },
@@ -99,13 +116,32 @@ OffBeat:RegisterProfile({
                 { name = "Rushing Wind Kick", spells = { 467307, 107428 }, min = 6 },
             },
         },
+        -- M+ (Method: Chi-Ji, Blackout Kick with its Teachings stacks, Rising
+        -- Sun Kick again on a reset). 12s with Gift of the Celestials, which
+        -- the top players take (Chi-Ji ~81s apart). In those 12s they cast
+        -- 3 Rising Sun Kicks and 2 Blackout Kicks (median); 38% of Chi-Jis
+        -- are followed straight by Blackout Kick.
+        {
+            name = "Chi-Ji",
+            trigger = 325197,
+            duration = 12,
+            note = "Chi-Ji, Blackout Kick on the Teachings stacks, Rising Sun Kick on every reset, "
+                .. "instant Enveloping Mist where it's needed. Top players: 3 Rising Sun Kicks, 2 Blackout Kicks.",
+            goals = {
+                { name = "Rising Sun Kick", spells = { 107428 }, min = 3 },
+                { name = "Blackout Kick", spells = { 100784 }, min = 2 },
+            },
+        },
     },
 
     -- Per-boss top-parse cast rates (casts per minute), { low, median, high }
     -- across the top 40 heroic parses (low/high = middle half); values follow
     -- the order of rates. window = median Enveloping Mists per Yu'lon.
+    -- Dungeons (by instance ID): the top 40 timed runs, per minute in combat
+    -- (Warcraft Logs' pulls); window = median Rising Sun Kicks per Chi-Ji.
+    -- Raid has no numbers for the last three rates, M+ none for Vivify.
     benchmarks = {
-        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 40 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",     all = true },
             { name = "Vivify",             spells = { 116670 } },
@@ -115,6 +151,9 @@ OffBeat:RegisterProfile({
             { name = "Thunder Focus Tea",  spells = { 116680 } },
             { name = "Mana Tea",           spells = { 115294 } },
             { name = "Celestial Conduit",  spells = { 443028 } },
+            { name = "Sheilun's Gift",     spells = { 399491 } },
+            { name = "Spinning Crane Kick", spells = { 101546 } },
+            { name = "Tiger Palm / Blackout Kick", spells = { 100780, 100784 } },
         },
         encounters = {
             [3492] = { name = "Ula'tek", window = 8, values = {
@@ -138,13 +177,31 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 6, values = {
             { 55.9, 58.7, 61.3 }, { 13.6, 15.4, 17.6 }, { 13.3, 14.6, 15.9 }, { 10.8, 11.6, 12.3 }, { 6.0, 7.5, 9.1 }, { 2.6, 2.7, 2.8 }, { 1.9, 2.5, 3.3 }, { 0.6, 0.6, 0.7 } } },
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", window = 4, values = {
+                { 50.1, 52.0, 54.0 }, nil, { 13.6, 15.9, 17.4 }, { 0.5, 1.0, 1.8 }, { 2.5, 2.9, 3.7 }, { 2.1, 2.3, 2.4 }, { 0.7, 0.8, 1.2 }, { 0.3, 0.4, 0.5 }, { 1.4, 1.9, 2.6 }, { 8.5, 11.1, 15.2 }, { 10.3, 12.6, 14.2 } } },
+            [2825] = { name = "Den of Nalorakk", window = 3, values = {
+                { 47.4, 49.6, 52.4 }, nil, { 14.6, 15.6, 16.6 }, { 0.5, 1.0, 1.8 }, { 2.5, 3.0, 3.5 }, { 2.1, 2.3, 2.4 }, { 0.6, 0.9, 1.2 }, { 0.4, 0.4, 0.5 }, { 1.3, 1.8, 2.7 }, { 6.8, 9.0, 11.8 }, { 11.0, 12.2, 14.3 } } },
+            [1762] = { name = "Kings' Rest", window = 3, values = {
+                { 49.8, 52.0, 53.9 }, nil, { 14.6, 16.3, 17.2 }, { 0.8, 1.3, 1.9 }, { 2.9, 3.5, 3.7 }, { 2.1, 2.3, 2.5 }, { 0.7, 1.0, 1.2 }, { 0.3, 0.3, 0.4 }, { 1.8, 2.4, 3.0 }, { 6.0, 6.7, 8.5 }, { 13.4, 15.0, 17.4 } } },
+            [2813] = { name = "Murder Row", window = 3, values = {
+                { 49.8, 51.3, 53.6 }, nil, { 13.9, 16.1, 17.3 }, { 0.7, 1.3, 2.3 }, { 3.1, 3.5, 4.1 }, { 2.1, 2.3, 2.4 }, { 0.8, 1.1, 1.5 }, { 0.4, 0.5, 0.5 }, { 1.7, 2.2, 3.7 }, { 6.5, 8.4, 11.9 }, { 8.3, 11.7, 14.0 } } },
+            [2521] = { name = "Ruby Life Pools", window = 4, values = {
+                { 50.5, 51.9, 54.6 }, nil, { 14.5, 16.1, 17.5 }, { 0.6, 0.9, 1.7 }, { 2.5, 3.1, 3.5 }, { 2.0, 2.2, 2.4 }, { 0.8, 1.1, 1.6 }, { 0.4, 0.4, 0.5 }, { 2.0, 2.5, 3.2 }, { 6.0, 8.8, 14.2 }, { 9.2, 13.3, 15.9 } } },
+            [1877] = { name = "Temple of Sethraliss", window = 4, values = {
+                { 49.0, 50.7, 52.1 }, nil, { 14.5, 15.4, 16.6 }, { 0.6, 1.0, 1.5 }, { 2.9, 3.4, 3.7 }, { 2.0, 2.3, 2.4 }, { 0.9, 1.1, 1.4 }, { 0.4, 0.4, 0.5 }, { 2.2, 2.7, 3.4 }, { 7.1, 8.9, 12.2 }, { 9.7, 11.6, 14.1 } } },
+            [2859] = { name = "The Blinding Vale", window = 3, values = {
+                { 50.9, 52.2, 54.5 }, nil, { 13.8, 15.9, 17.4 }, { 0.5, 1.0, 1.9 }, { 2.8, 3.3, 3.9 }, { 2.0, 2.4, 2.5 }, { 0.9, 1.1, 1.5 }, { 0.3, 0.4, 0.4 }, { 1.7, 2.4, 3.1 }, { 7.0, 10.4, 13.5 }, { 9.2, 13.3, 14.9 } } },
+            [2923] = { name = "Voidscar Arena", window = 3, values = {
+                { 50.3, 51.9, 54.4 }, nil, { 14.4, 16.2, 17.3 }, { 0.5, 1.0, 1.4 }, { 2.8, 3.3, 3.6 }, { 2.1, 2.3, 2.4 }, { 0.7, 1.0, 1.4 }, { 0.3, 0.4, 0.5 }, { 1.8, 2.5, 3.1 }, { 6.5, 8.9, 11.8 }, { 10.5, 13.7, 16.1 } } },
+        },
     },
 
     -- The movable cheat sheet (/ob sheet). Raid: Way of the Crane + Method,
     -- checked against the top 40 heroic parses per boss. M+: Way of the
-    -- Crane.
+    -- Crane + Method, checked against the top 40 timed runs per dungeon.
     rotationSheet = {
-        { title = "Pull", lines = {
+        { title = "Pull", content = "raid", lines = {
             { spellId = 467307, alt = { 107428 }, text = "Rushing Wind Kick and Renewing Mist in the first seconds (87% / 83% of top players)" },
             { spellId = 116680, text = "Thunder Focus Tea on that Renewing Mist (about half do it in the first 5s)" },
         } },
@@ -162,13 +219,19 @@ OffBeat:RegisterProfile({
             { spellId = 116670, text = "Vivify to finish: heals everyone with Renewing Mist (6+ targets)" },
             { spellId = 115175, text = "Soothing Mist only while moving: Vivify / Enveloping Mist go instant" },
         } },
-        { title = "M+ (Way of the Crane)", content = "dungeon", lines = {
-            { spellId = 107428, alt = { 467307 }, text = "DPS heals: Rising Sun Kick on cooldown (Ancient Teachings)" },
-            { spellId = 101546, text = "Many enemies: Spinning Crane Kick (Way of the Crane)" },
-            { spellId = 399491, text = "Sheilun's Gift: main cast heal, first answer to sudden damage" },
-            { spellId = 116680, text = "Thunder Focus Tea: hold for 3-4 Rising Sun Kicks in a row, or force Spiritfont" },
-            { spellId = 124682, text = "Before big damage: Enveloping Mist on 2-3 squishies, then Rising Sun Kick" },
-            { spellId = 443028, alt = { 325197, 115310 }, text = "4+ injured with damage coming: Conduit, Chi-Ji or Revival" },
+        { title = "M+: always", content = "dungeon", lines = {
+            { spellId = 107428, alt = { 467307 }, text = "Rising Sun Kick on cooldown (~16 a minute): your heal is Ancient Teachings" },
+            { spellId = 101546, text = "Packs: Spinning Crane Kick (Way of the Crane), ~9 a minute" },
+            { spellId = 100780, text = "Tiger Palm / Blackout Kick between: Teachings stacks reset Rising Sun Kick" },
+            { spellId = 116680, text = "Thunder Focus Tea on Rising Sun Kick (84% of top Teas)" },
+            { spellId = 399491, text = "Sheilun's Gift: cast heal for sudden damage (~2.4 a minute)" },
+            { text = "Vivify and Renewing Mist barely get pressed in top runs" },
+        } },
+        { title = "M+: damage coming", content = "dungeon", lines = {
+            { spellId = 124682, text = "Enveloping Mist on 2-3 squishies first, then Rising Sun Kick" },
+            { spellId = 325197, text = "Chi-Ji: Blackout Kick on the stacks, Rising Sun Kick on resets (3 in 12s)" },
+            { spellId = 443028, alt = { 115310 }, text = "4+ injured: Conduit or Revival (held for damage, ~2 min apart)" },
+            { text = "Stats in M+ (Way of the Crane): Haste > Mastery > Crit > Vers" },
         } },
         { title = "Cooldowns", lines = {
             { spellId = 116849, text = "Life Cocoon: stop a death on a DPS / healer (absorb, no damage reduction)" },
@@ -185,19 +248,21 @@ OffBeat:RegisterProfile({
     -- 3 = cooldown, nil = unused.
     keyLayout = {
         { spellId = 116670,  st = 1, aoe = 1, note = "Most pressed (~15 a minute); group heal with Renewing Mist out" },
-        { spellId = 467307,  st = 1, aoe = 1, alt = { 107428 }, note = "On cooldown (~15 a minute)" },
+        { spellId = 467307,  st = 1, aoe = 1, note = "Raid: on cooldown (~15 a minute)" },
         { spellId = 115151,  st = 1, aoe = 1, note = "On cooldown (~12 a minute)" },
         { spellId = 124682,  st = 1, aoe = 1, note = "Black Ox / Spiritfont procs, Yu'lon ramp" },
         { spellId = 116680,  st = 2, aoe = 1, note = "On Renewing Mist" },
         { spellId = 115294,  st = 2, aoe = 2, note = "When there's time, not at 20 stacks" },
         { spellId = 115175,  st = 2, aoe = 2, note = "While moving" },
-        { spellId = 399491,  st = 2, aoe = 2, note = "M+ main cast heal" },
+        { spellId = 399491,  st = 2, aoe = 2, note = "M+ cast heal, ~2.4 a minute" },
         { spellId = 115450,  st = 2, aoe = 2, note = "Dispel" },
-        { spellId = 100780,  st = 2, aoe = 2, note = "M+ damage (Ancient Teachings)" },
-        { spellId = 100784,  st = 2, aoe = 2, note = "M+ damage, resets Rising Sun Kick" },
-        { spellId = 101546,           aoe = 2, note = "M+ packs (Way of the Crane)" },
+        { spellId = 107428,  st = 1, aoe = 1, note = "M+: on cooldown, ~16 a minute" },
+        { spellId = 101546,           aoe = 1, note = "M+ packs, ~9 a minute" },
+        { spellId = 100780,  st = 1, aoe = 2, note = "M+: ~7 a minute, builds Teachings" },
+        { spellId = 100784,  st = 1, aoe = 2, note = "M+: ~6 a minute, resets Rising Sun Kick" },
         { spellId = 116849,  st = 3,          note = "Save a DPS or healer" },
-        { spellId = 322118,           aoe = 3, alt = { 325197 }, note = "2 min ramp" },
+        { spellId = 322118,           aoe = 3, note = "Raid: 2 min ramp" },
+        { spellId = 325197,           aoe = 3, note = "M+: ~80s apart, into damage" },
         { spellId = 443028,           aoe = 3, note = "On cooldown (90s)" },
         { spellId = 115310,           aoe = 3, alt = { 388615 }, note = "Raid dispel / top-off" },
         { spellId = 115203,  st = 3, aoe = 3, note = "Defensive" },

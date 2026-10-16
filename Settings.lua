@@ -932,7 +932,14 @@ local function CreatePanel()
     local bg = mainFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(unpack(BG_COLOR))
-    W().FlatBorder(mainFrame, 1, 1, 1, 0.12)
+    -- border in your class color (soft grey if the class can't be read)
+    local _, class = UnitClass("player")
+    local cc = class and (C_ClassColor and C_ClassColor.GetClassColor(class) or RAID_CLASS_COLORS[class])
+    if cc then
+        W().FlatBorder(mainFrame, cc.r, cc.g, cc.b, 0.8)
+    else
+        W().FlatBorder(mainFrame, 1, 1, 1, 0.12)
+    end
     mainFrame:SetFrameStrata("DIALOG")
     mainFrame:SetFrameLevel(100)
     mainFrame:SetClampedToScreen(true)

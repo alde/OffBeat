@@ -16,8 +16,9 @@ local Sheet = OffBeat:NewModule("Sheet", "AceEvent-3.0")
 -- with `unknown` only when you know none of them: different sheets for
 -- different talent builds (say Hellcaller for raid, Diabolist for M+),
 -- switching by themselves when you change loadout. `content = "raid"` or
--- `"dungeon"` limits a section to raids or dungeons; outside instances
--- (dummies, the open world) every section shows.
+-- `"dungeon"` limits a section to raids or dungeons (OffBeat:InContent):
+-- with /ob mode auto every section shows outside instances, /ob mode raid
+-- or mythic picks one everywhere.
 -- Each line shows the spell's icon, the key it's bound to (read from your
 -- bars) and the text. Lines for spells you don't know are hidden; the first
 -- known ID of spellId / alt wins. /ob sheet shows or hides it (per spec).
@@ -71,16 +72,8 @@ local function AnyKnown(ids)
     return false
 end
 
-local function InContent(content)
-    local ok, inInstance, kind = pcall(IsInInstance)
-    if not ok or not inInstance then return true end
-    if content == "raid" then return kind == "raid" end
-    if content == "dungeon" then return kind == "party" end
-    return true
-end
-
 local function SectionShown(section)
-    if section.content and not InContent(section.content) then return false end
+    if not OffBeat:InContent(section.content) then return false end
     if section.known and not AnyKnown(section.known) then return false end
     if section.unknown and AnyKnown(section.unknown) then return false end
     return true
@@ -242,6 +235,7 @@ function Sheet:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_DISABLED", "UpdateVisibility")
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "UpdateVisibility")
     self:RegisterMessage("OFFBEAT_LOCK_CHANGED", "OnLockChanged")
+    self:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", "QueueRefresh")
     OffBeat:InvalidateKeybindCache()
     self:Render()
 end

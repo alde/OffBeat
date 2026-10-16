@@ -226,6 +226,57 @@ function OffBeat:MergeImportedProfiles()
     end
 end
 
+-- Content mode: raid or Mythic+. Profiles can limit sheet sections and idle
+-- alerts to one (`content = "raid"` / `"dungeon"`), and training compares
+-- fights outside a boss or key with that content's numbers. "auto" reads the
+-- instance: a raid is raid, a dungeon or a delve (scenario) is Mythic+, since
+-- you play your M+ build there; outside instances both apply. "raid" and
+-- "mythic" force it everywhere, e.g. on a target dummy before a key.
+
+local MODE_NAMES = { auto = "Auto", raid = "Raid", mythic = "Mythic+" }
+local CONTENT_NAMES = { raid = "Raid", dungeon = "Mythic+" }
+
+--- "raid", "dungeon", or nil when both apply (auto, outside instances).
+function OffBeat:ContentMode()
+    local mode = self.db and self.db.profile.contentMode or "auto"
+    if mode == "raid" then return "raid" end
+    if mode == "mythic" then return "dungeon" end
+    local ok, inInstance, kind = pcall(IsInInstance)
+    if not ok or not inInstance then return nil end
+    if kind == "raid" then return "raid" end
+    if kind == "party" or kind == "scenario" then return "dungeon" end -- dungeons and delves
+    return nil
+end
+
+--- Does something limited to `content` ("raid" / "dungeon" / nil) apply now?
+function OffBeat:InContent(content)
+    if not content then return true end
+    local now = self:ContentMode()
+    return now == nil or now == content
+end
+
+--- "Auto (now Raid)" and the like, for chat and settings.
+function OffBeat:ContentModeText()
+    local mode = self.db.profile.contentMode or "auto"
+    if mode ~= "auto" then return MODE_NAMES[mode] end
+    local now = self:ContentMode()
+    return "Auto (" .. (now and ("now " .. CONTENT_NAMES[now]) or "outside instances: both") .. ")"
+end
+
+function OffBeat:SetContentMode(mode)
+    self.db.profile.contentMode = mode
+    self:Print("Content mode: " .. self:ContentModeText() .. ".")
+    self:SendMessage("OFFBEAT_CONTENT_MODE_CHANGED", mode)
+end
+
+--- Does this profile have anything that depends on the content mode?
+function OffBeat:ProfileUsesContent(profile)
+    if not profile then return false end
+    for _, s in ipairs(profile.rotationSheet or {}) do if s.content then return true end end
+    for _, c in ipairs(profile.idleCooldowns or {}) do if c.content then return true end end
+    return profile.benchmarks ~= nil and profile.benchmarks.dungeons ~= nil
+end
+
 -- Slash commands
 
 -- Training mode: cooldown window coaching (Windows). Off by default. It
@@ -348,6 +399,18 @@ function OffBeat:OnSlashCommand(input)
         else self:Print("No rotation sheet for this spec yet.") end
     elseif cmd == "gear" then
         self:PrintGearCheck()
+    elseif cmd == "mode" then
+        local _, arg = self:GetArgs(input, 2)
+        arg = arg and arg:lower()
+        local alias = { auto = "auto", raid = "raid", mythic = "mythic", ["m+"] = "mythic", mplus = "mythic",
+                        dungeon = "mythic", key = "mythic" }
+        if not arg then
+            self:Print("Content mode: " .. self:ContentModeText() .. ". /ob mode auto | raid | mythic")
+        elseif alias[arg] then
+            self:SetContentMode(alias[arg])
+        else
+            self:Print("Unknown mode '" .. arg .. "'. Use /ob mode auto | raid | mythic")
+        end
     elseif cmd == "bars" then
         local _, sub = self:GetArgs(input, 2)
         self:ShowBarLayout(sub == "apply")
@@ -377,6 +440,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob bars         — Show this spec's bar layout (/ob bars apply to place it)")
         self:Print("  /ob sheet        — Show/hide this spec's rotation cheat sheet")
         self:Print("  /ob gear         — Check your enchants and gems against top players")
+        self:Print("  /ob mode         — Raid or Mythic+ advice: auto | raid | mythic")
     end
 
 end

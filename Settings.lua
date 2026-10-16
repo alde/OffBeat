@@ -170,6 +170,20 @@ tabBuilders.overview = function(L)
         return y
     end)
 
+    if OffBeat:ProfileUsesContent(profile) then
+        L:Card("Raid or Mythic+", function(p, y)
+            local _, h = W():Dropdown(p, "Content", y,
+                { auto = "Auto", raid = "Raid", mythic = "Mythic+" },
+                function() return OffBeat.db.profile.contentMode or "auto" end,
+                function(v) OffBeat:SetContentMode(v); Select("spec", "overview") end,
+                { "auto", "raid", "mythic" })
+            y = y - h
+            return Para(p, y, "Now: " .. OffBeat:ContentModeText() .. ". Picks the cheat sheet sections, idle alerts "
+                .. "and the numbers dummy fights are compared with. Auto reads the instance (delves count as Mythic+); "
+                .. "outside one it shows both. Also /ob mode auto | raid | mythic.")
+        end)
+    end
+
     if profile then
         -- What this profile turns on, so you know where to look.
         L:Card("What OffBeat does for this spec", function(p, y)
@@ -273,7 +287,8 @@ tabBuilders.alerts = function(L)
             ss.disabledIdleCooldowns = ss.disabledIdleCooldowns or {}
             local function rebuild() local r = OffBeat:GetModule("Rotation", true); if r then r:BuildLookups() end end
             for _, cd in ipairs(profile.idleCooldowns) do
-                _, h = W():Toggle(p, "   " .. cd.name, y,
+                local tag = cd.content == "raid" and "  (raid)" or (cd.content == "dungeon" and "  (M+ / delves)" or "")
+                _, h = W():Toggle(p, "   " .. cd.name .. tag, y,
                     function() return not ss.disabledIdleCooldowns[cd.spellId] end,
                     function(v) ss.disabledIdleCooldowns[cd.spellId] = (not v) or nil; rebuild() end)
                 y = y - h
@@ -385,7 +400,8 @@ tabBuilders.training = function(L)
             return Para(p, y, "From " .. (bm.source or "top parses") .. ". Measured: "
                 .. table.concat(lines, ", ") .. ".\nBosses: " .. (#names > 0 and table.concat(names, ", ") or "none")
                 .. ". Dummies and other fights use " .. (bm.overall and bm.overall.name or "no benchmark") .. "."
-                .. (#dungeons > 0 and ("\nMythic+ (per minute in combat): " .. table.concat(dungeons, ", ") .. ".") or ""))
+                .. (#dungeons > 0 and ("\nMythic+ (per minute in combat): " .. table.concat(dungeons, ", ") .. "."
+                    .. (bm.dungeonOverall and (" With /ob mode mythic, dummies use " .. bm.dungeonOverall.name .. ".") or "")) or ""))
         end)
     end
 end

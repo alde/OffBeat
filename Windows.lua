@@ -33,6 +33,7 @@ local Windows = OffBeat:NewModule("Windows", "AceEvent-3.0")
 --       dungeons = {                         -- instance ID (GetInstanceInfo)
 --           [2993] = { name = "Altar of Fangs", window = 3, values = { ... } },
 --       },
+--       dungeonOverall = { name = "all M+ dungeons", values = { ... } },
 --   }
 --
 -- `values` follow `rates` order as { low, median, high } (low/high = middle
@@ -40,7 +41,8 @@ local Windows = OffBeat:NewModule("Windows", "AceEvent-3.0")
 -- boss. A boss without data gets no comparison rather than another boss's.
 -- `all = true` counts every rotationSpells cast. A Mythic+ run is compared
 -- with its dungeon's numbers (casts per minute in combat); a dungeon without
--- data gets none.
+-- data gets none. Other fights outside a boss (dummies) use `dungeonOverall`
+-- when the content mode is Mythic+ (/ob mode), `overall` otherwise.
 --
 -- In a raid, only boss encounters count (setting, on by default), so training
 -- can stay on all night; trash is ignored. Outside raids (dummies) every fight
@@ -173,7 +175,8 @@ end
 
 local function NewFight()
     return { start = GetTime(), inRaid = InRaid(), casts = {}, rotation = 0, results = {}, petWanted = PetWanted(),
-             encounterId = encounter and encounter.id, encounterName = encounter and encounter.name }
+             encounterId = encounter and encounter.id, encounterName = encounter and encounter.name,
+             content = OffBeat:ContentMode() }
 end
 
 -- Does this fight count? In a raid with "boss encounters only", only fights
@@ -421,6 +424,7 @@ function Windows:BenchmarkFor(f)
     if not bm then return nil end
     if f.run then return bm.dungeons and f.instanceId and bm.dungeons[f.instanceId] end
     if f.encounterId then return bm.encounters and bm.encounters[f.encounterId] end
+    if f.content == "dungeon" and bm.dungeonOverall then return bm.dungeonOverall end
     return bm.overall
 end
 
@@ -505,7 +509,7 @@ function Windows:BuildPage(name, encounterId, fights, subtitle, isRun)
     end
     local profile = OffBeat.activeProfile
     local bench = self:BenchmarkFor({ encounterId = encounterId, run = isRun,
-        instanceId = fights[1] and fights[1].instanceId })
+        instanceId = fights[1] and fights[1].instanceId, content = fights[1] and fights[1].content })
     return {
         name = name, subtitle = subtitle, minutes = minutes,
         pet = petWanted and { deaths = petDeaths, down = petDown } or nil,
@@ -530,10 +534,12 @@ function Windows:BuildReport(s)
         -- a blip of combat (under 15s) with no window isn't a pull
         if f.minutes >= 0.25 or #f.results > 0 then
             total = total + f.minutes
-            local key = f.run and f or (f.encounterId or 0) -- each key run is its own entry
+            -- each key run is its own entry; other fights split by content mode
+            local key = f.run and f or (f.encounterId or ("other:" .. (f.content or "")))
             local g = byKey[key]
             if not g then
-                g = { name = f.encounterName or "Training dummy / outside raids", encounterId = f.encounterId,
+                g = { name = f.encounterName or (f.content == "dungeon" and "Training dummy / outside keys (Mythic+)"
+                          or "Training dummy / outside raids"), encounterId = f.encounterId,
                       isRun = f.run, fights = {} }
                 byKey[key] = g
                 groups[#groups + 1] = g

@@ -115,6 +115,7 @@ function OffBeat:GetDefaults()
             warningPosition = nil,
 
             -- Behaviour
+            contentMode = "auto",        -- auto | raid | mythic (OffBeat:ContentMode)
             combatReport = true,
             timelineAutoShow = false,
             clearOnCombatEnd = false,

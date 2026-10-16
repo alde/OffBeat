@@ -13,8 +13,9 @@ local OffBeat = _G.OffBeat
 -- Spinning Crane Kick 9, Tiger Palm 7, Blackout Kick 6) and hardly cast
 -- Vivify (under 8% of them) or Renewing Mist (1 a minute). Way of the Crane
 -- says the same: Ancient Teachings through Rising Sun Kick is your heal.
--- Both builds share the profile: what you know decides which sheet, window
--- and idle alerts apply.
+-- Both builds share the profile: the content mode (/ob mode, auto by
+-- instance) picks the sheet sections, idle alerts and dummy numbers, and
+-- each window opens on its own cooldown (Yu'lon / Chi-Ji).
 --
 -- Healing is reactive, so there are no mistake rules. Even Thunder Focus
 -- Tea on Renewing Mist, which both guides ask for, is only 80% of the top
@@ -88,14 +89,14 @@ OffBeat:RegisterProfile({
     -- (median gap; 10s cooldown, reset by Rising Mist), Rising Sun Kick in
     -- M+ every ~2.6s, Celestial Conduit every ~96s in raid (90s cooldown),
     -- Yu'lon every ~127s (2 min). In M+ Conduit is held for damage (~127s
-    -- apart): turn its alert off on the Alerts tab if it nags there. Renewing
-    -- Mist and Thunder Focus Tea have charges (they'd nag at one charge);
-    -- Chi-Ji, Life Cocoon and Revival are held for damage.
+    -- apart), so its alert is raid only. Renewing Mist and Thunder Focus Tea
+    -- have charges (they'd nag at one charge); Chi-Ji, Life Cocoon and
+    -- Revival are held for damage.
     idleCooldowns = {
-        { spellId = 467307, name = "Rushing Wind Kick" },
-        { spellId = 107428, name = "Rising Sun Kick" },
-        { spellId = 443028, name = "Celestial Conduit" },
-        { spellId = 322118, name = "Invoke Yu'lon" },
+        { spellId = 467307, name = "Rushing Wind Kick", content = "raid" },
+        { spellId = 107428, name = "Rising Sun Kick", content = "dungeon" },
+        { spellId = 443028, name = "Celestial Conduit", content = "raid" },
+        { spellId = 322118, name = "Invoke Yu'lon", content = "raid" },
     },
 
     -- Coaching: the Yu'lon ramp (Way of the Crane: spread Enveloping Mist,
@@ -195,6 +196,9 @@ OffBeat:RegisterProfile({
             [2923] = { name = "Voidscar Arena", window = 3, values = {
                 { 50.3, 51.9, 54.4 }, nil, { 14.4, 16.2, 17.3 }, { 0.5, 1.0, 1.4 }, { 2.8, 3.3, 3.6 }, { 2.1, 2.3, 2.4 }, { 0.7, 1.0, 1.4 }, { 0.3, 0.4, 0.5 }, { 1.8, 2.5, 3.1 }, { 6.5, 8.9, 11.8 }, { 10.5, 13.7, 16.1 } } },
         },
+        -- Dummies with /ob mode mythic: all 320 runs together.
+        dungeonOverall = { name = "all M+ dungeons", window = 3, values = {
+            { 49.5, 51.6, 53.7 }, nil, { 14.0, 15.8, 17.2 }, { 0.6, 1.1, 1.7 }, { 2.7, 3.3, 3.7 }, { 2.0, 2.3, 2.4 }, { 0.8, 1.0, 1.4 }, { 0.4, 0.4, 0.5 }, { 1.7, 2.4, 3.1 }, { 6.5, 8.9, 12.3 }, { 9.9, 12.7, 15.3 } } },
     },
 
     -- The movable cheat sheet (/ob sheet). Raid: Way of the Crane + Method,

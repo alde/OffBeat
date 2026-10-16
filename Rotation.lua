@@ -230,7 +230,7 @@ function Rotation:BuildLookups()
         for _, cd in ipairs(profile.idleCooldowns) do
             if not (disabledIdle and disabledIdle[cd.spellId]) then
                 local resolved = ResolvePlayerSpell(cd.spellId, cd.name)
-                idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId) }
+                idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId), content = cd.content }
             end
         end
     end
@@ -407,7 +407,9 @@ function Rotation:CheckIdleCooldowns()
     if not self.idleState then self.idleState = {} end
 
     for spellId, info in pairs(idleCooldownSet) do
-        if IsPlayerSpell(spellId) then
+        if not OffBeat:InContent(info.content) then
+            self.idleState[spellId] = nil -- raid-only alert in a key, or the other way round
+        elseif IsPlayerSpell(spellId) then
             local usable = C_Spell.IsSpellUsable(spellId)
             local ready = usable and not OffBeat:IsSpellOnRealCooldown(spellId)
 

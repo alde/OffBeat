@@ -75,6 +75,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat) |
 | `/ob sheet` | Show or hide this spec's rotation cheat sheet |
 | `/ob gear` | Check your enchants and gems against what top players of your spec use |
+| `/ob mode` | Raid or Mythic+ advice: `auto` (by instance, the default), `raid` or `mythic` (everywhere, e.g. on a dummy before a key) |
 
 
 ## Creating a profile
@@ -138,7 +139,9 @@ rotationSheet = {
 }
 ```
 
-A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only in that kind of instance (outside instances every section shows). Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs.
+A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only for that content. Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs, Mistweaver for its raid and M+ playstyles.
+
+Which content applies is the **content mode** (`/ob mode`, or the "Raid or Mythic+" card on your spec's Overview tab). `auto` reads the instance: raid sections in a raid, dungeon sections in a dungeon or a delve (where you'd play your M+ build), both outside instances. `raid` and `mythic` pick one everywhere, so you can practise the M+ sheet on a dummy. Idle cooldowns take the same field (`{ spellId = 443028, name = "Celestial Conduit", content = "raid" }`), and fights outside a boss or key are compared with `benchmarks.dungeonOverall` when the mode is Mythic+.
 
 `/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight, Augmentation and Preservation Evoker, and Mistweaver Monk.
 
@@ -192,7 +195,7 @@ windows = { {
 
 Casts per minute from top parses, per boss. `rates` says what is measured; each encounter (keyed by its encounter ID, the boss ID Warcraft Logs uses) lists `{ low, median, high }` per rate, where low/high are the middle half. `window` is the top players' median goal count per window on that boss. `overall` covers fights that aren't a boss encounter, like target dummies. A boss without data gets no comparison rather than another boss's numbers. `all = true` counts every `rotationSpells` cast; a fight reaches a benchmark when your rate is at least `low`.
 
-`dungeons` does the same for Mythic+ runs, keyed by instance ID (the 8th return of `GetInstanceInfo`, which is also Warcraft Logs' zone ID for the dungeon), with rates per minute in combat. A rate with no number (`nil` in its place) is left out for that boss or dungeon, so one profile can measure raid and M+ spells.
+`dungeons` does the same for Mythic+ runs (and `dungeonOverall` for dummies with `/ob mode mythic`), keyed by instance ID (the 8th return of `GetInstanceInfo`, which is also Warcraft Logs' zone ID for the dungeon), with rates per minute in combat. A rate with no number (`nil` in its place) is left out for that boss or dungeon, so one profile can measure raid and M+ spells.
 
 ```lua
 benchmarks = {

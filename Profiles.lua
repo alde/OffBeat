@@ -96,6 +96,12 @@ function OffBeat:ValidateProfile(profile)
         if not ok then return false, err end
     end
 
+    for i, cd in ipairs(profile.idleCooldowns or {}) do
+        if cd.content ~= nil and cd.content ~= "raid" and cd.content ~= "dungeon" then
+            return false, "idleCooldowns[" .. i .. "].content must be \"raid\" or \"dungeon\""
+        end
+    end
+
     if profile.movingCasts ~= nil then
         if type(profile.movingCasts) ~= "table" or #profile.movingCasts == 0 then
             return false, "movingCasts must be a non-empty list"
@@ -125,7 +131,11 @@ function OffBeat:ValidateProfile(profile)
                 if m.cursor ~= nil and m.cursor ~= true and type(m.cursor) ~= "table" then
                     return false, where .. ".macro.cursor must be true or a list of spell IDs"
                 end
-                local minSpells = m.cursor == true and 1 or 2
+                if m.mouseover ~= nil and m.mouseover ~= true then
+                    return false, where .. ".macro.mouseover must be true"
+                end
+                -- one spell at the cursor or on mouseover; otherwise it picks between builds
+                local minSpells = (m.cursor == true or m.mouseover) and 1 or 2
                 if type(m.spells) ~= "table" or #m.spells < minSpells then
                     return false, where .. ".macro needs at least " .. minSpells .. " spell(s)"
                 end
@@ -136,8 +146,15 @@ function OffBeat:ValidateProfile(profile)
                 return false, where .. " needs a spellId or a macro"
             end
             if e.slot < 1 or e.slot > 180 then return false, where .. ".slot must be 1-180" end
-            if used[e.slot] then return false, where .. ": slot " .. e.slot .. " is used twice" end
-            used[e.slot] = true
+            if e.content ~= nil and e.content ~= "raid" and e.content ~= "dungeon" then
+                return false, where .. ".content must be \"raid\" or \"dungeon\""
+            end
+            -- a slot can hold one spell in raid and another in M+, but not two in the same layout
+            local u = used[e.slot]
+            if u and (u == "both" or e.content == nil or u == e.content) then
+                return false, where .. ": slot " .. e.slot .. " is used twice"
+            end
+            used[e.slot] = u and "both" or (e.content or "both")
         end
     end
 
@@ -279,14 +296,26 @@ local function ValidateBench(e, nRates, where)
     if type(e) ~= "table" then return false, where .. " must be a table" end
     if type(e.name) ~= "string" then return false, where .. ".name must be a string" end
     if e.window ~= nil and type(e.window) ~= "number" then return false, where .. ".window must be a number" end
-    if type(e.values) ~= "table" or #e.values == 0 or #e.values > nRates then
+    if type(e.values) ~= "table" then
         return false, where .. ".values must list { low, median, high } per rate"
     end
-    for j, v in ipairs(e.values) do
-        if type(v) ~= "table" or type(v[1]) ~= "number" or type(v[2]) ~= "number" or type(v[3]) ~= "number" then
-            return false, where .. ".values[" .. j .. "] must be { low, median, high }"
+    -- nil in a rate's place: no number for it here (raid-only / M+-only rates)
+    local any = false
+    for k in pairs(e.values) do
+        if type(k) ~= "number" or k < 1 or k > nRates or k % 1 ~= 0 then
+            return false, where .. ".values has more entries than there are rates"
         end
     end
+    for j = 1, nRates do
+        local v = e.values[j]
+        if v ~= nil then
+            if type(v) ~= "table" or type(v[1]) ~= "number" or type(v[2]) ~= "number" or type(v[3]) ~= "number" then
+                return false, where .. ".values[" .. j .. "] must be { low, median, high }"
+            end
+            any = true
+        end
+    end
+    if not any then return false, where .. ".values must list { low, median, high } per rate" end
     return true
 end
 
@@ -301,8 +330,17 @@ function OffBeat:ValidateBenchmarks(bm)
             return false, where .. " needs spells or all = true"
         end
     end
-    if bm.encounters == nil and bm.overall == nil then
-        return false, "benchmarks needs encounters and/or overall"
+    if bm.encounters == nil and bm.overall == nil and bm.dungeons == nil then
+        return false, "benchmarks needs encounters, overall and/or dungeons"
+    end
+    for id, e in pairs(bm.dungeons or {}) do
+        if type(id) ~= "number" then return false, "benchmarks.dungeons keys must be instance IDs" end
+        local ok, err = ValidateBench(e, #bm.rates, "benchmarks.dungeons[" .. id .. "]")
+        if not ok then return false, err end
+    end
+    if bm.dungeonOverall then
+        local ok, err = ValidateBench(bm.dungeonOverall, #bm.rates, "benchmarks.dungeonOverall")
+        if not ok then return false, err end
     end
     for id, e in pairs(bm.encounters or {}) do
         if type(id) ~= "number" then return false, "benchmarks.encounters keys must be encounter IDs" end

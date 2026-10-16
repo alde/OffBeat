@@ -6,3 +6,4 @@
 ## Dependencies: OffBeat
 
 WindwalkerMonk.lua
+MistweaverMonk.lua

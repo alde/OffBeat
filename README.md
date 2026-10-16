@@ -18,7 +18,7 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Key Layout**: a settings tab that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
-**Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation and Preservation Evoker): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
+**Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation and Preservation Evoker, Mistweaver Monk): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
 
 **Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
 
@@ -30,6 +30,7 @@ A profile can use any combination.
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking, Rotation (Eruption / empowers / Breath of Eons inside Ebon Might), Breath of Eons countdown (Fire Breath, Upheaval ready), Key Layout; Training (Breath of Eons: Fire Breath + Upheaval) |
 | OffBeat_Evoker | Preservation Evoker | Rotation (Flameshaper raid), idle Temporal Anomaly / Dream Breath / Fire Breath, Key Layout; Training (Dream Breath loop: Temporal Anomaly + Echo / Emerald Blossom) |
+| OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, M+ cheat sheet), idle Rushing Wind Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick) |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
@@ -139,7 +140,7 @@ rotationSheet = {
 
 A section can be limited to a talent build or a kind of content: `known = { ids }` shows it only when you know one of those spells, `unknown = { ids }` only when you know none, and `content = "raid"` / `"dungeon"` only in that kind of instance (outside instances every section shows). Destruction uses this for Hellcaller vs Diabolist and raid cleave vs M+ packs.
 
-`/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight and Augmentation and Preservation Evoker.
+`/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight, Augmentation and Preservation Evoker, and Mistweaver Monk.
 
 ## Settings
 
@@ -155,7 +156,7 @@ Profiles with a `keyLayout` section get a key layout on the **Keys & Bars** tab 
 
 `keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
 
-Currently filled in for all Warlock and Death Knight specs, Augmentation and Preservation Evoker, and Discipline and Holy Priest.
+Currently filled in for all Warlock and Death Knight specs, Augmentation and Preservation Evoker, Mistweaver Monk, and Discipline and Holy Priest.
 
 ## Training
 

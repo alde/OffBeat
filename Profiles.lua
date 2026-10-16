@@ -14,7 +14,7 @@ local VALID_SECTIONS = {
     "trackedBuffs", "alerts", "castWarnings",
     "rotationSpells", "mistakes", "trackedAuras",
     "keyCooldown", "idleCooldowns", "procTracking",
-    "statPriority", "heroStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges", "castAuras",
+    "statPriority", "heroStatPriorities", "contentStatPriorities", "keyLayout", "windows", "benchmarks", "pet", "movingCasts", "barLayout", "rotationSheet", "prep", "failNudges", "castAuras",
 }
 
 
@@ -94,6 +94,16 @@ function OffBeat:ValidateProfile(profile)
     if profile.benchmarks then
         local ok, err = self:ValidateBenchmarks(profile.benchmarks)
         if not ok then return false, err end
+    end
+
+    if profile.contentStatPriorities ~= nil then
+        if type(profile.contentStatPriorities) ~= "table" then return false, "contentStatPriorities must be a table" end
+        for k, v in pairs(profile.contentStatPriorities) do
+            if k ~= "raid" and k ~= "dungeon" then
+                return false, "contentStatPriorities keys must be \"raid\" or \"dungeon\""
+            end
+            if type(v) ~= "table" then return false, "contentStatPriorities." .. k .. " must be a rank map" end
+        end
     end
 
     for i, cd in ipairs(profile.idleCooldowns or {}) do

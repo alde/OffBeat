@@ -44,7 +44,7 @@ A profile can use any combination.
 
 ## Stat priority
 
-The stat priority panel has moved to its own addon, **[Statisfaction](https://github.com/alde/statisfaction)**. OffBeat profiles can still set `statPriority` / `heroStatPriorities`; when Statisfaction is installed it uses them over its built-in table.
+The stat priority panel has moved to its own addon, **[Statisfaction](https://github.com/alde/statisfaction)**. OffBeat profiles can still set `statPriority` / `heroStatPriorities`; when Statisfaction is installed it uses them over its built-in table. `contentStatPriorities = { raid = {...}, dungeon = {...} }` sets one per content, following `/ob mode` (Mistweaver: Haste > Crit in raid, Haste > Mastery in M+, from the ratings top players wear).
 
 ## Installation
 

@@ -287,7 +287,7 @@ OffBeat:RegisterProfile({
             { spellId = 124682, text = "Enveloping Mist on 2-3 squishies first, then Rising Sun Kick" },
             { spellId = 325197, text = "Chi-Ji: Blackout Kick on the stacks, Rising Sun Kick on resets (3 in 12s)" },
             { spellId = 443028, alt = { 115310 }, text = "4+ injured: Conduit or Revival (held for damage, ~2 min apart)" },
-            { text = "Stats in M+ (Way of the Crane): Haste > Mastery > Crit > Vers" },
+            { text = "Stats in M+: Haste > Mastery > Crit >= Vers (raid: Haste > Crit > Vers >= Mastery)" },
         } },
         { title = "Cooldowns", lines = {
             { spellId = 116849, text = "Life Cocoon: stop a death on a DPS / healer (absorb, no damage reduction)" },
@@ -295,8 +295,18 @@ OffBeat:RegisterProfile({
         } },
     },
 
-    -- Way of the Crane raid: Haste > Crit > Vers > Mastery
-    statPriority = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 4 },
+    -- Stats: Way of the Crane, checked against the ratings the top players
+    -- actually wear (Warcraft Logs, ~190 raid parses and ~180 M+ runs).
+    -- Raid: Haste > Crit > Vers >= Mastery (median 1600 / 1020 / 340 / 260;
+    -- Haste first for 95%, Crit second for 92%). M+: Haste > Mastery > Crit
+    -- >= Vers (1320 / 940 / 530 / 370; Mastery second for 61%). Method's
+    -- one list for both (Haste > Crit = Vers > Mastery) fits neither.
+    -- Statisfaction shows the one for the content you're in (/ob mode).
+    statPriority = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 3.5 },
+    contentStatPriorities = {
+        raid    = { HASTE = 1, CRIT = 2, VERS = 3, MASTERY = 3.5 },
+        dungeon = { HASTE = 1, MASTERY = 2, CRIT = 3, VERS = 3.5 },
+    },
 
     keyLayoutLabels = { st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" },
 

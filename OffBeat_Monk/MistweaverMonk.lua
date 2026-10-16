@@ -201,6 +201,58 @@ OffBeat:RegisterProfile({
             { 49.5, 51.6, 53.7 }, nil, { 14.0, 15.8, 17.2 }, { 0.6, 1.1, 1.7 }, { 2.7, 3.3, 3.7 }, { 2.0, 2.3, 2.4 }, { 0.8, 1.0, 1.4 }, { 0.4, 0.4, 0.5 }, { 1.7, 2.4, 3.1 }, { 6.5, 8.9, 12.3 }, { 9.9, 12.7, 15.3 } } },
     },
 
+    -- Bars: same keys as the other OffBeat specs (1-5, Q, G, E, R, X, the
+    -- Shift row, F, `), one layout for raid and one for M+ / delves, since
+    -- the top players' busiest buttons barely overlap (raid: Vivify,
+    -- Renewing Mist, Enveloping Mist; M+: Spinning Crane Kick, Tiger Palm,
+    -- Blackout Kick). Heals are mouseover macros. Keys that hold the same
+    -- spell in both stay put; the swap is offered when you enter a raid, a
+    -- key or a delve (/ob mode). Talents swap Rushing Wind / Rising Sun
+    -- Kick and Yu'lon / Chi-Ji on their own.
+    barLayout = {
+        -- both
+        { slot = 1,  key = "1",       spellId = 467307, alt = { 107428 },
+          note = "Rushing Wind Kick (raid) / Rising Sun Kick (M+): on cooldown, ~15 a minute" },
+        { slot = 5,  key = "5",       spellId = 116680, note = "Thunder Focus Tea: Renewing Mist in raid, Rising Sun Kick in M+" },
+        { slot = 6,  key = "Q",       spellId = 322118, alt = { 325197 }, note = "Yu'lon (raid) / Chi-Ji (M+)" },
+        { slot = 7,  key = "G",       spellId = 443028, note = "Celestial Conduit" },
+        { slot = 12, key = "X",       macro = { name = "OB Detox", spells = { 115450 }, mouseover = true }, note = "Detox (mouseover)" },
+        { slot = 61, key = "Shift-1", macro = { name = "OB Cocoon", spells = { 116849 }, mouseover = true }, note = "Life Cocoon (mouseover)" },
+        { slot = 62, key = "Shift-2", spellId = 115310, alt = { 388615 }, note = "Revival / Restoral" },
+        { slot = 66, key = "Shift-Q", spellId = 119381, note = "Leg Sweep" },
+        { slot = 50, key = "Shift-E", spellId = 115078, note = "Paralysis" },
+        { slot = 70, key = "F",       spellId = 109132, note = "Roll: movement" },
+        { slot = 55, key = "`",       spellId = 115203, note = "Fortifying Brew: defensive" },
+        { slot = 56, key = "Shift-`", spellId = 122783, alt = { 122278 }, note = "Diffuse Magic / Dampen Harm" },
+
+        -- raid: heal casts (top players: Vivify 15, Renewing Mist 12, Enveloping Mist 7.5 a minute)
+        { slot = 2,  key = "2",       content = "raid", macro = { name = "OB Vivify", spells = { 116670 }, mouseover = true },
+          note = "Vivify (mouseover): most pressed, after every kick" },
+        { slot = 3,  key = "3",       content = "raid", macro = { name = "OB ReM", spells = { 115151 }, mouseover = true },
+          note = "Renewing Mist (mouseover): on cooldown" },
+        { slot = 4,  key = "4",       content = "raid", macro = { name = "OB EnvM", spells = { 124682 }, mouseover = true },
+          note = "Enveloping Mist (mouseover): procs, Yu'lon ramp" },
+        { slot = 8,  key = "E",       content = "raid", macro = { name = "OB Soothing", spells = { 115175 }, mouseover = true },
+          note = "Soothing Mist (mouseover): while moving" },
+        { slot = 67, key = "R",       content = "raid", spellId = 115294, note = "Mana Tea: when there's time" },
+        { slot = 63, key = "Shift-3", content = "raid", macro = { name = "OB Sheilun", spells = { 399491 }, mouseover = true },
+          note = "Sheilun's Gift (mouseover): spot-heal raid build only" },
+
+        -- M+ / delves: damage is the heal (Rising Sun Kick 16, Crane Kick 9, Tiger Palm 7, Blackout Kick 6 a minute)
+        { slot = 2,  key = "2",       content = "dungeon", spellId = 101546, note = "Spinning Crane Kick: packs" },
+        { slot = 3,  key = "3",       content = "dungeon", spellId = 100780, note = "Tiger Palm: builds Teachings" },
+        { slot = 4,  key = "4",       content = "dungeon", spellId = 100784, note = "Blackout Kick: resets Rising Sun Kick" },
+        { slot = 8,  key = "E",       content = "dungeon", macro = { name = "OB EnvM", spells = { 124682 }, mouseover = true },
+          note = "Enveloping Mist (mouseover): before damage" },
+        { slot = 67, key = "R",       content = "dungeon", macro = { name = "OB Sheilun", spells = { 399491 }, mouseover = true },
+          note = "Sheilun's Gift (mouseover): sudden damage" },
+        { slot = 63, key = "Shift-3", content = "dungeon", spellId = 115294, note = "Mana Tea" },
+        { slot = 64, key = "Shift-4", content = "dungeon", macro = { name = "OB ReM", spells = { 115151 }, mouseover = true },
+          note = "Renewing Mist (mouseover): ~1 a minute" },
+        { slot = 65, key = "Shift-5", content = "dungeon", macro = { name = "OB Soothing", spells = { 115175 }, mouseover = true },
+          note = "Soothing Mist (mouseover)" },
+    },
+
     -- The movable cheat sheet (/ob sheet). Raid: Way of the Crane + Method,
     -- checked against the top 40 heroic parses per boss. M+: Way of the
     -- Crane + Method, checked against the top 40 timed runs per dungeon.

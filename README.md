@@ -30,7 +30,7 @@ A profile can use any combination.
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking, Rotation (Eruption / empowers / Breath of Eons inside Ebon Might), Breath of Eons countdown (Fire Breath, Upheaval ready), Key Layout; Training (Breath of Eons: Fire Breath + Upheaval) |
 | OffBeat_Evoker | Preservation Evoker | Rotation (Flameshaper raid), idle Temporal Anomaly / Dream Breath / Fire Breath, Key Layout; Training (Dream Breath loop: Temporal Anomaly + Echo / Emerald Blossom) |
-| OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, Conduit / Chi-Ji M+), idle Rushing Wind Kick / Rising Sun Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick; Chi-Ji: Rising Sun Kick + Blackout Kick; per-dungeon M+ benchmarks) |
+| OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, Conduit / Chi-Ji M+), raid and M+ bar layouts (mouseover heals), idle Rushing Wind Kick / Rising Sun Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick; Chi-Ji: Rising Sun Kick + Blackout Kick; per-dungeon M+ benchmarks) |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
@@ -72,7 +72,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob test` | Inject test data |
 | `/ob training` | Toggle cooldown window coaching (stays on through /reload) |
 | `/ob report` | Show the training report (the session so far while training is on) |
-| `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat) |
+| `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat); `/ob bars raid` / `mythic` for specs with both |
 | `/ob sheet` | Show or hide this spec's rotation cheat sheet |
 | `/ob gear` | Check your enchants and gems against what top players of your spec use |
 | `/ob mode` | Raid or Mythic+ advice: `auto` (by instance, the default), `raid` or `mythic` (everywhere, e.g. on a dummy before a key) |
@@ -125,6 +125,10 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 ## Bar layout
 
 `/ob bars` shows a profile's `barLayout` (which spell goes on which key) and `/ob bars apply` puts them on your bars. An entry can be a macro that picks between spells two builds don't share, so one key works for both: `{ slot = 67, key = "R", macro = { name = "OB Havoc/Cata", spells = { 80240, 152108 } } }` becomes a per-character macro `/cast [known:Havoc] Havoc; Cataclysm`. Add `cursor = true` to cast at the mouse (`[@cursor]`), e.g. `macro = { name = "OB Rain", spells = { 5740 }, cursor = true }`.
+
+Healers can use mouseover macros: `macro = { name = "OB Vivify", spells = { 116670 }, mouseover = true }` becomes `/cast [@mouseover,help,nodead][] Vivify` (the unit under the mouse, else your target).
+
+A layout can differ between raid and Mythic+: entries with `content = "raid"` or `"dungeon"` belong to that layout only (the rest to both), so a slot can hold Vivify in raid and Spinning Crane Kick in a key. The content mode decides which (`/ob mode`; dungeons and delves are Mythic+), and when it changes OffBeat asks whether to swap the layout on your bars (out of combat; off on the Keys & Bars tab). Outside instances in auto mode, pick one with `/ob bars raid apply` or `/ob bars mythic apply`. Mistweaver Monk has both.
 
 ## Rotation sheet
 

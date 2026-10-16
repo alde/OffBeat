@@ -475,7 +475,23 @@ tabBuilders.keys = function(L)
 
     if profile.barLayout then
         L:Card("Bar layout", function(p, y)
-            local plan = OffBeat:GetBarLayoutPlan() or {}
+            local ss = GetSpecSettings(profile.meta.specId)
+            local split = OffBeat:BarLayoutHasContent()
+            local content
+            if split then
+                -- which layout to show: picked here, else the content you're in, else raid
+                content = ss.barLayoutView or OffBeat:ContentMode() or ss.barLayoutContent or "raid"
+                local _, h = W():Dropdown(p, "Layout", y, { raid = "Raid", dungeon = "Mythic+ / delves" },
+                    function() return content end,
+                    function(v) ss.barLayoutView = v; Select("spec", "keys") end, { "raid", "dungeon" })
+                y = y - h
+                local onBars = ss.barLayoutContent
+                y = Para(p, y, "On your bars now: " .. (onBars == "raid" and "raid" or onBars == "dungeon" and "Mythic+"
+                    or "not placed by OffBeat yet") .. ". Heals are mouseover macros (your target when "
+                    .. "there's no one under the mouse).")
+                y = SpecToggle(p, y, "Offer to Swap When Raid / M+ Changes", ss, "barSwapOffer")
+            end
+            local plan = OffBeat:GetBarLayoutPlan(content) or {}
             for _, r in ipairs(plan) do
                 local info = C_Spell.GetSpellInfo(r.spellId)
                 local _, h = W():InfoRow(p, y, r.key, r.text .. (r.known and "" or "  (not talented, skipped)"),
@@ -483,7 +499,7 @@ tabBuilders.keys = function(L)
                 y = y - h
             end
             local _, h = W():Button(p, "Put These on My Bars", y, function()
-                OffBeat:ShowBarLayout(true)
+                OffBeat:ShowBarLayout(true, content and (content == "dungeon" and "mythic" or "raid"))
                 Select("spec", "keys")
             end, "Replaces only these slots. Out of combat.", true)
             return y - h

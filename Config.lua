@@ -100,6 +100,7 @@ function OffBeat:GetDefaults()
             prepEnabled = true,          -- countdown to the main cooldown with what to hold (profiles with prep)
             prepLead = nil,              -- seconds before; nil = the profile's lead
             showSheet = true,            -- rotation cheat sheet (profiles with rotationSheet)
+            barSwapOffer = true,         -- offer the raid / M+ bar layout when the content changes
             sheetHideInCombat = false,
             sheetPosition = nil,
             idleCooldownNag = true,

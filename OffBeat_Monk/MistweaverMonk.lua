@@ -221,7 +221,7 @@ OffBeat:RegisterProfile({
         { slot = 62, key = "Shift-2", spellId = 115310, alt = { 388615 }, note = "Revival / Restoral" },
         { slot = 66, key = "Shift-Q", spellId = 119381, note = "Leg Sweep" },
         { slot = 50, key = "Shift-E", spellId = 115078, note = "Paralysis" },
-        { slot = 70, key = "F",       spellId = 109132, note = "Roll: movement" },
+        { slot = 70, key = "F",       spellId = 116841, note = "Tiger's Lust: movement (Roll stays on your Meta-Q)" },
         { slot = 55, key = "`",       spellId = 115203, note = "Fortifying Brew: defensive" },
         { slot = 56, key = "Shift-`", spellId = 122783, alt = { 122278 }, note = "Diffuse Magic / Dampen Harm" },
 

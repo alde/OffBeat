@@ -280,5 +280,8 @@ watcher:SetScript("OnEvent", function(_, event, unit)
     -- give the profile a moment to load after a spec change or a loading screen
     C_Timer.After(2, function() OffBeat:CheckBarSwap() end)
 end)
--- /ob mode, or a loadout swap that changes the build (OffBeat.lua)
-OffBeat:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", function() OffBeat:CheckBarSwap() end)
+-- /ob mode, or a loadout swap that changes the build (OffBeat.lua). Its own
+-- listener: AceEvent keeps one handler per object and message, so another
+-- file registering the same message on OffBeat would replace this one.
+local listener = LibStub("AceEvent-3.0"):Embed({})
+listener:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", function() OffBeat:CheckBarSwap() end)

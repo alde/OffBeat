@@ -27,7 +27,10 @@ hooksecurefunc(OffBeat, "EnableAlwaysOnModules", function()
 end)
 
 -- The content changed: /ob mode, or entering / leaving a raid, a dungeon or a delve.
-OffBeat:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", function() Statisfaction:RequestRefresh() end)
+-- Own listener: AceEvent keeps one handler per object and message, and the
+-- bar layout listens for this one too.
+local listener = LibStub("AceEvent-3.0"):Embed({})
+listener:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", function() Statisfaction:RequestRefresh() end)
 local zoneWatcher = CreateFrame("Frame")
 zoneWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
 zoneWatcher:SetScript("OnEvent", function() Statisfaction:RequestRefresh() end)

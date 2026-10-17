@@ -247,13 +247,52 @@ end
 local declined   -- content the offer was turned down for, this session
 local pending    -- an offer waiting for combat to end
 
-StaticPopupDialogs["OFFBEAT_BAR_SWAP"] = {
-    text = "OffBeat: put your %s bar layout on your bars?\n(Replaces only the layout's slots.)",
-    button1 = YES, button2 = "Not now",
-    OnAccept = function(_, data) OffBeat:ShowBarLayout(true, data == "dungeon" and "mythic" or "raid") end,
-    OnCancel = function(_, data) declined = data end,
-    timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
-}
+-- Our own little dialog, not Blizzard's StaticPopup: an addon touching
+-- StaticPopupDialogs taints the shared popup code, and Blizzard UI that uses
+-- it later (the guild rank screen calling IsUserOAuthed) gets blocked with
+-- the blame on OffBeat.
+local dialog
+local function GetDialog()
+    if dialog then return dialog end
+    local f = CreateFrame("Frame", "OffBeatBarSwapDialog", UIParent, "BackdropTemplate")
+    f:SetSize(340, 96)
+    f:SetPoint("TOP", UIParent, "TOP", 0, -160)
+    f:SetFrameStrata("DIALOG")
+    f:SetClampedToScreen(true)
+    f:EnableMouse(true)
+    f:SetBackdrop(OffBeat.FLAT_BACKDROP or {
+        bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 1 })
+    f:SetBackdropColor(0.04, 0.05, 0.07, 0.95)
+    f:SetBackdropBorderColor(0.35, 0.70, 1.0, 0.6)
+    f.text = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    f.text:SetPoint("TOP", 0, -14)
+    f.text:SetWidth(310)
+    local function button(label, x, onClick)
+        local b = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+        b:SetSize(110, 22)
+        b:SetPoint("BOTTOM", x, 12)
+        b:SetText(label)
+        b:SetScript("OnClick", function() f:Hide(); onClick(f.content) end)
+        return b
+    end
+    button(YES or "Yes", -60, function(content)
+        OffBeat:ShowBarLayout(true, content == "dungeon" and "mythic" or "raid")
+    end)
+    button("Not now", 60, function(content) declined = content end)
+    f:Hide()
+    dialog = f
+    return f
+end
+
+local function ShowOffer(content)
+    local f = GetDialog()
+    f.content = content
+    f.text:SetText("OffBeat: put your " .. CONTENT_NAMES[content] .. " bar layout on your bars?\n"
+        .. "|cff999999Replaces only the layout's slots.|r")
+    f:Show()
+end
+
+local function HideOffer() if dialog then dialog:Hide() end end
 
 function OffBeat:CheckBarSwap()
     if not (self.db and self.activeProfile and self:BarLayoutHasContent()) then return end
@@ -261,20 +300,25 @@ function OffBeat:CheckBarSwap()
     if ss.barSwapOffer == false then return end
     local content = self:ContentMode()
     if not content then return end
-    if ss.barLayoutContent == content then declined = nil; return end
+    if ss.barLayoutContent == content then declined = nil; HideOffer(); return end
     if declined == content then return end
     if InCombatLockdown() then pending = true; return end
     pending = nil
-    StaticPopup_Hide("OFFBEAT_BAR_SWAP")
-    StaticPopup_Show("OFFBEAT_BAR_SWAP", CONTENT_NAMES[content], nil, content)
+    ShowOffer(content)
 end
 
 local watcher = CreateFrame("Frame")
 watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
 watcher:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
+watcher:RegisterEvent("PLAYER_REGEN_DISABLED")
 watcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 watcher:SetScript("OnEvent", function(_, event, unit)
+    if event == "PLAYER_REGEN_DISABLED" then
+        -- can't change bars in combat: put the question away, ask after
+        if dialog and dialog:IsShown() then HideOffer(); pending = true end
+        return
+    end
     if event == "PLAYER_REGEN_ENABLED" and not pending then return end
     if event == "PLAYER_SPECIALIZATION_CHANGED" and unit ~= "player" then return end
     -- give the profile a moment to load after a spec change or a loading screen

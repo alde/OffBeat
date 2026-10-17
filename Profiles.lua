@@ -96,6 +96,15 @@ function OffBeat:ValidateProfile(profile)
         if not ok then return false, err end
     end
 
+    if profile.contentTalents ~= nil then
+        if type(profile.contentTalents) ~= "table" then return false, "contentTalents must be a table" end
+        for k, v in pairs(profile.contentTalents) do
+            if (k ~= "raid" and k ~= "dungeon") or type(v) ~= "table" then
+                return false, "contentTalents must be { raid = { spell IDs }, dungeon = { spell IDs } }"
+            end
+        end
+    end
+
     if profile.contentStatPriorities ~= nil then
         if type(profile.contentStatPriorities) ~= "table" then return false, "contentStatPriorities must be a table" end
         for k, v in pairs(profile.contentStatPriorities) do

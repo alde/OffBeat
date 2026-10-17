@@ -489,7 +489,7 @@ tabBuilders.keys = function(L)
                 y = Para(p, y, "On your bars now: " .. (onBars == "raid" and "raid" or onBars == "dungeon" and "Mythic+"
                     or "not placed by OffBeat yet") .. ". Heals are mouseover macros (your target when "
                     .. "there's no one under the mouse).")
-                y = SpecToggle(p, y, "Offer to Swap on Spec Switch / Raid-M+ Change", ss, "barSwapOffer")
+                y = SpecToggle(p, y, "Offer to Swap on Raid / M+ Change", ss, "barSwapOffer")
             end
             local plan = OffBeat:GetBarLayoutPlan(content) or {}
             for _, r in ipairs(plan) do

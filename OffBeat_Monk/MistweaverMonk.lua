@@ -295,6 +295,12 @@ OffBeat:RegisterProfile({
         } },
     },
 
+    -- Which build is which, for /ob mode auto outside instances (the bar
+    -- layout offer when you swap loadouts, the sheet, stats): Yu'lon or
+    -- Rushing Wind Kick is the raid build (94% / 97% of top raid parses),
+    -- Chi-Ji the M+ one (all top runs).
+    contentTalents = { raid = { 322118, 467307 }, dungeon = { 325197 } },
+
     -- Stats: Way of the Crane, checked against the ratings the top players
     -- actually wear (Warcraft Logs, ~190 raid parses and ~180 M+ runs).
     -- Raid: Haste > Crit > Vers >= Mastery (median 1600 / 1020 / 340 / 260;

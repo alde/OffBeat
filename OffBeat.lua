@@ -230,8 +230,10 @@ end
 -- alerts to one (`content = "raid"` / `"dungeon"`), and training compares
 -- fights outside a boss or key with that content's numbers. "auto" reads the
 -- instance: a raid is raid, a dungeon or a delve (scenario) is Mythic+, since
--- you play your M+ build there; outside instances both apply. "raid" and
--- "mythic" force it everywhere, e.g. on a target dummy before a key.
+-- you play your M+ build there. Outside instances it follows your talents
+-- when the profile names tell-tale ones (contentTalents = { raid = { ids },
+-- dungeon = { ids } }: Mistweaver's Yu'lon vs Chi-Ji), else both apply.
+-- "raid" and "mythic" force it everywhere, e.g. on a dummy before a key.
 
 local MODE_NAMES = { auto = "Auto", raid = "Raid", mythic = "Mythic+" }
 local CONTENT_NAMES = { raid = "Raid", dungeon = "Mythic+" }
@@ -242,9 +244,29 @@ function OffBeat:ContentMode()
     if mode == "raid" then return "raid" end
     if mode == "mythic" then return "dungeon" end
     local ok, inInstance, kind = pcall(IsInInstance)
-    if not ok or not inInstance then return nil end
-    if kind == "raid" then return "raid" end
-    if kind == "party" or kind == "scenario" then return "dungeon" end -- dungeons and delves
+    if ok and inInstance then
+        if kind == "raid" then return "raid" end
+        if kind == "party" or kind == "scenario" then return "dungeon" end -- dungeons and delves
+        return nil -- battlegrounds and the like
+    end
+    return self:TalentContent() -- outside instances: your build, if the profile can tell
+end
+
+--- "raid" / "dungeon" when your talents match only one side of the active
+--- profile's contentTalents, else nil.
+function OffBeat:TalentContent()
+    local ct = self.activeProfile and self.activeProfile.contentTalents
+    if not ct then return nil end
+    local function any(ids)
+        for _, id in ipairs(ids or {}) do
+            local ok, known = pcall(IsPlayerSpell, id)
+            if ok and known then return true end
+        end
+        return false
+    end
+    local raid, dungeon = any(ct.raid), any(ct.dungeon)
+    if raid and not dungeon then return "raid" end
+    if dungeon and not raid then return "dungeon" end
     return nil
 end
 
@@ -260,7 +282,40 @@ function OffBeat:ContentModeText()
     local mode = self.db.profile.contentMode or "auto"
     if mode ~= "auto" then return MODE_NAMES[mode] end
     local now = self:ContentMode()
-    return "Auto (" .. (now and ("now " .. CONTENT_NAMES[now]) or "outside instances: both") .. ")"
+    local ok, inInstance = pcall(IsInInstance)
+    local why = (now and not (ok and inInstance)) and ", from your talents" or ""
+    return "Auto (" .. (now and ("now " .. CONTENT_NAMES[now] .. why) or "outside instances: both") .. ")"
+end
+
+-- Talent changes (a loadout swap) can change the content outside instances:
+-- tell the sheet, idle alerts, bar layout offer and stat priority.
+do
+    local last, primed
+    local watcher = CreateFrame("Frame")
+    watcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+    watcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    watcher:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    watcher:RegisterEvent("PLAYER_TALENT_UPDATE")
+    local queued = false
+    watcher:SetScript("OnEvent", function(_, event, unit)
+        if event == "PLAYER_SPECIALIZATION_CHANGED" and unit ~= "player" then return end
+        local reset = event ~= "TRAIT_CONFIG_UPDATED" and event ~= "PLAYER_TALENT_UPDATE"
+        if reset then primed = false end
+        if queued then return end
+        queued = true
+        -- talents settle (and IsPlayerSpell catches up) a moment after the event
+        C_Timer.After(1.5, function()
+            queued = false
+            if not OffBeat.db then return end
+            local now = OffBeat:TalentContent()
+            if primed and now ~= last and now then
+                last = now
+                OffBeat:SendMessage("OFFBEAT_CONTENT_MODE_CHANGED", "talents")
+            else
+                last, primed = now, true -- a spec switch or a loading screen: just note it
+            end
+        end)
+    end)
 end
 
 function OffBeat:SetContentMode(mode)

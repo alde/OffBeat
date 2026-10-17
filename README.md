@@ -128,7 +128,7 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 
 Healers can use mouseover macros: `macro = { name = "OB Vivify", spells = { 116670 }, mouseover = true }` becomes `/cast [@mouseover,help,nodead][] Vivify` (the unit under the mouse, else your target).
 
-A layout can differ between raid and Mythic+: entries with `content = "raid"` or `"dungeon"` belong to that layout only (the rest to both), so a slot can hold Vivify in raid and Spinning Crane Kick in a key. The content mode decides which (`/ob mode`; dungeons and delves are Mythic+), and when it changes OffBeat asks whether to swap the layout on your bars (out of combat; off on the Keys & Bars tab). Outside instances in auto mode, pick one with `/ob bars raid apply` or `/ob bars mythic apply`. Mistweaver Monk has both.
+A layout can differ between raid and Mythic+: entries with `content = "raid"` or `"dungeon"` belong to that layout only (the rest to both), so a slot can hold Vivify in raid and Spinning Crane Kick in a key. The content mode decides which (`/ob mode`; dungeons and delves are Mythic+), and when it changes, or you switch to the spec, OffBeat asks whether to swap the layout on your bars (outside instances it asks "Raid or Mythic+?"; out of combat; off on the Keys & Bars tab). Outside instances in auto mode, pick one with `/ob bars raid apply` or `/ob bars mythic apply`. Mistweaver Monk has both.
 
 ## Rotation sheet
 

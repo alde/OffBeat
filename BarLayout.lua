@@ -29,9 +29,9 @@ local OffBeat = _G.OffBeat
 -- `"dungeon"` only belongs to that layout (entries without it are in both),
 -- so the same slot can hold Vivify in raid and Spinning Crane Kick in a key.
 -- Which one applies is the content mode (/ob mode; dungeons and delves are
--- Mythic+). When it changes, OffBeat offers to swap the layout on your bars
--- (out of combat, per spec setting). Outside instances in auto mode you pick:
--- /ob bars raid | mythic [apply].
+-- Mythic+). When it changes, or you switch to the spec, OffBeat offers to
+-- swap the layout on your bars (out of combat, per spec setting; see below).
+-- Outside instances in auto mode: /ob bars raid | mythic [apply].
 --
 -- Slots are Blizzard's: 1-12 main bar, 61-72 bottom left, 49-60 bottom right,
 -- 25-36 right, 37-48 left, 145-180 bars 5-7. `key` is only shown in the plan.
@@ -234,33 +234,58 @@ function OffBeat:ShowBarLayout(apply, contentArg)
     end
 end
 
--- Offer to swap layouts when the content changes (entering a raid, a key or
--- a delve, or /ob mode). Asks once per change; "Not now" is remembered until
--- the content changes again. Waits for the end of combat.
+-- Offer the layout when it may be the wrong one on your bars:
+--  * the content changes (entering a raid, a key or a delve, or /ob mode):
+--    "Put your Mythic+ bar layout on your bars?" when it isn't already there;
+--    "Not now" holds until the content changes again;
+--  * you switch to the spec: in a raid / dungeon / delve the same question,
+--    outside instances (auto mode) "Raid or Mythic+?".
+-- Waits for the end of combat. Off with the per-spec toggle on Keys & Bars.
 
 local declined   -- content the offer was turned down for, this session
-local pending    -- an offer waiting for combat to end
+local pending    -- an offer waiting for combat to end: "content" or "spec"
+
+local function Apply(content) OffBeat:ShowBarLayout(true, content == "dungeon" and "mythic" or "raid") end
 
 StaticPopupDialogs["OFFBEAT_BAR_SWAP"] = {
     text = "OffBeat: put your %s bar layout on your bars?\n(Replaces only the layout's slots.)",
     button1 = YES, button2 = "Not now",
-    OnAccept = function(_, data) OffBeat:ShowBarLayout(true, data == "dungeon" and "mythic" or data) end,
+    OnAccept = function(_, data) Apply(data) end,
     OnCancel = function(_, data) declined = data end,
     timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
 }
 
-function OffBeat:CheckBarSwap()
+StaticPopupDialogs["OFFBEAT_BAR_CHOOSE"] = {
+    text = "OffBeat: which bar layout for %s?\nOn your bars now: %s. (Replaces only the layout's slots.)",
+    button1 = "Raid", button3 = "Mythic+", button2 = "Not now",
+    OnAccept = function() Apply("raid") end,
+    OnAlt = function() Apply("dungeon") end,
+    timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+}
+
+function OffBeat:CheckBarSwap(specChanged)
     if not (self.db and self.activeProfile and self:BarLayoutHasContent()) then return end
     local ss = SpecSettings()
     if ss.barSwapOffer == false then return end
     local content = self:ContentMode()
-    if not content then return end -- outside instances in auto: keep what's there
-    if ss.barLayoutContent == content then declined = nil; return end
-    if declined == content then return end
-    if InCombatLockdown() then pending = true; return end
+    if specChanged then declined = nil end
+    if not content and not specChanged then return end -- outside instances: only ask on a spec switch
+    if content and ss.barLayoutContent == content then declined = nil; return end
+    if content and declined == content then return end
+    if InCombatLockdown() then
+        pending = (specChanged or pending == "spec") and "spec" or "content"
+        return
+    end
     pending = nil
     StaticPopup_Hide("OFFBEAT_BAR_SWAP")
-    StaticPopup_Show("OFFBEAT_BAR_SWAP", CONTENT_NAMES[content], nil, content)
+    StaticPopup_Hide("OFFBEAT_BAR_CHOOSE")
+    if content then
+        StaticPopup_Show("OFFBEAT_BAR_SWAP", CONTENT_NAMES[content], nil, content)
+    else
+        local onBars = ss.barLayoutContent
+        StaticPopup_Show("OFFBEAT_BAR_CHOOSE", self.activeProfile.meta.name,
+            onBars == "raid" and "raid" or onBars == "dungeon" and "Mythic+" or "not placed by OffBeat yet")
+    end
 end
 
 local watcher = CreateFrame("Frame")
@@ -269,9 +294,15 @@ watcher:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
 watcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 watcher:SetScript("OnEvent", function(_, event, unit)
-    if event == "PLAYER_REGEN_ENABLED" and not pending then return end
+    if event == "PLAYER_REGEN_ENABLED" then
+        if not pending then return end
+        local spec = pending == "spec"
+        C_Timer.After(1, function() OffBeat:CheckBarSwap(spec) end)
+        return
+    end
     if event == "PLAYER_SPECIALIZATION_CHANGED" and unit ~= "player" then return end
+    local spec = event == "PLAYER_SPECIALIZATION_CHANGED"
     -- give the profile a moment to load after a spec change or a loading screen
-    C_Timer.After(2, function() OffBeat:CheckBarSwap() end)
+    C_Timer.After(2, function() OffBeat:CheckBarSwap(spec) end)
 end)
 OffBeat:RegisterMessage("OFFBEAT_CONTENT_MODE_CHANGED", function() OffBeat:CheckBarSwap() end)

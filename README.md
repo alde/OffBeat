@@ -75,6 +75,7 @@ Panels ignore the mouse while OffBeat is locked, so clicks and camera drags go t
 | `/ob bars` | Show this spec's bar layout; `/ob bars apply` puts the spells on your bars (out of combat); `/ob bars raid` / `mythic` for specs with both |
 | `/ob sheet` | Show or hide this spec's rotation cheat sheet |
 | `/ob gear` | Check your enchants and gems against what top players of your spec use |
+| `/ob idledebug` | What the idle cooldown check sees right now for each tracked cooldown (ready or not, and whether it read the cooldown or fell back on your last cast) |
 | `/ob mode` | Raid or Mythic+ advice: `auto` (by instance, the default), `raid` or `mythic` (everywhere, e.g. on a dummy before a key) |
 
 

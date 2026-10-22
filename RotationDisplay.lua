@@ -616,8 +616,7 @@ end
 -- Weapon and Vampiric Blood), so keep a list and show them all together.
 
 local function IsIdleSpellReady(spellId)
-    if OffBeat:IsSpellOnRealCooldown(spellId) then return false end
-    return C_Spell.IsSpellUsable(spellId) and true or false
+    return OffBeat:IdleSpellReady(spellId) == true
 end
 
 function RotationDisplay:OnCooldownIdle(_, spellId, spellName)

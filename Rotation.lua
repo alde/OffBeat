@@ -33,6 +33,35 @@ function OffBeat:IsSpellOnRealCooldown(spellId)
     return true
 end
 
+--- Is an idle-tracked spell ready to press? true / false, nil when it can't
+--- be told. Reads the cooldown when the game shows it; while combat hides it
+--- (12.x secret values), falls back on your last cast plus the cooldown
+--- (`cooldown` from the profile, else the spell's base cooldown), like the
+--- countdown panel does.
+function OffBeat:IdleSpellReady(spellId, cooldown)
+    local IsSecretV = OffBeat.Conditions.IsSecret
+    local ok, ready = pcall(function()
+        local info = C_Spell.GetSpellCooldown(spellId)
+        if not info or IsSecretV(info.isActive) or IsSecretV(info.startTime) or IsSecretV(info.duration) then
+            return nil
+        end
+        if OffBeat:IsSpellOnRealCooldown(spellId) then return false end
+        local usable = C_Spell.IsSpellUsable(spellId)
+        if IsSecretV(usable) then return nil end
+        return usable and true or false
+    end)
+    if ok and ready ~= nil then return ready, "cooldown" end
+    local last = OffBeat.Conditions.LastCast(spellId)
+    if not last then return true, "not cast yet" end
+    local cd = cooldown
+    if not cd and GetSpellBaseCooldown then
+        local ok2, ms = pcall(GetSpellBaseCooldown, spellId)
+        if ok2 and type(ms) == "number" and not IsSecretV(ms) and ms > 0 then cd = ms / 1000 end
+    end
+    if not cd then return nil, "hidden, cooldown unknown" end
+    return GetTime() >= last + cd, "last cast + " .. cd .. "s"
+end
+
 local function ResolvePlayerSpell(spellId, name)
     if IsPlayerSpell(spellId) then return spellId end
     if FindSpellOverrideByID then
@@ -164,6 +193,7 @@ function Rotation:OnDisable()
     self.keyCdActiveUntil = nil
     self.idleState = nil
     self.procState = nil
+    if self.idleTicker then self.idleTicker:Cancel(); self.idleTicker = nil end
 end
 
 local function GetSpecSettings()
@@ -230,7 +260,8 @@ function Rotation:BuildLookups()
         for _, cd in ipairs(profile.idleCooldowns) do
             if not (disabledIdle and disabledIdle[cd.spellId]) then
                 local resolved = ResolvePlayerSpell(cd.spellId, cd.name)
-                idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId), content = cd.content }
+                idleCooldownSet[resolved] = { name = cd.name or tostring(cd.spellId), content = cd.content,
+                                              cooldown = cd.cooldown }
             end
         end
     end
@@ -410,8 +441,7 @@ function Rotation:CheckIdleCooldowns()
         if not OffBeat:InContent(info.content) then
             self.idleState[spellId] = nil -- raid-only alert in a key, or the other way round
         elseif IsPlayerSpell(spellId) then
-            local usable = C_Spell.IsSpellUsable(spellId)
-            local ready = usable and not OffBeat:IsSpellOnRealCooldown(spellId)
+            local ready = OffBeat:IdleSpellReady(spellId, info.cooldown)
 
             if ready then
                 local st = self.idleState[spellId]
@@ -481,9 +511,36 @@ end
 function Rotation:PLAYER_REGEN_DISABLED()
     OffBeat.state.combat = NewCombatStats()
     self.idleState = nil
+    -- Check idle cooldowns on a clock too: with cooldowns hidden in combat,
+    -- "ready" can come from time passing, with no cooldown event to wake us.
+    if self.idleTicker then self.idleTicker:Cancel() end
+    self.idleTicker = C_Timer.NewTicker(0.5, function()
+        if GetSpecOr("idleCooldownAlert") and UnitAffectingCombat("player") then
+            Rotation:CheckIdleCooldowns()
+        end
+    end)
+end
+
+--- /ob idledebug: what the idle check sees for each tracked cooldown.
+function Rotation:PrintIdleDebug()
+    local threshold = GetSpecOr("idleCooldownThreshold")
+    OffBeat:Print(string.format("Idle cooldowns (warn after %ss, %s, in combat: %s):", tostring(threshold),
+        GetSpecOr("idleCooldownAlert") and "on" or "|cffff4040off|r", tostring(UnitAffectingCombat("player"))))
+    local n = 0
+    for spellId, info in pairs(idleCooldownSet) do
+        n = n + 1
+        local known = IsPlayerSpell(spellId)
+        local ready, how = OffBeat:IdleSpellReady(spellId, info.cooldown)
+        local st = self.idleState and self.idleState[spellId]
+        OffBeat:Print(string.format("  %s (%d): known %s, content %s, ready %s (%s)%s", info.name, spellId,
+            tostring(known), info.content or "any", tostring(ready), how or "?",
+            st and string.format(", ready for %.0fs%s", GetTime() - st.readySince, st.warned and ", warned" or "") or ""))
+    end
+    if n == 0 then OffBeat:Print("  none for this spec") end
 end
 
 function Rotation:PLAYER_REGEN_ENABLED()
+    if self.idleTicker then self.idleTicker:Cancel(); self.idleTicker = nil end
     local combat = OffBeat.state.combat
     if combat and combat.totalCasts > 0 then
         combat.endTime = GetTime()

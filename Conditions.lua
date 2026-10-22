@@ -58,6 +58,11 @@ function C.NoteCast(spellId)
     if NoteModels then NoteModels(spellId, GetTime()) end
 end
 
+--- GetTime() of your last successful cast of spellId (any spec, this session), or nil.
+function C.LastCast(spellId)
+    return lastCast[spellId]
+end
+
 -- Since 12.1 the game hides aura data in combat (C_Secrets.ShouldAurasBeSecret),
 -- for your own buffs too. Treat that, or a walk the game refused, as hidden.
 local function AurasHidden()

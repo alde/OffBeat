@@ -441,6 +441,9 @@ function OffBeat:OnSlashCommand(input)
             self:Print(C_Spell.GetSpellName(a.aura) or a.aura, "by ID:", kind, "| from casts:",
                 tostring(up), untilT and string.format("%.1fs left", untilT - GetTime()) or "")
         end
+    elseif cmd == "idledebug" then
+        local rot = self:GetModule("Rotation", true)
+        if rot and rot:IsEnabled() then rot:PrintIdleDebug() else self:Print("No idle cooldowns for this spec.") end
     elseif cmd == "debug" then
         self.db.profile.debug = not self.db.profile.debug
         self:Print("Debug " .. (self.db.profile.debug and "enabled" or "disabled") .. ".")

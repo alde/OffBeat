@@ -105,6 +105,17 @@ OffBeat:RegisterProfile({
             spells = { 434506 },
             when = { power = "SoulShards", min = 3 },
         },
+        -- Tyrant extends the demons already out, and Dreadstalkers are the
+        -- ones worth extending. Top heroic parses (Oct 2026) call them 2-11s
+        -- before ~90% of their Tyrants; on 22 Oct you cast Tyrant first and
+        -- Dreadstalkers a few seconds after (0 of 7 on Coiled Altar).
+        {
+            type = "bad_cast",
+            name = "Tyrant without Dreadstalkers",
+            description = "Call Dreadstalkers (and Grimoire: Imp Lord if ready) right before Tyrant",
+            spells = { 265187 },
+            when = { recent = 104316, within = 12, absent = true },
+        },
     },
 
     -- Coaching: Tyrant opens Dominion of Argus' window, and the guides say to
@@ -124,6 +135,7 @@ OffBeat:RegisterProfile({
                 .. "Top players' median: 9 on Ula'tek, 10 on most bosses.",
             setup = {
                 { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } },
+                { name = "Dreadstalkers out", when = { recent = 104316, within = 12 } },
             },
             goals = {
                 { name = "Hand of Gul'dan + Ruination", spells = { 105174, 434635 }, min = 9 },

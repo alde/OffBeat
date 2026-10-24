@@ -88,7 +88,8 @@ OffBeat:RegisterProfile({
           note = "Leap of Faith (mouseover)" },
         { slot = 65, key = "Shift-5", spellId = 528,   note = "Dispel Magic: purge an enemy (M+)" },
         { slot = 66, key = "Shift-Q", spellId = 8122,  note = "Psychic Scream: M+ (64% of top runs)" },
-        { slot = 70, key = "F",       spellId = 586,   note = "Fade (Angelic Feather goes on your Shift-F)" },
+        { slot = 70, key = "F",       spellId = 586,   note = "Fade" },
+        { slot = 71, key = "Shift-F", spellId = 121536, note = "Angelic Feather: movement" },
         { slot = 55, key = "`",       spellId = 19236, note = "Desperate Prayer: defensive" },
     },
 

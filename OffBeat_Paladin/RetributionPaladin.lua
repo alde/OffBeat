@@ -26,7 +26,7 @@ OffBeat:RegisterProfile({
         { spellId = 383328 }, -- Final Verdict
         { spellId = 53385 },  -- Divine Storm
         { spellId = 184575 }, -- Blade of Justice
-        { spellId = 24275 },  -- Hammer of Wrath
+        { spellId = 24275 },  -- Hammer of Wrath (Judgment during wings)
         { spellId = 20271 },  -- Judgment
         { spellId = 255937 }, -- Wake of Ashes
         { spellId = 31884 },  -- Avenging Wrath
@@ -46,6 +46,18 @@ OffBeat:RegisterProfile({
             description = "Divine Toll goes inside Avenging Wrath: hold it for the next one",
             spells = { 375576 },
             when = { recent = 31884, within = 20, absent = true },
+        },
+        -- Overcapping: a generator pressed at 5 Holy Power wastes all of it.
+        -- Not a top-player rule (the logs only give totals: ~30% of a top
+        -- player's Holy Power is wasted, mostly Crusading Strikes swings),
+        -- but your first Ret kills wasted half, mostly Blade of Justice at 5
+        -- inside wings. Judged when you press it, before the cast adds any.
+        {
+            type = "bad_cast",
+            name = "Generator at 5 Holy Power",
+            description = "At 5 Holy Power spend first: Final Verdict or Divine Storm",
+            spells = { 184575, 20271, 24275 },
+            when = { power = "HolyPower", min = 5 },
         },
     },
 
@@ -67,7 +79,7 @@ OffBeat:RegisterProfile({
 
     failNudges = {
         { error = "range", spells = { 383328, 53385 }, name = "Melee out of range",
-          text = "Out of range: Judgment, Hammer of Wrath and Blade of Justice reach further" },
+          text = "Out of range: Judgment and Blade of Justice reach further" },
     },
 
     -- Countdown to wings: Execution Sentence and Divine Toll should be ready
@@ -76,8 +88,11 @@ OffBeat:RegisterProfile({
     -- Sentence, Wake of Ashes, Divine Toll.
     prep = {
         spellId = 31884, name = "Avenging Wrath", cooldown = 60, lead = 5,
-        hint = "Hold Execution Sentence and Divine Toll for wings",
+        hint = "Hold Execution Sentence and Divine Toll; stop spending, go in with 4-5 Holy Power",
         checks = {
+            -- Your kills: 5 Holy Power going in gave 8-12 spenders per wings
+            -- (Vashnik), 2-3 gave 5-12 (Explorers).
+            { name = "Holy Power", power = "HolyPower", min = 4 },
             { name = "Execution Sentence", ready = 343527, cooldown = 60 },
             { name = "Divine Toll",        ready = 375576, cooldown = 60 },
         },
@@ -85,7 +100,7 @@ OffBeat:RegisterProfile({
 
     -- On cooldown for every top player: wings every ~62s, Wake of Ashes
     -- every ~31s. Execution Sentence and Divine Toll wait for wings, and
-    -- Blade of Justice, Judgment and Hammer of Wrath have charges.
+    -- Blade of Justice and Judgment have charges.
     idleCooldowns = {
         { spellId = 31884,  name = "Avenging Wrath" },
         { spellId = 255937, name = "Wake of Ashes" },
@@ -173,21 +188,23 @@ OffBeat:RegisterProfile({
     },
 
     -- /ob bars: role for role on the keys your other specs use (binds are
-    -- account-wide): spender on 1, AoE spender on 2, generators on 3-5, big
-    -- cooldown on Q, the cooldowns that go with it on the Shift row,
+    -- account-wide): spender on 1, AoE spender on 2, generators on 3-4,
+    -- Wake of Ashes (every ~31s) on Q, and wings, Execution Sentence and
+    -- Divine Toll (pressed back to back every ~62s) along Shift-1, 2, 3,
     -- interrupt Shift-E, stun Shift-Q, defensives on ` / Shift-`. F is
     -- Blessing of Freedom; Divine Steed stays on your Meta-Q and isn't
     -- touched. One layout for raid and M+: the top players press the same
-    -- buttons in both. E, G, R and F5 are left alone.
+    -- buttons in both. Hammer of Wrath has no button: it is Judgment during
+    -- Avenging Wrath (top logs: no Judgment inside wings). 5, E, G, R and
+    -- F5 are left alone.
     barLayout = {
         { slot = 1,  key = "1",       spellId = 383328, note = "Final Verdict: single-target spender, ~16 a minute in raid" },
         { slot = 2,  key = "2",       spellId = 53385,  note = "Divine Storm: 2+ targets, most of M+" },
         { slot = 3,  key = "3",       spellId = 184575, note = "Blade of Justice: Art of War procs" },
-        { slot = 4,  key = "4",       spellId = 24275,  note = "Hammer of Wrath: ~6 a minute, 4 in every wings" },
-        { slot = 5,  key = "5",       spellId = 20271,  note = "Judgment" },
-        { slot = 6,  key = "Q",       spellId = 31884,  note = "Avenging Wrath: every ~62s" },
-        { slot = 61, key = "Shift-1", spellId = 343527, note = "Execution Sentence: with wings" },
-        { slot = 62, key = "Shift-2", spellId = 255937, note = "Wake of Ashes: every ~31s" },
+        { slot = 4,  key = "4",       spellId = 20271,  note = "Judgment: turns into Hammer of Wrath during wings (4 in every wings)" },
+        { slot = 6,  key = "Q",       spellId = 255937, note = "Wake of Ashes: every ~31s, one in each wings right after Execution Sentence" },
+        { slot = 61, key = "Shift-1", spellId = 31884,  note = "Avenging Wrath: every ~62s, then Shift-2, Shift-3" },
+        { slot = 62, key = "Shift-2", spellId = 343527, note = "Execution Sentence: right after wings" },
         { slot = 63, key = "Shift-3", spellId = 375576, note = "Divine Toll: only inside wings" },
         { slot = 50, key = "Shift-E", spellId = 96231,  note = "Rebuke: interrupt" },
         { slot = 66, key = "Shift-Q", spellId = 853,    note = "Hammer of Justice: stun" },
@@ -219,9 +236,8 @@ OffBeat:RegisterProfile({
         } },
         { title = "Single target", lines = {
             { spellId = 383328, text = "Final Verdict at 5 Holy Power (4 before a Crusading Strikes swing)" },
-            { spellId = 24275,  text = "Hammer of Wrath at 2 charges (Herald)" },
             { spellId = 184575, text = "Blade of Justice on Art of War" },
-            { spellId = 20271,  text = "Judgment / Hammer of Wrath, then Final Verdict at 3+" },
+            { spellId = 20271,  text = "Judgment (Hammer of Wrath in wings), then Final Verdict at 3+" },
             { text = "Keep Judgment and Expurgation on the target" },
         } },
         { title = "AoE (2+) and M+", lines = {
@@ -243,8 +259,7 @@ OffBeat:RegisterProfile({
         { spellId = 383328, st = 1,          note = "Single-target spender" },
         { spellId = 53385,           aoe = 1, note = "AoE spender, most of M+" },
         { spellId = 184575, st = 1, aoe = 1, note = "Art of War" },
-        { spellId = 24275,  st = 1, aoe = 1, note = "~6 a minute" },
-        { spellId = 20271,  st = 2, aoe = 2, note = "Generator, debuff" },
+        { spellId = 20271,  st = 1, aoe = 1, note = "Hammer of Wrath during wings" },
         { spellId = 255937, st = 2, aoe = 2, note = "Every ~31s" },
         { spellId = 31884,  st = 3, aoe = 3, note = "Every ~62s" },
         { spellId = 343527, st = 3, aoe = 3, note = "With wings" },

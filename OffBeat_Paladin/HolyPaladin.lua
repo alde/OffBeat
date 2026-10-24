@@ -43,8 +43,8 @@ OffBeat:RegisterProfile({
         { spellId = 31821 },   -- Aura Mastery
         { spellId = 82326 },   -- Holy Light
         { spellId = 415091 },  -- Shield of the Righteous
-        { spellId = 1241413 }, -- Hammer of Wrath (cast ID in the logs)
-        { spellId = 24275 },   -- Hammer of Wrath (spellbook)
+        { spellId = 1241413 }, -- Hammer of Wrath (Judgment during wings)
+        { spellId = 24275 },   -- Hammer of Wrath
         { spellId = 432459 },  -- Holy Bulwark (Holy Armaments, Lightsmith)
         { spellId = 432472 },  -- Sacred Weapon (Holy Armaments, Lightsmith)
     },
@@ -191,7 +191,9 @@ OffBeat:RegisterProfile({
     -- the Righteous 10, Flash of Light 9, Word of Glory 7, Judgment 7).
     -- Heals and externals are mouseover macros. Keys that hold the same
     -- spell in both stay put; the swap is offered when you enter a raid, a
-    -- key or a delve (/ob mode). F is Blessing of Freedom; Divine Steed
+    -- key or a delve (/ob mode). Hammer of Wrath has no button: it is
+    -- Judgment during Avenging Wrath (top logs: no Judgment inside wings,
+    -- Hammer instead). F is Blessing of Freedom; Divine Steed
     -- stays on your Meta-Q and isn't touched.
     barLayout = {
         -- both
@@ -199,7 +201,7 @@ OffBeat:RegisterProfile({
           note = "Holy Shock (mouseover): most pressed in raid, on every charge" },
         { slot = 3,  key = "3",       macro = { name = "OB FoL", spells = { 19750 }, mouseover = true },
           note = "Flash of Light (mouseover): Infusion of Light procs" },
-        { slot = 4,  key = "4",       spellId = 275773, note = "Judgment: builds Holy Power, on cooldown in M+" },
+        { slot = 4,  key = "4",       spellId = 275773, note = "Judgment: builds Holy Power, on cooldown in M+; Hammer of Wrath during wings" },
         { slot = 6,  key = "Q",       spellId = 31884, note = "Avenging Wrath: on cooldown in raid (2 min)" },
         { slot = 12, key = "X",       macro = { name = "OB Cleanse", spells = { 4987 }, mouseover = true }, note = "Cleanse (mouseover)" },
         { slot = 61, key = "Shift-1", macro = { name = "OB Sacrifice", spells = { 6940 }, mouseover = true },
@@ -223,7 +225,6 @@ OffBeat:RegisterProfile({
           note = "Beacon of Virtue (mouseover): on cooldown, every ~16s" },
         { slot = 8,  key = "E",       content = "raid", spellId = 375576, note = "Divine Toll: right after Beacon of Virtue, every ~33s" },
         { slot = 7,  key = "G",       content = "raid", spellId = 85222, note = "Light of Dawn: when Eternal Flame would overheal" },
-        { slot = 67, key = "R",       content = "raid", spellId = 24275, alt = { 1241413 }, note = "Hammer of Wrath: when it lights up" },
 
         -- M+ / delves (Lightsmith): Shield of the Righteous, Word of Glory, Holy Light, Armaments
         { slot = 2,  key = "2",       content = "dungeon", spellId = 415091,
@@ -232,7 +233,6 @@ OffBeat:RegisterProfile({
           note = "Word of Glory (mouseover): Holy Power where it's needed" },
         { slot = 8,  key = "E",       content = "dungeon", macro = { name = "OB HLight", spells = { 82326 }, mouseover = true },
           note = "Holy Light (mouseover): ~3 a minute, when there's no Holy Power or Infusion" },
-        { slot = 7,  key = "G",       content = "dungeon", spellId = 24275, alt = { 1241413 }, note = "Hammer of Wrath: on cooldown (~every 6s)" },
         { slot = 67, key = "R",       content = "dungeon", spellId = 432459, alt = { 432472 },
           note = "Holy Armaments: Holy Bulwark / Sacred Weapon, ~2 a minute" },
     },
@@ -258,7 +258,7 @@ OffBeat:RegisterProfile({
         { title = "M+ (Lightsmith)", content = "dungeon", lines = {
             { spellId = 415091, text = "Shield of the Righteous: most pressed (~10 a minute), spend Holy Power on damage" },
             { spellId = 85673, text = "Word of Glory where healing is needed (~7 a minute)" },
-            { spellId = 275773, text = "Judgment and Hammer of Wrath on cooldown (every ~6s)" },
+            { spellId = 275773, text = "Judgment on cooldown (every ~6s); it turns into Hammer of Wrath during wings" },
             { spellId = 432459, alt = { 432472 }, text = "Holy Armaments: Holy Bulwark on the tank, Sacred Weapon on a DPS" },
             { spellId = 31884, text = "Avenging Wrath for group damage (~every 96s): 7 spenders in it" },
             { text = "Top M+ runs don't take Beacon of Virtue or Divine Toll" },
@@ -299,7 +299,6 @@ OffBeat:RegisterProfile({
         { spellId = 275773,  st = 2, aoe = 2, note = "Holy Power; on cooldown in M+" },
         { spellId = 375576,           aoe = 2, note = "Raid: after Beacon of Virtue" },
         { spellId = 85222,            aoe = 2, note = "Raid: when Eternal Flame overheals" },
-        { spellId = 24275,   st = 2, aoe = 2, alt = { 1241413 }, note = "When it lights up" },
         { spellId = 82326,   st = 2,          note = "No Holy Power, no Infusion" },
         { spellId = 4987,    st = 2, aoe = 2, note = "Dispel" },
         { spellId = 432459,  st = 2, aoe = 2, alt = { 432472 }, note = "M+: Holy Armaments" },

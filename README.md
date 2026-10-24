@@ -41,7 +41,7 @@ A profile can use any combination.
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
 | OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout, pet warnings; Training (Affliction, Demonology, Destruction) |
 | OffBeat_Mage | Arcane | Rotation & Burn Phases |
-| OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns |
+| OffBeat_Priest | Discipline, Holy | Key Layout, Surge of Light, healer cooldowns; Holy: bar layout (mouseover heals, one layout for raid and M+) |
 
 ## Stat priority
 

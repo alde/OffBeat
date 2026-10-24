@@ -8,6 +8,7 @@ local Windows = OffBeat:NewModule("Windows", "AceEvent-3.0")
 --
 --   windows = { {
 --       name = "Tyrant", trigger = 265187, duration = 25,
+--       content = "raid",   -- optional: only in raid ("dungeon": M+ / delves)
 --       setup = { { name = "5 Soul Shards", when = { power = "SoulShards", min = 5 } } },
 --       goals = { { name = "Hand of Gul'dan", spells = { 105174 }, min = 8 } },
 --   } }
@@ -137,7 +138,7 @@ function Windows:BuildLookups()
 
     for _, w in ipairs(profile.windows) do
         local def = { name = w.name, trigger = w.trigger, duration = w.duration,
-                      setup = {}, goals = {} }
+                      content = w.content, setup = {}, goals = {} }
         for _, s in ipairs(w.setup or {}) do
             local conds = OffBeat.Conditions.Normalize(s.when)
             if conds then def.setup[#def.setup + 1] = { name = s.name, conds = conds } end
@@ -148,7 +149,19 @@ function Windows:BuildLookups()
             def.goals[#def.goals + 1] = { name = g.name, spells = set, min = g.min }
         end
         defs[#defs + 1] = def
-        byTrigger[w.trigger] = def
+        -- several windows can share a trigger, one per content (Holy
+        -- Paladin's wings: raid and M+ builds press different spells)
+        byTrigger[w.trigger] = byTrigger[w.trigger] or {}
+        table.insert(byTrigger[w.trigger], def)
+    end
+end
+
+--- The window `spellId` opens in the content you're in (/ob mode), if any.
+local function DefFor(spellId)
+    local list = byTrigger[spellId]
+    if not list then return nil end
+    for _, def in ipairs(list) do
+        if OffBeat:InContent(def.content) then return def end
     end
 end
 
@@ -379,7 +392,7 @@ function Windows:UNIT_SPELLCAST_SENT(_, unit, _, castGUID, spellId)
     if unit ~= "player" or not OffBeat.training then return end
     local IsSecret = OffBeat.Conditions.IsSecret
     if not castGUID or IsSecret(castGUID) or IsSecret(spellId) then return end
-    local def = byTrigger[spellId]
+    local def = DefFor(spellId)
     if not def then return end
     pendingSetup[castGUID] = JudgeSetup(def)
 end
@@ -392,7 +405,7 @@ function Windows:UNIT_SPELLCAST_SUCCEEDED(_, unit, castGUID, spellId)
         if rotationSet[spellId] then fight.rotation = fight.rotation + 1 end
     end
 
-    local def = byTrigger[spellId]
+    local def = DefFor(spellId)
     if def then
         local setup
         if castGUID and not OffBeat.Conditions.IsSecret(castGUID) then

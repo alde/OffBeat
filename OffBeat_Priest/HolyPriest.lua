@@ -78,8 +78,6 @@ OffBeat:RegisterProfile({
         { slot = 8,  key = "E",       spellId = 88625, note = "Holy Word: Chastise: M+ damage, ~2.6 a minute" },
         { slot = 67, key = "R",       spellId = 64843, note = "Divine Hymn: raid cooldown" },
         { slot = 12, key = "X",       macro = { name = "OB Purify", spells = { 527 }, mouseover = true }, note = "Purify (mouseover)" },
-        { slot = 61, key = "Shift-1", macro = { name = "OB GSpirit", spells = { 47788 }, mouseover = true },
-          note = "Guardian Spirit (mouseover): external" },
         { slot = 62, key = "Shift-2", macro = { name = "OB PI", spells = { 10060 }, mouseover = true },
           note = "Power Infusion (mouseover): on a DPS with their cooldowns, every 2 min" },
         { slot = 63, key = "Shift-3", macro = { name = "OB MassDispel", spells = { 32375 }, cursor = true },

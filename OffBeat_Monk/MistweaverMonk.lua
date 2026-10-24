@@ -217,7 +217,6 @@ OffBeat:RegisterProfile({
         { slot = 6,  key = "Q",       spellId = 322118, alt = { 325197 }, note = "Yu'lon (raid) / Chi-Ji (M+)" },
         { slot = 7,  key = "G",       spellId = 443028, note = "Celestial Conduit" },
         { slot = 12, key = "X",       macro = { name = "OB Detox", spells = { 115450 }, mouseover = true }, note = "Detox (mouseover)" },
-        { slot = 61, key = "Shift-1", macro = { name = "OB Cocoon", spells = { 116849 }, mouseover = true }, note = "Life Cocoon (mouseover)" },
         { slot = 62, key = "Shift-2", spellId = 115310, alt = { 388615 }, note = "Revival / Restoral" },
         { slot = 66, key = "Shift-Q", spellId = 119381, note = "Leg Sweep" },
         { slot = 50, key = "Shift-E", spellId = 115078, note = "Paralysis" },

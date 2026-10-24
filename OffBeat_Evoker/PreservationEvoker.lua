@@ -152,6 +152,20 @@ OffBeat:RegisterProfile({
             { spellId = 370564, text = "Stasis release: into heavy damage, ~15s after storing" },
             { spellId = 363534, text = "Rewind: after a heavy hit, not for chip damage" },
         } },
+        -- M+ from Method 12.1 and the top 20 runs per dungeon (Oct 2026,
+        -- 93% Flameshaper): Disintegrate is their most pressed spell, and
+        -- Dream Breath / Fire Breath come round twice as often as in raid.
+        { title = "M+: always", content = "dungeon", lines = {
+            { spellId = 366155, text = "Reversion on the tank (Temporal Anomaly into Reversion), pre-spread between pulls" },
+            { spellId = 355936, alt = { 355941 }, text = "Dream Breath before damage; Fire Breath DoT on every pack" },
+            { spellId = 373861, text = "Temporal Anomaly between Dream Breath and Fire Breath" },
+            { spellId = 356995, text = "Disintegrate when no healing is needed: banks Merithra's Blessing" },
+        } },
+        { title = "M+: damage coming", content = "dungeon", lines = {
+            { spellId = 360995, text = "Verdant Embrace (one target) or Emerald Blossom (group) consumes Dream Breath" },
+            { spellId = 1256581, text = "Merithra's Blessing after a big hit (Golden Hour)" },
+            { spellId = 374251, text = "Cauterizing Flame: bleeds, poisons, curses, diseases" },
+        } },
         { title = "Filler / damage", lines = {
             { spellId = 357208, text = "Fire Breath on cooldown, mostly at max rank" },
             { spellId = 361469, text = "Living Flame: builds Essence Burst (20% a cast)" },
@@ -159,8 +173,63 @@ OffBeat:RegisterProfile({
         } },
     },
 
-    -- Method 12.1 raid: Mastery > Crit > Haste = Vers
+    -- Method 12.1 raid: Mastery > Crit > Haste = Vers; M+ (healing):
+    -- Mastery > Crit > Haste > Vers
     statPriority = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 3 },
+    contentStatPriorities = {
+        raid    = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 3 },
+        dungeon = { MASTERY = 1, CRIT = 2, HASTE = 3, VERS = 4 },
+    },
+
+    -- Bars: same keys as the other OffBeat specs (1-5, Q, G, E, R, X, the
+    -- Shift row, F, `), laid out like Mistweaver: one layout for raid and
+    -- one for M+ / delves, heals as mouseover macros (Living Flame heals
+    -- your mouseover, else hits your target). Ordered by how often the top
+    -- players press them. Raid (top 40 heroic): Echo and Emerald Blossom
+    -- ~11 a minute, then Temporal Anomaly / Dream Breath / Merithra's ~4.
+    -- M+ (top 20 runs per dungeon): Disintegrate is first, Echo drops to
+    -- ~2 a minute (its key moves to Shift-5), Cauterizing Flame joins.
+    -- Fire Breath, Tip the Scales, Hover, Quell and the defensives sit
+    -- where Augmentation has them.
+    barLayout = {
+        -- both
+        { slot = 2,  key = "2",       macro = { name = "OB Blossom", spells = { 355913 }, mouseover = true },
+          note = "Emerald Blossom (mouseover): ~11 a minute in raid, Essence Burst goes here" },
+        { slot = 3,  key = "3",       macro = { name = "OB LFlame", spells = { 361469 }, mouseover = true },
+          note = "Living Flame: heals your mouseover, else hits your target. Builds Essence Burst" },
+        { slot = 4,  key = "4",       spellId = 357208, note = "Fire Breath: on cooldown (Augmentation's spot)" },
+        { slot = 5,  key = "5",       macro = { name = "OB Merithra", spells = { 1256581 }, mouseover = true },
+          note = "Merithra's Blessing (mouseover): finishes the ramp" },
+        { slot = 6,  key = "Q",       spellId = 355936, note = "Dream Breath: rank 1, starts the ramp" },
+        { slot = 8,  key = "E",       spellId = 373861, note = "Temporal Anomaly: right after Dream Breath, every ~15s" },
+        { slot = 7,  key = "G",       macro = { name = "OB Verdant", spells = { 360995 }, mouseover = true },
+          note = "Verdant Embrace (mouseover): stabilize, Lifebind" },
+        { slot = 67, key = "R",       macro = { name = "OB Reversion", spells = { 366155 }, mouseover = true },
+          note = "Reversion (mouseover): Echo it first on the tank" },
+        { slot = 12, key = "X",       macro = { name = "OB Naturalize", spells = { 360823 }, mouseover = true },
+          note = "Naturalize (mouseover): dispel" },
+        { slot = 61, key = "Shift-1", macro = { name = "OB TimeDil", spells = { 357170 }, mouseover = true },
+          note = "Time Dilation (mouseover): tank before a big hit" },
+        { slot = 62, key = "Shift-2", spellId = 370553, note = "Tip the Scales: on Fire Breath (Augmentation's spot)" },
+        { slot = 63, key = "Shift-3", spellId = 370537, note = "Stasis: store Dream Breath x2 + Temporal Anomaly, press again to release" },
+        { slot = 64, key = "Shift-4", spellId = 363534, note = "Rewind: after a heavy hit" },
+        { slot = 50, key = "Shift-E", spellId = 351338, note = "Quell: interrupt" },
+        { slot = 70, key = "F",       spellId = 358267, note = "Hover: cast while moving" },
+        { slot = 55, key = "`",       spellId = 363916, note = "Obsidian Scales: defensive" },
+        { slot = 56, key = "Shift-`", spellId = 374348, note = "Renewing Blaze: defensive" },
+
+        -- raid
+        { slot = 1,  key = "1",       content = "raid", macro = { name = "OB Echo", spells = { 364343 }, mouseover = true },
+          note = "Echo (mouseover): most pressed with Emerald Blossom, ~11 a minute" },
+
+        -- M+ / delves
+        { slot = 1,  key = "1",       content = "dungeon", spellId = 356995,
+          note = "Disintegrate: the top M+ players' most pressed spell (banks Merithra's Blessing)" },
+        { slot = 65, key = "Shift-5", content = "dungeon", macro = { name = "OB Echo", spells = { 364343 }, mouseover = true },
+          note = "Echo (mouseover): ~2 a minute in M+" },
+        { slot = 66, key = "Shift-Q", content = "dungeon", macro = { name = "OB Cauterize", spells = { 374251 }, mouseover = true },
+          note = "Cauterizing Flame (mouseover): bleeds, poisons, curses, diseases" },
+    },
 
     keyLayoutLabels = { st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" },
 

@@ -41,9 +41,74 @@ local OffBeat = _G.OffBeat
 
 local CONTENT_NAMES = { raid = "raid", dungeon = "Mythic+" }
 
-local function Known(spellId)
+local function KnownExact(spellId)
     local ok, known = pcall(IsPlayerSpell, spellId)
     return ok and known and true or false
+end
+
+--- The spellbook's ID for `spellId`: itself, the spell it overrides, or the
+--- spellbook spell with the same name. The IDs in a profile come from
+--- combat logs, which can be a talent's or hero tree's cast ID rather than
+--- the one in the spellbook (Hammer of Wrath, Holy Bulwark).
+local function Resolve(spellId)
+    if KnownExact(spellId) then return spellId end
+    if FindSpellOverrideByID then
+        local ok, override = pcall(FindSpellOverrideByID, spellId)
+        if ok and override and override ~= spellId and KnownExact(override) then return override end
+    end
+    local info = C_Spell.GetSpellInfo(spellId)
+    if info and info.name then
+        local byName = C_Spell.GetSpellInfo(info.name)
+        if byName and byName.spellID and KnownExact(byName.spellID) then return byName.spellID end
+    end
+    return nil
+end
+
+--- Last resort: walk the spellbook (what the spellbook window lists) for
+--- an active spell with this name. Returns the slot, or nil.
+local function BookSlot(spellId)
+    if not (C_SpellBook and C_SpellBook.GetNumSpellBookSkillLines) then return nil end
+    local info = C_Spell.GetSpellInfo(spellId)
+    local name = info and info.name
+    if not name then return nil end
+    local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
+    -- the game's own lookup: finds Holy Bulwark (432459) in the book even
+    -- though IsPlayerSpell says no
+    if C_SpellBook.FindSpellBookSlotForSpell then
+        for _, key in ipairs({ spellId, name }) do
+            local okF, slot = pcall(C_SpellBook.FindSpellBookSlotForSpell, key)
+            if okF and slot then return slot end
+        end
+    end
+    local ok, found = pcall(function()
+        for line = 1, C_SpellBook.GetNumSpellBookSkillLines() do
+            local li = C_SpellBook.GetSpellBookSkillLineInfo(line)
+            if li and not li.offSpecID then
+                for slot = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
+                    local item = C_SpellBook.GetSpellBookItemInfo(slot, bank)
+                    if item and item.name == name and not item.isPassive and not item.isOffSpec then
+                        return slot
+                    end
+                end
+            end
+        end
+    end)
+    return ok and found or nil
+end
+
+local function Known(spellId)
+    return Resolve(spellId) ~= nil or BookSlot(spellId) ~= nil
+end
+
+--- Put the spell on the cursor, by ID or from its spellbook slot.
+local function PickupLayoutSpell(spellId)
+    local id = Resolve(spellId)
+    if id then C_Spell.PickupSpell(id); return end
+    local slot = BookSlot(spellId)
+    if slot then
+        local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
+        C_SpellBook.PickupSpellBookItem(slot, bank)
+    end
 end
 
 local function SpellName(spellId)
@@ -209,7 +274,7 @@ function OffBeat:ShowBarLayout(apply, contentArg)
             if not apply then self:Print(string.format("  %-8s %s |cff888888(not known, skipped)|r", e.key or ("slot " .. e.slot), name)) end
         elseif apply then
             ClearCursor()
-            C_Spell.PickupSpell(id)
+            PickupLayoutSpell(id)
             if GetCursorInfo() == "spell" then
                 PlaceAction(e.slot)
                 placed = placed + 1

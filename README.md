@@ -18,7 +18,7 @@ OffBeat is a single addon framework that tracks buffs on party members **or** yo
 
 **Key Layout**: a settings tab that shows which spells deserve your best keys, for single target and AoE, next to your current keybinds.
 
-**Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation and Preservation Evoker, Mistweaver Monk): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
+**Rotation sheet** (Affliction and Destruction Warlock, Frost DK, Augmentation and Preservation Evoker, Mistweaver Monk, Holy and Retribution Paladin): a small movable panel with the guide's priority list, one line per spell with its icon and the key it's bound to.
 
 **Training** (e.g. Demonology Warlock): coaching for your big cooldown windows, scored against goals and casts-per-minute benchmarks taken from top Warcraft Logs parses, with a report panel at the end of each session.
 
@@ -29,13 +29,14 @@ A profile can use any combination.
 | Addon | Spec | Type |
 |-------|------|------|
 | OffBeat_Evoker | Augmentation Evoker | Buff tracking, Rotation (Eruption / empowers / Breath of Eons inside Ebon Might), Breath of Eons countdown (Fire Breath, Upheaval ready), Key Layout; Training (Breath of Eons: Fire Breath + Upheaval) |
-| OffBeat_Evoker | Preservation Evoker | Rotation (Flameshaper raid), idle Temporal Anomaly / Dream Breath / Fire Breath, Key Layout; Training (Dream Breath loop: Temporal Anomaly + Echo / Emerald Blossom) |
+| OffBeat_Evoker | Preservation Evoker | Rotation (Flameshaper), raid and M+ bars (mouseover heals), idle Temporal Anomaly / Dream Breath / Fire Breath, Key Layout; Training (Dream Breath loop: Temporal Anomaly + Echo / Emerald Blossom) |
 | OffBeat_Monk | Mistweaver Monk | Rotation (Conduit / Yu'lon raid, Conduit / Chi-Ji M+), raid and M+ bar layouts (mouseover heals), idle Rushing Wind Kick / Rising Sun Kick / Celestial Conduit / Yu'lon, Key Layout; Training (Yu'lon ramp: Enveloping Mist + Rushing Wind Kick; Chi-Ji: Rising Sun Kick + Blackout Kick; per-dungeon M+ benchmarks) |
 | OffBeat_Monk | Windwalker Monk | Rotation (Combo Strikes) |
 | OffBeat_DeathKnight | Blood Death Knight | Rotation (Bone Shield, DRW, Crimson Scourge, Boiling Point), Key Layout; Training (Frost, Unholy) |
 | OffBeat_DeathKnight | Frost Death Knight | Rotation (Rime, Breath with Pillar), Pillar countdown (runes, Runic Power), Key Layout; Training (Pillar of Frost: runes pooled, Obliterate / Frostscythe) |
 | OffBeat_DeathKnight | Unholy Death Knight | Rotation (Dark Transformation, Sudden Doom), Key Layout |
-| OffBeat_Paladin | Retribution Paladin | Rotation (Art of War, Empyrean Power) |
+| OffBeat_Paladin | Retribution Paladin | Rotation (Herald, Divine Toll inside wings), wings countdown (Execution Sentence, Divine Toll ready), bar layout, Key Layout; Training (wings: Final Verdict / Divine Storm + Hammer of Wrath; per-dungeon M+ benchmarks) |
+| OffBeat_Paladin | Holy Paladin | Rotation (Herald raid, Lightsmith M+), raid and M+ bar layouts (mouseover heals), idle Beacon of Virtue / Divine Toll / Avenging Wrath / Judgment, Key Layout; Training (Avenging Wrath: Eternal Flame + Holy Shock in raid, Holy Power spenders in M+; per-dungeon M+ benchmarks) |
 | OffBeat_DemonHunter | Havoc, Vengeance, Devourer | Rotation & Tank Cooldowns |
 | OffBeat_Shaman | Elemental, Enhancement | Rotation & Maelstrom Spenders |
 | OffBeat_Warlock | Affliction, Demonology, Destruction | Rotation, Pet Spenders & Demonic Art / Fiendish Cruelty procs, Key Layout, pet warnings; Training (Affliction, Demonology, Destruction) |
@@ -129,7 +130,7 @@ Profiles can be exported as `!OB1!` strings from the settings panel and shared i
 
 Healers can use mouseover macros: `macro = { name = "OB Vivify", spells = { 116670 }, mouseover = true }` becomes `/cast [@mouseover,help,nodead][] Vivify` (the unit under the mouse, else your target).
 
-A layout can differ between raid and Mythic+: entries with `content = "raid"` or `"dungeon"` belong to that layout only (the rest to both), so a slot can hold Vivify in raid and Spinning Crane Kick in a key. The content mode decides which (`/ob mode`; dungeons and delves are Mythic+), and when it changes (entering a raid, a key or a delve, `/ob mode`, or swapping to a raid / M+ talent loadout outside instances) OffBeat asks whether to swap the layout on your bars (out of combat; off on the Keys & Bars tab). Or pick one with `/ob bars raid apply` / `/ob bars mythic apply`. Mistweaver Monk has both.
+A layout can differ between raid and Mythic+: entries with `content = "raid"` or `"dungeon"` belong to that layout only (the rest to both), so a slot can hold Vivify in raid and Spinning Crane Kick in a key. The content mode decides which (`/ob mode`; dungeons and delves are Mythic+), and when it changes (entering a raid, a key or a delve, `/ob mode`, or swapping to a raid / M+ talent loadout outside instances) OffBeat asks whether to swap the layout on your bars (out of combat; off on the Keys & Bars tab). Or pick one with `/ob bars raid apply` / `/ob bars mythic apply`. Mistweaver Monk, Holy Paladin and Preservation Evoker have both.
 
 ## Rotation sheet
 
@@ -148,7 +149,7 @@ A section can be limited to a talent build or a kind of content: `known = { ids 
 
 Which content applies is the **content mode** (`/ob mode`, or the "Raid or Mythic+" card on your spec's Overview tab). `auto` reads the instance: raid sections in a raid, dungeon sections in a dungeon or a delve (where you'd play your M+ build). Outside instances it follows your talents when the profile names tell-tale ones (`contentTalents = { raid = { 322118 }, dungeon = { 325197 } }`: Mistweaver's Yu'lon vs Chi-Ji), so swapping loadouts swaps the sheet, idle alerts, stat priority and offers the matching bar layout; otherwise both apply. `raid` and `mythic` pick one everywhere, so you can practise the M+ sheet on a dummy. Idle cooldowns take the same field (`{ spellId = 443028, name = "Celestial Conduit", content = "raid" }`), and fights outside a boss or key are compared with `benchmarks.dungeonOverall` when the mode is Mythic+.
 
-`/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight, Augmentation and Preservation Evoker, and Mistweaver Monk.
+`/ob sheet` (or your spec's Overview tab in `/ob`) shows or hides it per spec, and it can hide itself in combat. Drag it while frames are unlocked; locked, it lets clicks through to the world. Filled in for Affliction and Destruction Warlock, Frost Death Knight, Augmentation and Preservation Evoker, Mistweaver Monk and Holy and Retribution Paladin.
 
 ## Settings
 
@@ -164,13 +165,13 @@ Profiles with a `keyLayout` section get a key layout on the **Keys & Bars** tab 
 
 `keyLayoutLabels` renames the two contexts, e.g. `{ st = "Single", aoe = "Group", stLong = "Single Target", aoeLong = "Group Healing" }` for a healer; without it they're ST / AoE.
 
-Currently filled in for all Warlock and Death Knight specs, Augmentation and Preservation Evoker, Mistweaver Monk, and Discipline and Holy Priest.
+Currently filled in for all Warlock and Death Knight specs, Augmentation and Preservation Evoker, Mistweaver Monk, Holy and Retribution Paladin, and Discipline and Holy Priest.
 
 ## Training
 
 Training coaches your big cooldown windows and compares your casting with top players. It's off by default and never saved: `/ob training` (or the toggle on your spec's **Training** tab) turns it on until you turn it off or log out. A `/reload` keeps it on, along with the session so far.
 
-Only combat counts, and in a raid only boss encounters count (setting on the Training tab), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned. Profiles with dungeon benchmarks (Mistweaver Monk) compare the run with that dungeon's top runs; others have no top-parse numbers for dungeons.
+Only combat counts, and in a raid only boss encounters count (setting on the Training tab), so you can leave it on for a whole raid night: trash is ignored, and the report groups the session boss by boss. Outside raids (target dummies) every fight counts. A Mythic+ run counts as one fight: every pull folds into it, its length is time in combat, and the report marks it timed, over time or abandoned. Profiles with dungeon benchmarks (Mistweaver Monk, Holy and Retribution Paladin) compare the run with that dungeon's top runs; others have no top-parse numbers for dungeons.
 
 How to use it:
 
@@ -185,7 +186,7 @@ Training also turns on combat logging for the session (setting on the Training t
 
 ### Windows
 
-Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); a check the game won't let OffBeat read shows as `?`, never as a miss. `goals` count casts inside the window. `note` is shown on the Training tab. If combat ends before the window runs out (the boss dies), the window only counts when you had already reached the goal; otherwise it's left out of the score and shown greyed out as "early".
+Casting `trigger` opens a window for `duration` seconds. `setup` checks are judged when you press the trigger (same conditions as mistake rules); a check the game won't let OffBeat read shows as `?`, never as a miss. `goals` count casts inside the window. `note` is shown on the Training tab. If combat ends before the window runs out (the boss dies), the window only counts when you had already reached the goal; otherwise it's left out of the score and shown greyed out as "early". `content = "raid"` / `"dungeon"` limits a window to that content, so two windows can share a trigger (Holy Paladin's wings: Eternal Flame in raid, Holy Power spenders in M+).
 
 ```lua
 windows = { {

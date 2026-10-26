@@ -87,6 +87,7 @@ end
 
 function Moving:Tick()
     if not GetSpecOr("movingNudge") then return end
+    if OffBeat:HealerAlone() then return end -- nobody to heal
     local now = GetTime()
     if IsCasting() then lastCast = now end
     if not IsMoving() then

@@ -277,6 +277,18 @@ function OffBeat:InContent(content)
     return now == nil or now == content
 end
 
+--- Healer nags (idle cooldowns, "moving: X is instant") only make sense
+--- with someone to heal: true when your spec is a healer and you're not in
+--- a group or raid (questing, a dummy on your own).
+function OffBeat:HealerAlone()
+    local okSpec, spec = pcall(GetSpecialization)
+    if not okSpec or not spec then return false end
+    local okRole, role = pcall(GetSpecializationRole, spec)
+    if not okRole or role ~= "HEALER" then return false end
+    local okGroup, inGroup = pcall(IsInGroup)
+    return okGroup and not inGroup
+end
+
 --- "Auto (now Raid)" and the like, for chat and settings.
 function OffBeat:ContentModeText()
     local mode = self.db.profile.contentMode or "auto"

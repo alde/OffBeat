@@ -432,6 +432,7 @@ function Rotation:CheckKeyCdReady()
 end
 
 function Rotation:CheckIdleCooldowns()
+    if OffBeat:HealerAlone() then self.idleState = nil; return end -- nobody to heal
     local now = GetTime()
     local threshold = GetSpecOr("idleCooldownThreshold")
 
@@ -526,6 +527,7 @@ function Rotation:PrintIdleDebug()
     local threshold = GetSpecOr("idleCooldownThreshold")
     OffBeat:Print(string.format("Idle cooldowns (warn after %ss, %s, in combat: %s):", tostring(threshold),
         GetSpecOr("idleCooldownAlert") and "on" or "|cffff4040off|r", tostring(UnitAffectingCombat("player"))))
+    if OffBeat:HealerAlone() then OffBeat:Print("  |cffff4040quiet: healer spec, not in a group|r") end
     local n = 0
     for spellId, info in pairs(idleCooldownSet) do
         n = n + 1

@@ -7,3 +7,4 @@
 
 EnhancementShaman.lua
 ElementalShaman.lua
+RestorationShaman.lua

@@ -10,7 +10,7 @@ OffBeat:RegisterProfile({
         specId = 251,
         version = 3,
         author = "OffBeat Defaults",
-        source = "Method 12.1 + top 40 heroic parses per boss (Oct 2026)",
+        source = "Method 12.1.5 + top 40 heroic parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     -- Every spell here is pressed by at least 80% of those top players.
@@ -153,7 +153,7 @@ OffBeat:RegisterProfile({
     -- across the top 40 heroic parses; values follow the order of rates.
     -- window = top players' median Obliterate + Exterminate per Pillar.
     benchmarks = {
-        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 40 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",      all = true },
             { name = "Obliterate",          spells = { 49020 } },
@@ -186,6 +186,30 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 9, values = {
             { 61.1, 63.7, 66.3 }, { 19.6, 21.7, 23.2 }, { 3.9, 4.1, 4.2 }, { 14.7, 16.2, 17.2 }, { 10.0, 10.8, 11.5 }, { 4.6, 4.9, 5.1 }, { 1.3, 1.4, 1.4 }, { 1.3, 1.4, 1.4 } } },
+        -- Dungeons (by instance ID): the top 40 timed runs per Season 2
+        -- dungeon (Warcraft Logs, Oct 2026), per minute in combat (Warcraft
+        -- Logs' pulls).
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", values = {
+                { 56.8, 57.6, 59.6 }, { 9.7, 10.2, 11.0 }, { 3.6, 3.7, 3.8 }, { 7.9, 8.2, 8.5 }, { 9.8, 10.1, 10.5 }, { 4.1, 4.4, 4.6 }, { 1.2, 1.2, 1.3 }, { 1.2, 1.2, 1.3 } } },
+            [2825] = { name = "Den of Nalorakk", values = {
+                { 53.5, 54.9, 57.6 }, { 11.2, 12.2, 13.4 }, { 3.5, 3.7, 3.7 }, { 8.3, 8.6, 9.6 }, { 9.2, 9.5, 10.1 }, { 4.0, 4.2, 4.6 }, { 1.2, 1.2, 1.3 }, { 1.2, 1.2, 1.3 } } },
+            [1762] = { name = "Kings' Rest", values = {
+                { 55.4, 57.1, 59.3 }, { 14.2, 16.1, 16.7 }, { 3.7, 3.8, 3.8 }, { 10.8, 11.5, 12.1 }, { 9.3, 9.8, 10.3 }, { 4.1, 4.4, 4.6 }, { 1.3, 1.3, 1.3 }, { 1.3, 1.3, 1.3 } } },
+            [2813] = { name = "Murder Row", values = {
+                { 55.1, 57.2, 59.3 }, { 11.1, 12.3, 14.2 }, { 3.6, 3.6, 3.8 }, { 8.4, 9.2, 9.9 }, { 9.5, 9.8, 10.3 }, { 4.2, 4.5, 4.7 }, { 1.2, 1.2, 1.3 }, { 1.2, 1.2, 1.3 } } },
+            [2521] = { name = "Ruby Life Pools", values = {
+                { 56.3, 57.6, 60.4 }, { 12.0, 13.8, 16.1 }, { 3.6, 3.8, 3.8 }, { 8.9, 10.3, 11.6 }, { 9.9, 10.2, 10.7 }, { 4.2, 4.3, 4.6 }, { 1.2, 1.3, 1.3 }, { 1.2, 1.3, 1.3 } } },
+            [1877] = { name = "Temple of Sethraliss", values = {
+                { 54.7, 56.7, 58.1 }, { 10.6, 11.6, 12.8 }, { 3.5, 3.6, 3.7 }, { 8.0, 8.5, 9.0 }, { 9.5, 10.1, 10.6 }, { 4.2, 4.3, 4.6 }, { 1.2, 1.2, 1.3 }, { 1.2, 1.2, 1.3 } } },
+            [2859] = { name = "The Blinding Vale", values = {
+                { 56.9, 57.7, 59.8 }, { 8.8, 10.0, 11.8 }, { 3.6, 3.7, 3.8 }, { 7.0, 7.9, 9.1 }, { 9.8, 10.4, 10.6 }, { 4.1, 4.4, 4.7 }, { 1.2, 1.3, 1.3 }, { 1.2, 1.3, 1.3 } } },
+            [2923] = { name = "Voidscar Arena", values = {
+                { 56.2, 57.9, 59.5 }, { 12.8, 14.4, 15.4 }, { 3.7, 3.7, 3.8 }, { 9.0, 10.3, 11.0 }, { 9.7, 10.0, 10.5 }, { 4.2, 4.5, 4.7 }, { 1.2, 1.3, 1.3 }, { 1.2, 1.3, 1.3 } } },
+        },
+        -- Dummies with /ob mode mythic: all 318 runs together.
+        dungeonOverall = { name = "all M+ dungeons", values = {
+            { 55.2, 57.2, 59.2 }, { 10.7, 12.3, 14.4 }, { 3.6, 3.7, 3.8 }, { 8.2, 9.1, 10.5 }, { 9.5, 10.0, 10.5 }, { 4.1, 4.4, 4.6 }, { 1.2, 1.3, 1.3 }, { 1.2, 1.3, 1.3 } } },
     },
 
     -- /ob bars: role for role on the warlock's keys (binds are account-wide):

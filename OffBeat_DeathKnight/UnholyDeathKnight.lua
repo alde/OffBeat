@@ -1,7 +1,7 @@
 local OffBeat = _G.OffBeat
 
--- Method 12.1 (updated 24 Sep 2026). Hero trees: Riders of the Apocalypse and
--- San'layn. 12.1 reworked the spec: Festering Wounds became Lesser Ghouls,
+-- Method 12.1.5 (13 Oct 2026). Hero trees: Riders of the Apocalypse and
+-- San'layn (every top player in the Oct 2026 logs is San'layn). 12.1 reworked the spec: Festering Wounds became Lesser Ghouls,
 -- Apocalypse / Gargoyle / Raise Abomination left the builds, and Putrefy,
 -- Festering Scythe, Necrotic Coil and a new Dark Transformation came in.
 -- Talents you don't have are ignored.
@@ -11,7 +11,7 @@ OffBeat:RegisterProfile({
         specId = 252,
         version = 2,
         author = "OffBeat Defaults",
-        source = "Method 12.1 (24 Sep 2026)",
+        source = "Method 12.1.5 + top 40 heroic parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     rotationSpells = {
@@ -75,6 +75,39 @@ OffBeat:RegisterProfile({
     -- page can turn it back on).
     assistedCombat = false,
 
+    failNudges = {
+        { error = "range", spells = { 55090, 85948, 433895 }, name = "Melee out of range",
+          text = "Out of range: Death Coil, Outbreak, Death's Advance back in" },
+    },
+
+    -- The movable cheat sheet (/ob sheet). Method 12.1.5 (San'layn: every
+    -- top player in the logs, raid and M+).
+    rotationSheet = {
+        { title = "Opener", lines = {
+            { spellId = 77575,   text = "Outbreak, Festering Strike, Festering Scythe" },
+            { spellId = 42650,   text = "Army of the Dead with trinket and potion" },
+            { spellId = 1233448, text = "Dark Transformation, Putrefy, 2x Necrotic Coil" },
+            { spellId = 433895,  text = "2x Vampiric Strike, Putrefy" },
+            { spellId = 343294,  text = "Soul Reaper ~7s after Dark Transformation, Blightfall before it ends" },
+        } },
+        { title = "Single target", lines = {
+            { spellId = 77575,   text = "Outbreak if Virulent Plague is down (no Blightburst)" },
+            { spellId = 85948,   text = "Festering Strike before Dark Transformation at 3 or fewer Lesser Ghouls" },
+            { spellId = 1233448, text = "Army of the Dead, Dark Transformation on cooldown" },
+            { spellId = 1247378, text = "Putrefy at 2 charges; Soul Reaper on cooldown" },
+            { spellId = 455397,  text = "Festering Scythe if a target is missing it" },
+            { spellId = 47541,   text = "Death Coil on Sudden Doom or 80+ Runic Power" },
+            { spellId = 433895,  text = "Vampiric Strike below 7 Essence of the Blood Queen" },
+            { spellId = 55090,   text = "Festering Strike at 0 Lesser Ghouls, else Scourge Strike; Death Coil" },
+        } },
+        { title = "AoE", lines = {
+            { spellId = 1247378, text = "Putrefy in Dark Transformation, or for diseases, or at 3 charges" },
+            { spellId = 43265,   text = "Death and Decay at 2+ targets (Putrefy cooldown)" },
+            { spellId = 1242174, text = "Necrotic Coil up to 3 targets, Graveyard at 4+" },
+            { spellId = 207317,  text = "Epidemic at 3+ targets, Death Coil at 2 or fewer" },
+        } },
+    },
+
     -- /ob bars: puts these on your bars, mapped role for role onto how the
     -- warlock is organised (binds are account-wide): spender on 1, short
     -- cooldown on 2, filler on 3, big cooldown on Q, debuffs on Shift-1/2,
@@ -127,7 +160,7 @@ OffBeat:RegisterProfile({
     -- window = top players' median Putrefy count per Dark Transformation.
     -- All 360 of those parses play San'layn (Vampiric Strike).
     benchmarks = {
-        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 40 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",   all = true },
             { name = "Vampiric Strike",  spells = { 433895 } },
@@ -160,6 +193,30 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 2, values = {
             { 59.3, 61.4, 63.3 }, { 14.1, 15.0, 16.0 }, { 10.9, 11.8, 12.4 }, { 7.0, 8.2, 9.0 }, { 7.2, 7.9, 8.6 }, { 3.4, 3.8, 4.2 }, { 3.2, 3.5, 3.8 }, { 2.1, 2.3, 2.5 } } },
+        -- Dungeons (by instance ID): the top 40 timed runs per Season 2
+        -- dungeon (Warcraft Logs, Oct 2026), per minute in combat (Warcraft
+        -- Logs' pulls).
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", values = {
+                { 54.9, 57.7, 59.1 }, { 12.7, 13.5, 14.7 }, { 5.5, 6.1, 6.4 }, { 2.4, 2.6, 2.9 }, { 6.2, 7.0, 7.8 }, { 3.4, 3.7, 4.2 }, { 2.8, 3.1, 3.4 }, { 1.5, 1.9, 2.1 } } },
+            [2825] = { name = "Den of Nalorakk", values = {
+                { 54.0, 56.7, 57.5 }, { 12.3, 13.0, 14.5 }, { 6.5, 7.1, 7.5 }, { 3.1, 3.6, 3.9 }, { 6.3, 7.1, 7.9 }, { 3.3, 3.7, 4.0 }, { 2.8, 3.2, 3.4 }, { 1.6, 1.9, 2.2 } } },
+            [1762] = { name = "Kings' Rest", values = {
+                { 56.1, 57.9, 59.8 }, { 13.2, 13.9, 14.2 }, { 8.1, 8.9, 9.5 }, { 4.7, 5.1, 5.5 }, { 6.9, 7.6, 8.0 }, { 3.2, 3.7, 3.9 }, { 2.8, 3.2, 3.4 }, { 1.7, 2.1, 2.2 } } },
+            [2813] = { name = "Murder Row", values = {
+                { 55.6, 57.2, 58.4 }, { 12.5, 13.3, 14.1 }, { 5.9, 6.7, 7.2 }, { 2.8, 3.2, 3.5 }, { 6.3, 7.0, 7.8 }, { 3.5, 3.8, 4.2 }, { 2.8, 3.2, 3.3 }, { 1.6, 2.0, 2.2 } } },
+            [2521] = { name = "Ruby Life Pools", values = {
+                { 56.6, 57.8, 58.8 }, { 12.9, 13.5, 14.5 }, { 4.4, 5.0, 6.0 }, { 2.5, 3.3, 3.8 }, { 6.2, 7.3, 8.0 }, { 3.2, 3.7, 4.2 }, { 2.9, 3.1, 3.2 }, { 1.5, 2.0, 2.2 } } },
+            [1877] = { name = "Temple of Sethraliss", values = {
+                { 55.2, 57.7, 59.1 }, { 12.6, 13.5, 14.4 }, { 5.1, 5.9, 6.7 }, { 2.7, 3.1, 3.7 }, { 6.9, 7.6, 7.8 }, { 3.1, 3.8, 4.1 }, { 2.8, 3.0, 3.3 }, { 1.4, 1.9, 2.1 } } },
+            [2859] = { name = "The Blinding Vale", values = {
+                { 57.7, 59.3, 60.3 }, { 13.6, 14.4, 15.7 }, { 5.0, 5.3, 6.1 }, { 2.7, 3.0, 3.5 }, { 6.5, 7.1, 7.5 }, { 3.4, 3.8, 4.2 }, { 2.9, 3.1, 3.4 }, { 1.5, 1.9, 2.1 } } },
+            [2923] = { name = "Voidscar Arena", values = {
+                { 57.1, 58.9, 60.3 }, { 13.2, 14.0, 15.2 }, { 6.5, 7.2, 7.9 }, { 3.4, 3.7, 4.2 }, { 6.8, 7.3, 8.0 }, { 3.5, 3.9, 4.2 }, { 3.0, 3.3, 3.4 }, { 1.7, 2.1, 2.2 } } },
+        },
+        -- Dummies with /ob mode mythic: all 320 runs together.
+        dungeonOverall = { name = "all M+ dungeons", values = {
+            { 55.8, 57.7, 59.5 }, { 12.7, 13.6, 14.6 }, { 5.5, 6.5, 7.5 }, { 2.7, 3.4, 3.9 }, { 6.5, 7.3, 7.9 }, { 3.4, 3.8, 4.2 }, { 2.9, 3.2, 3.4 }, { 1.6, 2.0, 2.2 } } },
     },
 
     -- Method 12.1 (same for both hero trees): Crit > Mastery >= Haste > Vers

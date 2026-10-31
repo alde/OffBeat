@@ -84,8 +84,8 @@ OffBeat:RegisterProfile({
     -- On cooldown for every top player: Combustion every ~61s, Meteor every
     -- ~31s.
     idleCooldowns = {
-        { spellId = 190319, name = "Combustion" },
-        { spellId = 153561, name = "Meteor" },
+        { spellId = 190319, name = "Combustion", cooldown = 60 },
+        { spellId = 153561, name = "Meteor", cooldown = 30 },
     },
 
     -- Coaching: Combustion (~14s). Raid: 13 Pyroblasts (12 on Nymrissa) and

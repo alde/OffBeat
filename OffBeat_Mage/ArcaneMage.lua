@@ -73,10 +73,11 @@ OffBeat:RegisterProfile({
     },
 
     -- On cooldown for every top player: Arcane Surge every ~92s, Touch of
-    -- the Magi every ~46s.
+    -- the Magi every ~46s. The cooldowns are given because combat hides
+    -- them and the game's base cooldown for Touch of the Magi reads 15s.
     idleCooldowns = {
-        { spellId = 365350, name = "Arcane Surge" },
-        { spellId = 321507, name = "Touch of the Magi" },
+        { spellId = 365350, name = "Arcane Surge", cooldown = 90 },
+        { spellId = 321507, name = "Touch of the Magi", cooldown = 45 },
     },
 
     -- Coaching: Arcane Surge (~17s), the big burn. The same in raid and

@@ -6,3 +6,5 @@
 ## Dependencies: OffBeat
 
 ArcaneMage.lua
+FireMage.lua
+FrostMage.lua

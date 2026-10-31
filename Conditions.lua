@@ -8,9 +8,12 @@ local OffBeat = _G.OffBeat
 --   { combat = true | false }
 --   { hardcast = true | false }   the cast had a cast bar (not instant)
 --   { moving = true | false }     you were moving when you pressed it
---   { recent = id, within = s, [absent = true] }
+--   { recent = id, within = s, [after = s], [absent = true] }
 --                                 you cast spell `id` in the last `s` seconds
---                                 (or, with absent, didn't). Read from your
+--                                 (or, with absent, didn't); with after, at
+--                                 least that many seconds ago (Fireball 1.5s
+--                                 into Combustion, not one you started before
+--                                 pressing it). Read from your
 --                                 own casts, so it works while auras are
 --                                 hidden. Judged when the cast completes, so a
 --                                 macro's earlier spell has counted by then.
@@ -165,7 +168,8 @@ local CHECKS = {
     end,
     recent = function(c)
         local t = lastCast[c.recent]
-        local cast = t ~= nil and (GetTime() - t) <= c.within
+        local age = t ~= nil and (GetTime() - t) or nil
+        local cast = age ~= nil and age <= c.within and age >= (c.after or 0)
         if c.absent then return not cast end
         return cast
     end,
@@ -203,7 +207,7 @@ local function NormalizeOne(c)
         return { kind = kind, hardcast = c.hardcast, deferred = true }
     elseif kind == "recent" then
         if type(c.within) ~= "number" then return nil end
-        return { kind = kind, recent = c.recent, within = c.within, absent = c.absent, deferred = true }
+        return { kind = kind, recent = c.recent, within = c.within, after = c.after, absent = c.absent, deferred = true }
     end
 end
 

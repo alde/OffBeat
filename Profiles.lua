@@ -96,6 +96,15 @@ function OffBeat:ValidateProfile(profile)
         if not ok then return false, err end
     end
 
+    if profile.complexity ~= nil then
+        local c = profile.complexity
+        if type(c) ~= "table" then return false, "complexity must be a table" end
+        if c.score ~= nil and (type(c.score) ~= "number" or c.score < 1 or c.score > 5) then
+            return false, "complexity.score must be 1-5"
+        end
+        if c.note ~= nil and type(c.note) ~= "string" then return false, "complexity.note must be text" end
+    end
+
     if profile.contentTalents ~= nil then
         if type(profile.contentTalents) ~= "table" then return false, "contentTalents must be a table" end
         for k, v in pairs(profile.contentTalents) do
@@ -294,6 +303,7 @@ local function ValidateCondition(c, where)
     elseif c.recent ~= nil then
         if type(c.recent) ~= "number" then return false, where .. ".recent must be a spell ID" end
         if type(c.within) ~= "number" then return false, where .. ".within must be seconds" end
+        if c.after ~= nil and type(c.after) ~= "number" then return false, where .. ".after must be seconds" end
     else
         return false, where .. " must have aura, power, combat, hardcast, moving or recent"
     end

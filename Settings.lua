@@ -170,6 +170,16 @@ tabBuilders.overview = function(L)
         return y
     end)
 
+    local rating = profile and OffBeat.Complexity and OffBeat.Complexity.Rate(profile)
+    if rating then
+        L:Card("Rotation complexity", function(p, y)
+            y = Para(p, y, OffBeat.Complexity.Text(rating))
+            return Para(p, y, "Compared with the other specs OffBeat has profiles for, from what the rotation asks: "
+                .. "buttons you press, casts a minute, priority lines that hang on a proc or a count, cooldowns "
+                .. "and buffs to keep up, and builds that differ by content or hero tree. /ob specs lists them all.")
+        end)
+    end
+
     if OffBeat:ProfileUsesContent(profile) then
         L:Card("Raid or Mythic+", function(p, y)
             local _, h = W():Dropdown(p, "Content", y,

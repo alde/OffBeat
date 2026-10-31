@@ -469,6 +469,8 @@ function OffBeat:OnSlashCommand(input)
         else self:Print("No rotation sheet for this spec yet.") end
     elseif cmd == "gear" then
         self:PrintGearCheck()
+    elseif cmd == "specs" then
+        self:PrintSpecComplexity()
     elseif cmd == "mode" then
         local _, arg = self:GetArgs(input, 2)
         arg = arg and arg:lower()
@@ -512,6 +514,7 @@ function OffBeat:OnSlashCommand(input)
         self:Print("  /ob bars         — Show this spec's bar layout (/ob bars [raid|mythic] apply to place it)")
         self:Print("  /ob sheet        — Show/hide this spec's rotation cheat sheet")
         self:Print("  /ob gear         — Check your enchants and gems against top players")
+        self:Print("  /ob specs        — Rotation complexity of every spec, simplest first")
         self:Print("  /ob mode         — Raid or Mythic+ advice: auto | raid | mythic")
     end
 

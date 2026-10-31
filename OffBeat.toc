@@ -28,6 +28,7 @@ Sounds.lua
 Frames.lua
 Core.lua
 Profiles.lua
+Complexity.lua
 
 ## Buff Tracker
 Buffs.lua

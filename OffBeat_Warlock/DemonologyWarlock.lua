@@ -1,7 +1,7 @@
 local OffBeat = _G.OffBeat
 
--- Method 12.1 (updated 27 Sep 2026). Diabolist is Method's pick for both raid
--- and M+; Soul Harvester is covered by the same spell list. 12.1 dropped
+-- Method 12.1.5 (13 Oct 2026). Diabolist is what every top player runs, raid
+-- and M+ (Oct 2026 logs); Soul Harvester is covered by the same spell list. 12.1 dropped
 -- Grimoire: Felguard, Summon Vilefiend and Demonic Strength from the builds in
 -- favour of Summon Doomguard and the Grimoire: Imp Lord / Fel Ravager choice
 -- node. Talents you don't have are ignored.
@@ -11,7 +11,7 @@ OffBeat:RegisterProfile({
         specId = 266,
         version = 2,
         author = "OffBeat Defaults",
-        source = "Method 12.1 (27 Sep 2026)",
+        source = "Method 12.1.5 + top 40 heroic parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     -- Pet died / missing / low warnings, and pet deaths in training.
@@ -21,6 +21,11 @@ OffBeat:RegisterProfile({
     -- Ula'tek, 8 Oct: 79% of the time spent moving without casting had a
     -- Demonic Core up. Nudge when Demonbolt is instant while you move.
     movingCasts = { { spellId = 264178, name = "Demonbolt" } },
+
+    failNudges = {
+        { error = "moving", spells = { 686, 105174, 104316 }, name = "Cast while moving",
+          text = "Moving: Demonbolt on a Demonic Core, Burning Rush" },
+    },
 
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt
@@ -150,7 +155,7 @@ OffBeat:RegisterProfile({
     -- across the top 40 heroic parses; values follow the order of rates.
     -- window = top players' median Hand of Gul'dan + Ruination per Tyrant window.
     benchmarks = {
-        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 40 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",       all = true },
             { name = "Hand of Gul'dan",      spells = { 105174 } },
@@ -182,6 +187,29 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 10, values = {
             { 46.0, 47.6, 49.6 }, { 14.6, 15.3, 15.9 }, { 10.1, 10.7, 11.2 }, { 10.9, 12.3, 13.2 }, { 2.8, 2.9, 3.0 }, { 3.2, 3.4, 3.6 }, { 1.5, 1.5, 1.6 } } },
+        -- Dungeons (by instance ID): the top 40 timed runs per Season 2
+        -- dungeon (Warcraft Logs, Oct 2026), per minute in combat (Warcraft
+        -- Logs' pulls).
+        -- (Voidscar Arena: too few top runs to give numbers.)
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", values = {
+                { 52.4, 53.7, 55.2 }, { 13.1, 13.5, 13.8 }, { 9.6, 10.0, 10.3 }, { 20.6, 21.4, 22.3 }, { 2.8, 2.9, 2.9 }, { 3.0, 3.2, 3.4 }, { 1.5, 1.5, 1.6 } } },
+            [2825] = { name = "Den of Nalorakk", values = {
+                { 49.3, 50.7, 52.6 }, { 12.3, 12.6, 13.0 }, { 9.0, 9.3, 9.5 }, { 19.1, 20.7, 21.9 }, { 2.7, 2.8, 2.9 }, { 2.8, 3.1, 3.3 }, { 1.4, 1.4, 1.5 } } },
+            [1762] = { name = "Kings' Rest", values = {
+                { 52.5, 54.0, 56.0 }, { 13.3, 13.7, 14.0 }, { 9.9, 10.3, 10.5 }, { 20.2, 21.2, 22.4 }, { 2.9, 2.9, 2.9 }, { 3.0, 3.3, 3.4 }, { 1.5, 1.5, 1.6 } } },
+            [2813] = { name = "Murder Row", values = {
+                { 53.8, 55.4, 56.7 }, { 13.2, 13.5, 14.0 }, { 9.5, 9.7, 10.0 }, { 21.9, 23.1, 24.0 }, { 2.8, 2.9, 2.9 }, { 3.1, 3.2, 3.4 }, { 1.5, 1.5, 1.6 } } },
+            [2521] = { name = "Ruby Life Pools", values = {
+                { 52.8, 53.5, 55.2 }, { 13.4, 13.8, 14.1 }, { 9.9, 10.2, 10.5 }, { 19.8, 20.9, 22.3 }, { 2.8, 2.9, 2.9 }, { 2.9, 3.1, 3.4 }, { 1.5, 1.5, 1.6 } } },
+            [1877] = { name = "Temple of Sethraliss", values = {
+                { 49.8, 51.5, 53.5 }, { 12.9, 13.1, 13.5 }, { 9.8, 10.1, 10.3 }, { 17.9, 19.9, 21.1 }, { 2.8, 2.9, 2.9 }, { 2.8, 3.2, 3.4 }, { 1.5, 1.5, 1.5 } } },
+            [2859] = { name = "The Blinding Vale", values = {
+                { 53.7, 54.9, 57.7 }, { 13.6, 14.0, 14.4 }, { 9.8, 10.2, 10.5 }, { 20.5, 21.8, 23.8 }, { 2.8, 2.9, 2.9 }, { 3.0, 3.2, 3.4 }, { 1.5, 1.5, 1.6 } } },
+        },
+        -- Dummies with /ob mode mythic: all 274 runs together.
+        dungeonOverall = { name = "all M+ dungeons", values = {
+            { 51.7, 53.6, 55.4 }, { 13.0, 13.5, 13.9 }, { 9.6, 10.0, 10.4 }, { 19.8, 21.4, 22.7 }, { 2.8, 2.9, 2.9 }, { 3.0, 3.2, 3.4 }, { 1.5, 1.5, 1.6 } } },
     },
 
     -- Demonic Core dropping without a Demonbolt is a wasted instant cast.
@@ -210,5 +238,56 @@ OffBeat:RegisterProfile({
         { spellId = 18540,   st = 3, aoe = 3, note = "Top parses don't take it" },
         { spellId = 1276452, st = 3, aoe = 3, note = "Grimoire choice node" },
         { spellId = 1276467, st = 3, aoe = 3, note = "Grimoire choice node" },
+    },
+
+    -- /ob bars: the warlock key map the other two specs follow (binds are
+    -- account-wide): Hand of Gul'dan on 1, Call Dreadstalkers on 2, Shadow
+    -- Bolt on 3 (Infernal Bolt for Diabolist), Implosion on 4, Demonbolt on
+    -- 5, Summon Demonic Tyrant on Q, Grimoire: Imp Lord on Shift-3,
+    -- Soulburn on R, Shadowfury at the cursor on Shift-Q. Interrupt
+    -- Shift-E, defensives on ` / Shift-`, Burning Rush on F, Demonic Circle
+    -- teleport on Shift-F, Soulstone on F5. One layout for raid and M+
+    -- (Diabolist: every top player, Oct 2026).
+    barLayout = {
+        { slot = 1,  key = "1",       spellId = 105174,  note = "Hand of Gul'dan: at 3+ Soul Shards (~15 a minute in raid)" },
+        { slot = 2,  key = "2",       spellId = 104316,  note = "Call Dreadstalkers: on cooldown (~3 a minute)" },
+        { slot = 3,  key = "3",       spellId = 686,     note = "Shadow Bolt / Infernal Bolt: filler" },
+        { slot = 4,  key = "4",       spellId = 196277,  note = "Implosion: at 6+ Imps" },
+        { slot = 5,  key = "5",       spellId = 264178,  note = "Demonbolt: only instant, at 2+ Demonic Cores (keep 1 for moving)" },
+        { slot = 6,  key = "Q",       spellId = 265187,  note = "Summon Demonic Tyrant: with 4-5 shards and 2-3 cores saved" },
+        { slot = 63, key = "Shift-3", spellId = 1276452, alt = { 1276467 }, note = "Grimoire: Imp Lord (or Fel Ravager): before Tyrant" },
+        { slot = 67, key = "R",       spellId = 385899,  note = "Soulburn (96% of top M+ runs)" },
+        { slot = 66, key = "Shift-Q", macro = { name = "OB Shadowfury", spells = { 30283 }, cursor = true },
+          note = "Shadowfury at your cursor: stun a pack (M+)" },
+        { slot = 64, key = "Shift-4", spellId = 6789,    note = "Mortal Coil (M+)" },
+        { slot = 65, key = "Shift-5", spellId = 1714,    note = "Curse of Tongues (93% of top M+ runs)" },
+        { slot = 50, key = "Shift-E", spellId = 119898,  note = "Command Demon: Spell Lock (interrupt)" },
+        { slot = 70, key = "F",       spellId = 111400,  note = "Burning Rush: movement" },
+        { slot = 71, key = "Shift-F", spellId = 48020,   note = "Demonic Circle: Teleport" },
+        { slot = 25, key = "F5",      spellId = 20707,   note = "Soulstone: combat rez" },
+        { slot = 55, key = "`",       spellId = 104773,  note = "Unending Resolve: long defensive" },
+        { slot = 56, key = "Shift-`", spellId = 108416,  note = "Dark Pact: short defensive" },
+    },
+
+    -- The movable cheat sheet (/ob sheet). Method 12.1.5 (Diabolist).
+    rotationSheet = {
+        { title = "Opener", lines = {
+            { spellId = 686,     text = "Precast 2 Shadow Bolts (or a Demonbolt)" },
+            { spellId = 104316,  text = "Call Dreadstalkers, Grimoire: Imp Lord" },
+            { spellId = 686,     text = "Shadow Bolt to 5 shards (Diabolist)" },
+            { spellId = 265187,  text = "Summon Demonic Tyrant, then Hand of Gul'dan at 3+" },
+        } },
+        { title = "Priority", lines = {
+            { spellId = 104316,  text = "Call Dreadstalkers on cooldown (hold a few seconds for Tyrant)" },
+            { spellId = 196277,  text = "Implosion at 6+ Imps" },
+            { spellId = 264178,  text = "Demonbolt near 4 Demonic Cores (don't overcap shards)" },
+            { spellId = 105174,  text = "Hand of Gul'dan at 3+ shards" },
+            { spellId = 264178,  text = "Demonbolt at 2+ cores, keep 1 for moving" },
+            { spellId = 686,     text = "Shadow Bolt" },
+        } },
+        { title = "Tyrant", lines = {
+            { spellId = 265187,  text = "Save 2-3 cores and 4-5 shards, then the opener again" },
+            { text = "M+: hold it if the pack dies in under 20s; plan where the next one lands" },
+        } },
     },
 })

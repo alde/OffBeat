@@ -9,7 +9,7 @@ OffBeat:RegisterProfile({
         specId = 267,
         version = 1,
         author = "OffBeat Defaults",
-        source = "Method",
+        source = "Method 12.1.5 + top 40 heroic parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     -- Pet died / missing / low warnings, and pet deaths in training.
@@ -17,6 +17,12 @@ OffBeat:RegisterProfile({
     -- heroic Ula'tek parses we could read (Oct 2026) kept a pet out, mostly
     -- the Imp or the Sayaad; none played without one.
     pet = { quickSummon = 333889, sacrifice = 108503 }, -- Grimoire of Sacrifice: no pet
+
+    -- Incinerate, Chaos Bolt and Soul Fire have cast times.
+    failNudges = {
+        { error = "moving", spells = { 29722, 116858, 6353 }, name = "Cast while moving",
+          text = "Moving: Conflagrate, Shadowburn, Burning Rush" },
+    },
 
     rotationSpells = {
         { spellId = 29722 },  -- Incinerate
@@ -121,7 +127,7 @@ OffBeat:RegisterProfile({
     -- window = top players' median Chaos Bolt count per Infernal window.
     -- 357 of those 360 parses play Hellcaller (Wither).
     benchmarks = {
-        source = "top 40 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 40 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",    all = true },
             { name = "Chaos Bolt",        spells = { 116858 } },
@@ -153,6 +159,30 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 7, values = {
             { 50.0, 52.4, 54.7 }, { 9.1, 10.4, 11.8 }, { 11.5, 14.3, 17.7 }, { 8.4, 8.9, 9.1 }, { 8.6, 10.3, 12.1 }, { 1.2, 1.3, 1.3 }, { 2.5, 3.3, 4.3 } } },
+        -- Dungeons (by instance ID): the top 40 timed runs per Season 2
+        -- dungeon (Warcraft Logs, Oct 2026), per minute in combat (Warcraft
+        -- Logs' pulls). Soul Fire is a raid spell (Cataclysm in M+).
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", values = {
+                { 41.1, 44.3, 46.8 }, { 4.2, 4.8, 5.0 }, { 12.3, 13.0, 14.0 }, { 7.1, 7.4, 7.7 }, { 7.6, 8.7, 9.7 }, nil, { 1.4, 1.8, 2.1 } } },
+            [2825] = { name = "Den of Nalorakk", values = {
+                { 40.2, 43.2, 45.0 }, { 4.9, 5.2, 6.0 }, { 11.2, 12.2, 14.1 }, { 7.2, 7.5, 7.7 }, { 6.7, 7.4, 7.9 }, nil, { 1.5, 1.7, 2.0 } } },
+            [1762] = { name = "Kings' Rest", values = {
+                { 42.2, 43.2, 45.4 }, { 6.7, 7.2, 8.3 }, { 11.3, 12.8, 14.7 }, { 7.6, 7.8, 8.0 }, { 8.1, 8.7, 9.6 }, { 0.0, 0.4, 1.1 }, { 1.5, 1.6, 2.2 } } },
+            [2813] = { name = "Murder Row", values = {
+                { 41.2, 44.2, 46.0 }, { 5.1, 5.6, 7.3 }, { 11.0, 12.6, 13.5 }, { 7.2, 7.5, 7.9 }, { 6.8, 8.2, 8.9 }, nil, { 1.5, 1.9, 2.1 } } },
+            [2521] = { name = "Ruby Life Pools", values = {
+                { 43.4, 45.6, 47.7 }, { 6.1, 7.4, 8.8 }, { 10.2, 11.3, 12.7 }, { 7.6, 7.8, 8.0 }, { 8.0, 9.4, 10.4 }, nil, { 1.6, 1.9, 2.2 } } },
+            [1877] = { name = "Temple of Sethraliss", values = {
+                { 39.5, 42.7, 44.9 }, { 4.7, 5.3, 6.1 }, { 10.4, 12.0, 13.5 }, { 7.3, 7.5, 7.8 }, { 6.7, 7.5, 9.4 }, nil, { 1.6, 2.0, 2.4 } } },
+            [2859] = { name = "The Blinding Vale", values = {
+                { 41.0, 44.8, 47.3 }, { 4.6, 5.2, 6.3 }, { 12.0, 12.9, 14.4 }, { 7.4, 7.6, 7.9 }, { 7.3, 8.2, 9.6 }, nil, { 1.4, 1.6, 1.9 } } },
+            [2923] = { name = "Voidscar Arena", values = {
+                { 41.5, 43.0, 45.1 }, { 4.9, 5.9, 6.7 }, { 11.2, 12.6, 13.6 }, { 7.2, 7.6, 7.8 }, { 7.3, 7.9, 8.8 }, nil, { 1.4, 1.7, 2.3 } } },
+        },
+        -- Dummies with /ob mode mythic: all 320 runs together.
+        dungeonOverall = { name = "all M+ dungeons", values = {
+            { 41.2, 43.8, 46.2 }, { 4.8, 5.6, 7.0 }, { 11.1, 12.5, 13.9 }, { 7.3, 7.6, 7.9 }, { 7.2, 8.3, 9.4 }, nil, { 1.4, 1.8, 2.1 } } },
     },
 
     -- /ob bars: role for role on your Demonology keys. Spender on 1, short

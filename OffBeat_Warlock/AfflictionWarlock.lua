@@ -16,12 +16,18 @@ OffBeat:RegisterProfile({
         specId = 265,
         version = 2,
         author = "OffBeat Defaults",
-        source = "Method 12.1 + Kalamazi 12.1 + top parses (Oct 2026)",
+        source = "Method 12.1.5 + Kalamazi 12.1 + top parses per boss / timed runs per dungeon (Oct 2026)",
     },
 
     -- Pet died / missing / low warnings, and pet deaths in training.
     -- Fel Domination makes the next summon instant.
     pet = { quickSummon = 333889, sacrifice = 108503 }, -- Grimoire of Sacrifice: no pet
+
+    -- Shadow Bolt / Drain Soul, Haunt and Seed have cast times.
+    failNudges = {
+        { error = "moving", spells = { 686, 198590, 48181, 27243 }, name = "Cast while moving",
+          text = "Moving: Agony, Corruption / Wither on the move, Burning Rush" },
+    },
 
     rotationSpells = {
         { spellId = 686 },     -- Shadow Bolt
@@ -77,7 +83,7 @@ OffBeat:RegisterProfile({
     -- shard spending looks the same, the spender depends on target count).
     -- window = median Unstable Affliction + Seed per Darkglare.
     benchmarks = {
-        source = "top 25 heroic parses per boss (Warcraft Logs, Oct 2026)",
+        source = "top 25 heroic parses per boss, top 40 timed runs per dungeon (Warcraft Logs, Oct 2026)",
         rates = {
             { name = "Rotation casts",          all = true },
             { name = "Unstable Affliction + Seed", spells = { 1259790, 316099, 27243 } },
@@ -109,6 +115,30 @@ OffBeat:RegisterProfile({
         },
         overall = { name = "all heroic bosses", window = 8, values = {
             { 44.9, 48.9, 51.1 }, { 17, 18.4, 19.7 }, { 12.5, 16.5, 19.1 }, { 5.7, 6.9, 8.3 }, { 3.2, 3.4, 3.6 }, { 1, 1.1, 1.3 }, { 0.5, 0.6, 0.6 } } },
+        -- Dungeons (by instance ID): the top 40 timed runs per Season 2
+        -- dungeon (Warcraft Logs, Oct 2026), per minute in combat (Warcraft
+        -- Logs' pulls).
+        dungeons = {
+            [2993] = { name = "Altar of Fangs", values = {
+                { 42.2, 43.9, 46.2 }, { 17.0, 18.5, 19.0 }, { 10.4, 11.9, 13.2 }, { 7.7, 8.5, 9.4 }, { 3.2, 3.3, 3.3 }, { 1.2, 1.2, 1.3 }, { 0.4, 0.5, 0.5 } } },
+            [2825] = { name = "Den of Nalorakk", values = {
+                { 40.5, 41.7, 45.0 }, { 16.2, 17.6, 18.5 }, { 9.7, 10.6, 11.9 }, { 7.1, 7.9, 8.9 }, { 3.1, 3.3, 3.4 }, { 1.2, 1.2, 1.3 }, { 0.5, 0.5, 0.5 } } },
+            [1762] = { name = "Kings' Rest", values = {
+                { 42.3, 44.5, 45.4 }, { 16.7, 17.9, 18.5 }, { 11.9, 12.7, 13.5 }, { 6.5, 7.5, 8.2 }, { 3.3, 3.4, 3.5 }, { 1.2, 1.3, 1.3 }, { 0.5, 0.5, 0.5 } } },
+            [2813] = { name = "Murder Row", values = {
+                { 43.1, 44.8, 46.3 }, { 18.3, 18.9, 19.6 }, { 10.6, 11.5, 13.4 }, { 7.7, 8.4, 9.1 }, { 3.2, 3.3, 3.4 }, { 1.2, 1.3, 1.3 }, { 0.5, 0.5, 0.5 } } },
+            [2521] = { name = "Ruby Life Pools", values = {
+                { 43.6, 44.8, 46.9 }, { 18.5, 19.4, 20.1 }, { 10.1, 10.8, 11.9 }, { 8.3, 9.5, 10.4 }, { 3.2, 3.3, 3.4 }, { 1.2, 1.3, 1.3 }, { 0.5, 0.5, 0.5 } } },
+            [1877] = { name = "Temple of Sethraliss", values = {
+                { 41.6, 43.3, 45.0 }, { 17.4, 18.6, 19.2 }, { 9.6, 10.2, 11.2 }, { 8.2, 9.2, 9.9 }, { 3.1, 3.2, 3.5 }, { 1.2, 1.2, 1.3 }, { 0.5, 0.5, 0.5 } } },
+            [2859] = { name = "The Blinding Vale", values = {
+                { 41.5, 43.6, 44.8 }, { 17.6, 18.5, 19.0 }, { 10.7, 11.6, 12.7 }, { 6.9, 8.0, 9.0 }, { 3.2, 3.3, 3.4 }, { 1.2, 1.3, 1.4 }, { 0.5, 0.5, 0.5 } } },
+            [2923] = { name = "Voidscar Arena", values = {
+                { 42.2, 43.2, 44.9 }, { 17.3, 18.0, 19.0 }, { 10.0, 11.2, 12.0 }, { 7.6, 8.3, 9.1 }, { 3.2, 3.4, 3.5 }, { 1.2, 1.2, 1.3 }, { 0.5, 0.5, 0.5 } } },
+        },
+        -- Dummies with /ob mode mythic: all 320 runs together.
+        dungeonOverall = { name = "all M+ dungeons", values = {
+            { 42.0, 43.9, 45.6 }, { 17.3, 18.5, 19.1 }, { 10.1, 11.2, 12.5 }, { 7.3, 8.3, 9.3 }, { 3.2, 3.3, 3.4 }, { 1.2, 1.2, 1.3 }, { 0.5, 0.5, 0.5 } } },
     },
 
     -- /ob bars: role for role on your warlock keys. Spender on 1, short
